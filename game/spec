@@ -1,0 +1,12 @@
+beginseg
+    name "code"
+    flags BOOT OBJECT
+    entry boot
+    stack boot_stack + 0x2000
+    include "codesegment.o"
+endseg
+
+beginwave
+    name "thorn"
+    include "code"
+endwave
