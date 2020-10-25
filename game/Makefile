@@ -16,9 +16,6 @@ CC := mips32-elf-gcc
 CFLAGS += -O2 -D_FINALROM
 ASFLAGS := -32 -mips3
 
-codesegment.o: main.o
-	$(CC) -nostdlib -r -o $@ $^ ../sdk/ultra/lib/libgultra_rom.a /opt/n64/lib/gcc/mips32-elf/10.2.0/libgcc.a
-
 objs := main.o start.o
 $(name).elf: link.lds $(objs)
 	$(CC) -nostdlib -o $@ -T link.lds $(objs) ../sdk/ultra/lib/libgultra_rom.a /opt/n64/lib/gcc/mips32-elf/10.2.0/libgcc.a
