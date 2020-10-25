@@ -1,0 +1,28 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//base:copts.bzl", "COPTS")
+
+alias(
+    name = "game",
+    actual = ":Thornmarked",
+)
+
+cc_binary(
+    name = "Thornmarked.elf",
+    srcs = [
+        "main.c",
+    ],
+    additional_linker_inputs = ["//n64:link.lds"],
+    copts = COPTS + ["-ffreestanding"],
+    linkopts = [
+        "-T",
+        "$(location //n64:link.lds)",
+    ],
+    deps = ["//n64"],
+)
+
+genrule(
+    name = "Thornmarked",
+    srcs = [":Thornmarked.elf"],
+    outs = ["Thornmarked.n64"],
+    cmd = "mips32-elf-objcopy -O binary $< $@; makemask $@",
+)

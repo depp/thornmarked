@@ -10,7 +10,7 @@ EXTRA_PATHS = [
     '/usr/games',
 ]
 
-SRCDIR = pathlib.Path(__file__).resolve().parent.parent
+SRCDIR = pathlib.Path(__file__).resolve().parent
 
 def find_program(name, *, extra_paths=[]):
     """Return the path to a program."""
@@ -56,7 +56,7 @@ def main(argv):
         help='additional options to pass emulator')
     args = p.parse_args(argv)
 
-    rom = pathlib.Path(SRCDIR, 'game', ROM)
+    rom = pathlib.Path(SRCDIR, 'bazel-bin', 'game', ROM)
     emulators[args.emulator](rom, args)
 
 if __name__ == '__main__':

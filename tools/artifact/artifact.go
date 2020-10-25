@@ -154,9 +154,9 @@ type buildInfo struct {
 // buildArtifact builds the desired artifact.
 func buildArtifact() error {
 	fmt.Fprintln(os.Stderr, "Building...")
-	cmd := exec.Command("make")
+	cmd := exec.Command("bazel", "build", "-c", "opt", "--cpu=n64", "//game")
 	cmd.Stderr = os.Stderr
-	cmd.Dir = filepath.Join(wsdir, "game")
+	cmd.Dir = wsdir
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("build failed: %w", err)
 	}
@@ -194,7 +194,7 @@ func createPackage(info *buildInfo, filename string) error {
 		return err
 	}
 
-	inpath := filepath.Join(wsdir, "game", fileName)
+	inpath := filepath.Join(wsdir, "bazel-bin/game", fileName)
 	fp, err := os.Open(inpath)
 	if err != nil {
 		return err

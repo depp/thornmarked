@@ -1,0 +1,15 @@
+load("@rules_cc//cc:defs.bzl", "cc_import", "cc_library")
+
+cc_import(
+    name = "libultra_bin",
+    static_library = "lib/libgultra.a",
+)
+
+cc_library(
+    name = "libultra",
+    hdrs = ["include/ultra64.h"] + glob(["include/PR/*.h"]),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+    deps = [":libultra_bin"],
+    defines = ["_LANGUAGE_C"],
+)
