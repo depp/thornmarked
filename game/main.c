@@ -32,9 +32,6 @@ static u8 main_thread_stack[STACK_SIZE] __attribute__((aligned(8)));
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
 
-static OSMesgQueue rdp_message_queue;
-static OSMesg rdp_message_buffer;
-
 static OSMesgQueue retrace_message_queue;
 static OSMesg retrace_message_buffer;
 
@@ -140,8 +137,6 @@ static void main(void *arg) {
     (void)arg;
 
     // Set up message queues.
-    osCreateMesgQueue(&rdp_message_queue, &rdp_message_buffer, 1);
-    osSetEventMesg(OS_EVENT_DP, &rdp_message_queue, NULL);
     osCreateMesgQueue(&retrace_message_queue, &retrace_message_buffer, 1);
     osViSetEvent(&retrace_message_queue, NULL, 1); // 1 = every frame
 
