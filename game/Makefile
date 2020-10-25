@@ -9,12 +9,11 @@ CFLAGS += -Wall -Wextra -Wpointer-arith -Wwrite-strings -Wmissing-prototypes -Wd
 #CFLAGS += -Werror
 
 CC := mips32-elf-gcc
-LD := mips32-elf-ld
 
 CFLAGS += -O2 -D_FINALROM 
 
 codesegment.o: main.o
-	$(LD) -nostdlib -r -o $@ $^ ../sdk/ultra/lib/libgultra_rom.a /opt/n64/lib/gcc/mips32-elf/10.2.0/libgcc.a
+	$(CC) -nostdlib -r -o $@ $^ ../sdk/ultra/lib/libgultra_rom.a /opt/n64/lib/gcc/mips32-elf/10.2.0/libgcc.a
 
 thorn.n64: spec codesegment.o
 	spicy -r $@ spec --toolchain-prefix=mips32-elf-
