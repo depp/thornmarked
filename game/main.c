@@ -2,13 +2,7 @@
 
 #define ARRAY_COUNT(x) (sizeof((x)) / sizeof((x)[0]))
 
-// Get a pointer to the start (top) of a stack.
-#define STACK_START(x) ((x) + sizeof((x)))
-
 enum {
-    // Size of stacks for threads, in bytes.
-    STACK_SIZE = 8 * 1024,
-
     // Maximum number of simultaneous PI requests.
     PI_MSG_COUNT = 8,
 
@@ -17,17 +11,15 @@ enum {
     SCREEN_HEIGHT = 240,
 };
 
-// Extern, because it is used by the boot code.
-u8 boot_stack[STACK_SIZE] __attribute__((aligned(8)));
+// Stacks (defined in linker script).
+extern u8 _main_thread_stack[];
+extern u8 _idle_thread_stack[];
 
 // Handle to access ROM data, from osCartRomInit.
 static OSPiHandle *rom_handle;
 
 static OSThread idle_thread;
-static u8 idle_thread_stack[STACK_SIZE] __attribute__((aligned(8)));
-
 static OSThread main_thread;
-static u8 main_thread_stack[STACK_SIZE] __attribute__((aligned(8)));
 
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
@@ -49,8 +41,7 @@ void boot(void);
 void boot(void) {
     osInitialize();
     rom_handle = osCartRomInit();
-    osCreateThread(&idle_thread, 1, idle, NULL, STACK_START(idle_thread_stack),
-                   10);
+    osCreateThread(&idle_thread, 1, idle, NULL, _idle_thread_stack, 10);
     osStartThread(&idle_thread);
 }
 
@@ -66,8 +57,7 @@ static void idle(void *arg) {
                       PI_MSG_COUNT);
 
     // Start main thread.
-    osCreateThread(&main_thread, 3, main, NULL, STACK_START(main_thread_stack),
-                   10);
+    osCreateThread(&main_thread, 3, main, NULL, _main_thread_stack, 10);
     osStartThread(&main_thread);
 
     // Idle loop.
