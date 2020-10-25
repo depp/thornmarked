@@ -2,7 +2,7 @@ name := Thornmarked
 
 all: $(name).n64
 clean:
-	rm -f codesegment.o main.o
+	rm -f $(objs) $(name).elf $(name).n64
 .PHONY: all clean
 
 CFLAGS := -O2 -std=c11
