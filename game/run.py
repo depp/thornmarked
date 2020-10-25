@@ -5,7 +5,7 @@ import pathlib
 import shlex
 import sys
 
-ROM = 'thorn.n64'
+ROM = 'Thornmarked.n64'
 EXTRA_PATHS = [
     '/usr/games',
 ]
