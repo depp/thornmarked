@@ -18,7 +18,7 @@ ASFLAGS := -32 -mips3
 
 objs := main.o start.o
 $(name).elf: link.lds $(objs)
-	$(CC) -nostdlib -o $@ -T link.lds $(objs) ../sdk/ultra/lib/libgultra_rom.a /opt/n64/lib/gcc/mips32-elf/10.2.0/libgcc.a
+	$(CC) -nostdlib -o $@ -T link.lds $(objs) ../sdk/ultra/lib/libgultra_rom.a -lgcc
 
 $(name).n64: $(name).elf
 	mips32-elf-objcopy -O binary $< $@
