@@ -1,5 +1,7 @@
 #include <ultra64.h>
 
+#include <stdint.h>
+
 #define ARRAY_COUNT(x) (sizeof((x)) / sizeof((x)[0]))
 
 enum {
@@ -26,6 +28,9 @@ static OSMesgQueue pi_message_queue;
 
 static OSMesgQueue retrace_message_queue;
 static OSMesg retrace_message_buffer;
+
+static OSMesgQueue rdp_message_queue;
+static OSMesg rdp_message_buffer;
 
 static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT];
 
@@ -63,14 +68,6 @@ static void idle(void *arg) {
     // Idle loop.
     osSetThreadPri(0, 0);
     for (;;) {}
-}
-
-// Fill a framebuffer with the given color, whuch must be in 16-bit RGBA format.
-static void fill_framebuffer(u16 (*framebuffer)[SCREEN_WIDTH * SCREEN_HEIGHT],
-                             unsigned color) {
-    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
-        (*framebuffer)[i] = color;
-    }
 }
 
 // Create a 16-bit RGBA color from components. Color components must be 5-bit,
@@ -123,25 +120,111 @@ static unsigned make_hue(unsigned hue) {
     return rgba16(r, g, b, 0);
 }
 
+// Viewport scaling parameters.
+static const Vp viewport = {{
+    .vscale = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
+    .vtrans = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
+}};
+
+// Initialize the RSP.
+static const Gfx rspinit_dl[] = {
+    gsSPViewport(&viewport),
+    gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH | G_CULL_BOTH | G_FOG |
+                          G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR |
+                          G_LOD),
+    gsSPTexture(0, 0, 0, 0, G_OFF),
+    gsSPEndDisplayList(),
+};
+
+// Initialize the RDP.
+static const Gfx rdpinit_dl[] = {
+    gsDPSetCycleType(G_CYC_1CYCLE),
+    gsDPSetScissor(G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT),
+    gsDPSetCombineKey(G_CK_NONE),
+    gsDPSetAlphaCompare(G_AC_NONE),
+    gsDPSetRenderMode(G_RM_NOOP, G_RM_NOOP2),
+    gsDPSetColorDither(G_CD_DISABLE),
+    gsDPPipeSync(),
+    gsSPEndDisplayList(),
+};
+
+// Clear the color framebuffer.
+static Gfx clearframebuffer_dl[] = {
+    gsDPSetCycleType(G_CYC_FILL),
+    gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+                      framebuffers[0]),
+    gsDPPipeSync(),
+    // This must be in array position [3] because we modify it.
+    gsDPSetFillColor(0),
+    gsDPFillRectangle(0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1),
+    gsSPEndDisplayList(),
+};
+
+enum {
+    SP_STACK_SIZE = 1024,
+    RDP_OUTPUT_LEN = 64 * 1024,
+};
+
+static u64 sp_dram_stack[SP_STACK_SIZE / 8]
+    __attribute__((section("uninit.rsp")));
+// static u64 rdp_output[RDP_OUTPUT_LEN] __attribute__((section("uninit.rsp"));
+
+static OSTask tlist = {{
+    .type = M_GFXTASK,
+    .flags = OS_TASK_DP_WAIT,
+    .ucode = (u64 *)gspF3DEX2_xbusTextStart,
+    .ucode_size = SP_UCODE_SIZE,
+    .ucode_data = (u64 *)gspF3DEX2_xbusDataStart,
+    .ucode_data_size = SP_UCODE_DATA_SIZE,
+    .dram_stack = sp_dram_stack,
+    .dram_stack_size = sizeof(sp_dram_stack),
+    // .output_buff = rdp_output + RDP_OUTPUT_LEN,
+    // Refer to osSpTaskStart docs... this is a pointer past the edn.
+    // .output_buff_size = sizeof(rdp_output),
+}};
+
 static void main(void *arg) {
     (void)arg;
 
     // Set up message queues.
+    osCreateMesgQueue(&rdp_message_queue, &rdp_message_buffer, 1);
+    osSetEventMesg(OS_EVENT_DP, &rdp_message_queue, NULL);
     osCreateMesgQueue(&retrace_message_queue, &retrace_message_buffer, 1);
     osViSetEvent(&retrace_message_queue, NULL, 1); // 1 = every frame
 
     int which_framebuffer = 0;
     unsigned hue = 0;
+    tlist.t.ucode_boot = (u64 *)rspbootTextStart;
+    tlist.t.ucode_boot_size =
+        (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart;
 
     for (;;) {
+        // Set up display lists.
+
         unsigned color = make_hue(hue);
         hue++;
         if (hue == 6 << 5)
             hue = 0;
 
-        fill_framebuffer(&framebuffers[which_framebuffer], color);
-        osWritebackDCache(&framebuffers[which_framebuffer],
-                          sizeof(framebuffers[which_framebuffer]));
+        Gfx glist[16], *glistp = glist;
+        gSPSegment(glistp++, 0, 0);
+        gSPDisplayList(glistp++, rdpinit_dl);
+        gSPDisplayList(glistp++, rspinit_dl);
+        clearframebuffer_dl[1] =
+            (Gfx)gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+                                   framebuffers[which_framebuffer]);
+        clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(color | (color << 16));
+        gSPDisplayList(glistp++, clearframebuffer_dl);
+        gDPFullSync(glistp++);
+        gSPEndDisplayList(glistp++);
+
+        osWritebackDCache(&clearframebuffer_dl[1], sizeof(Gfx) * 3);
+        osWritebackDCache(glist, sizeof(*glist) * (glistp - glist));
+        tlist.t.data_ptr = (u64 *)glist;
+        tlist.t.data_size = sizeof(*glist) * (glistp - glist);
+
+        osSpTaskStart(&tlist);
+        osRecvMesg(&rdp_message_queue, NULL, OS_MESG_BLOCK);
 
         osViSwapBuffer(framebuffers[which_framebuffer]);
         // Remove any old retrace message and wait for a new one.

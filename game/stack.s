@@ -1,5 +1,5 @@
 # Stacks for threads and SP tasks.
-	.section .stack
+	.section uninit.stack
 
 	.global _boot_stack
 	.global _main_thread_stack

@@ -34,9 +34,13 @@ SECTIONS {
         _bss_end = .;
     } >ram
 
-    .stack (NOLOAD) : ALIGN(16) {
-        *(.stack .stack.*)
+    uninit (NOLOAD) : ALIGN(16) {
+        *(uninit.*)
     } >ram
+
+    uninit.rdp (NOLOAD) : ALIGN(16) {
+        *(uniti.rdp)
+    }
 
     /DISCARD/ : {
         *(*)

@@ -14,11 +14,16 @@ cc_binary(
     ],
     additional_linker_inputs = ["//n64:link.lds"],
     copts = COPTS + ["-ffreestanding"],
+    defines = ["F3DEX_GBI_2"],
     linkopts = [
         "-T",
         "$(location //n64:link.lds)",
     ],
-    deps = ["//n64"],
+    deps = [
+        "//n64",
+        "@n64sdk//:gspF3DEX2.xbus",
+        "@n64sdk//:rspboot",
+    ],
 )
 
 genrule(
