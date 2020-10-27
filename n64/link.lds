@@ -35,14 +35,7 @@ SECTIONS {
     } >ram
 
     .stack (NOLOAD) : ALIGN(16) {
-        . += STACK_SIZE;
-        . = ALIGN(8);
-        _boot_stack = .;
-        _main_thread_stack = .;
-
-        . += STACK_SIZE;
-        . = ALIGN(8);
-        _idle_thread_stack = .;
+        *(.stack .stack.*)
     } >ram
 
     /DISCARD/ : {

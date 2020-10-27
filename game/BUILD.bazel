@@ -10,6 +10,7 @@ cc_binary(
     name = "Thornmarked.elf",
     srcs = [
         "main.c",
+        "stack.s",
     ],
     additional_linker_inputs = ["//n64:link.lds"],
     copts = COPTS + ["-ffreestanding"],
