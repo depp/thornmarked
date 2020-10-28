@@ -32,7 +32,7 @@ def cen64(rom, args):
 
 def mame(rom, args):
     exe = find_program('mame', extra_paths=EXTRA_PATHS)
-    run([exe, 'n64', rom, *args.emulator_opts])
+    run([exe, 'n64', '-cart', rom, *args.emulator_opts])
 
 def mupen64(rom, args):
     exe = find_program('mupen64plus', extra_paths=EXTRA_PATHS)
