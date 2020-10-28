@@ -1,4 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//base:copts.bzl", "COPTS")
 
 alias(
@@ -20,6 +20,7 @@ cc_binary(
         "$(location //n64:link.lds)",
     ],
     deps = [
+        "//assets/test",
         "//n64",
         "@n64sdk//:gspF3DEX2.xbus",
         "@n64sdk//:rspboot",

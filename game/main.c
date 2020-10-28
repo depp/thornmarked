@@ -120,6 +120,9 @@ static unsigned make_hue(unsigned hue) {
     return rgba16(r, g, b, 0);
 }
 
+extern u8 _binary_Ariella_32x32_rgba16_start[];
+#define IMAGE _binary_Ariella_32x32_rgba16_start
+
 // Viewport scaling parameters.
 static const Vp viewport = {{
     .vscale = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
@@ -157,6 +160,25 @@ static Gfx clearframebuffer_dl[] = {
     // This must be in array position [3] because we modify it.
     gsDPSetFillColor(0),
     gsDPFillRectangle(0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1),
+    gsSPEndDisplayList(),
+};
+
+static Gfx sprite_dl[] = {
+    gsDPPipeSync(),
+    gsDPSetTexturePersp(G_TP_NONE),
+    gsDPSetCycleType(G_CYC_COPY), // G_CYC_2CYCLE
+    gsDPSetRenderMode(G_RM_NOOP, G_RM_NOOP2),
+    gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH),
+    gsSPTexture(0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON),
+    gsDPSetCombineMode(G_CC_DECALRGB, G_CC_DECALRGB),
+    gsDPSetTexturePersp(G_TP_NONE),
+    gsDPSetTextureFilter(G_TF_POINT), // G_TF_BILERP
+    gsDPLoadTextureBlock(IMAGE, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0,
+                         G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0, G_TX_NOLOD,
+                         G_TX_NOLOD),
+    gsSPTextureRectangle(40 << 2, 10 << 2, (40 + 32 - 1) << 2,
+                         (10 + 32 - 1) << 2, 0, 0, 0, 4 << 10, 1 << 10),
+    gsDPPipeSync(),
     gsSPEndDisplayList(),
 };
 
@@ -215,6 +237,7 @@ static void main(void *arg) {
                                    framebuffers[which_framebuffer]);
         clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(color | (color << 16));
         gSPDisplayList(glistp++, clearframebuffer_dl);
+        gSPDisplayList(glistp++, sprite_dl);
         gDPFullSync(glistp++);
         gSPEndDisplayList(glistp++);
 
@@ -225,6 +248,16 @@ static void main(void *arg) {
 
         osSpTaskStart(&tlist);
         osRecvMesg(&rdp_message_queue, NULL, OS_MESG_BLOCK);
+
+        // Copy a version of the txture with the CPU for reference.
+        u16 *restrict pixels = (u16 *)IMAGE;
+        for (int y = 0; y < 32; y++) {
+            for (int x = 0; x < 32; x++) {
+                framebuffers[which_framebuffer][y * SCREEN_WIDTH + x] =
+                    pixels[y * 32 + x];
+            }
+        }
+        osWritebackDCacheAll();
 
         osViSwapBuffer(framebuffers[which_framebuffer]);
         // Remove any old retrace message and wait for a new one.
