@@ -1,0 +1,27 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+SRCS = [
+    "//assets/test:Ariella_32x32",
+    "//assets/test:Ball",
+]
+
+genrule(
+    name = "assets_files",
+    srcs = ["manifest.txt"] + SRCS,
+    outs = [
+        "assets.dat",
+        "assets.h",
+    ],
+    cmd = ("$(location //tools/makepak) " +
+           "$(location assets.dat) $(location assets.h) " +
+           "$(location manifest.txt)  " +
+           " ".join(["$(locations %s)" % src for src in SRCS])),
+    tools = ["//tools/makepak"],
+    visibility = ["//game:__pkg__"],
+)
+
+cc_library(
+    name = "assets",
+    hdrs = ["assets.h"],
+    visibility = ["//game:__subpackages__"],
+)

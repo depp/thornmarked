@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "assets/assets.h"
+
 #define ARRAY_COUNT(x) (sizeof((x)) / sizeof((x)[0]))
 
 enum {
@@ -25,6 +27,10 @@ static OSThread main_thread;
 
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
+
+static OSMesgQueue dma_message_queue;
+static OSMesg dma_message_buffer;
+static OSIoMesg dma_io_message_buffer;
 
 static OSMesgQueue retrace_message_queue;
 static OSMesg retrace_message_buffer;
@@ -120,9 +126,6 @@ static unsigned make_hue(unsigned hue) {
     return rgba16(r, g, b, 0);
 }
 
-extern u8 _binary_Ariella_32x32_rgba16_start[];
-#define IMAGE _binary_Ariella_32x32_rgba16_start
-
 // Viewport scaling parameters.
 static const Vp viewport = {{
     .vscale = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
@@ -163,6 +166,9 @@ static Gfx clearframebuffer_dl[] = {
     gsSPEndDisplayList(),
 };
 
+static uint16_t img_cat[32 * 32] __attribute__((unused, aligned(16)));
+static uint16_t img_ball[32 * 32] __attribute__((unused, aligned(16)));
+
 static Gfx sprite_dl[] = {
     gsDPPipeSync(),
     gsDPSetTexturePersp(G_TP_NONE),
@@ -173,7 +179,7 @@ static Gfx sprite_dl[] = {
     gsDPSetCombineMode(G_CC_DECALRGB, G_CC_DECALRGB),
     gsDPSetTexturePersp(G_TP_NONE),
     gsDPSetTextureFilter(G_TF_POINT), // G_TF_BILERP
-    gsDPLoadTextureBlock(IMAGE, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0,
+    gsDPLoadTextureBlock(img_cat, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0,
                          G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0, G_TX_NOLOD,
                          G_TX_NOLOD),
     gsSPTextureRectangle(40 << 2, 10 << 2, (40 + 32 - 1) << 2,
@@ -205,14 +211,55 @@ static OSTask tlist = {{
     // .output_buff_size = sizeof(rdp_output),
 }};
 
+// Offset in cartridge where data is stored.
+extern u8 _pakdata_offset[];
+
+// Descriptor for an object in the pak.
+struct pak_object {
+    uint32_t offset;
+    uint32_t size;
+};
+
+// Info for the pak objects, to be loaded from cartridge.
+static struct pak_object pak_objects[PAK_SIZE] __attribute__((aligned(16)));
+
+static void load_pak_data(void *dest, uint32_t offset, uint32_t size) {
+    osWritebackDCache(dest, size);
+    osInvalDCache(dest, size);
+    dma_io_message_buffer = (OSIoMesg){
+        .hdr =
+            {
+                .pri = OS_MESG_PRI_NORMAL,
+                .retQueue = &dma_message_queue,
+            },
+        .dramAddr = dest,
+        .devAddr = (uint32_t)_pakdata_offset + offset,
+        .size = size,
+    };
+    osEPiStartDma(rom_handle, &dma_io_message_buffer, OS_READ);
+    osRecvMesg(&dma_message_queue, NULL, OS_MESG_BLOCK);
+    osInvalDCache(dest, size);
+}
+
+static void load_pak_object(void *dest, int index) {
+    struct pak_object obj = pak_objects[index - 1];
+    load_pak_data(dest, sizeof(pak_objects) + obj.offset, obj.size);
+}
+
 static void main(void *arg) {
     (void)arg;
 
     // Set up message queues.
+    osCreateMesgQueue(&dma_message_queue, &dma_message_buffer, 1);
     osCreateMesgQueue(&rdp_message_queue, &rdp_message_buffer, 1);
     osSetEventMesg(OS_EVENT_DP, &rdp_message_queue, NULL);
     osCreateMesgQueue(&retrace_message_queue, &retrace_message_buffer, 1);
     osViSetEvent(&retrace_message_queue, NULL, 1); // 1 = every frame
+
+    // Load the pak header.
+    load_pak_data(pak_objects, 0, sizeof(pak_objects));
+    load_pak_object(img_cat, IMG_CAT);
+    load_pak_object(img_ball, IMG_BALL);
 
     int which_framebuffer = 0;
     unsigned hue = 0;
@@ -250,7 +297,7 @@ static void main(void *arg) {
         osRecvMesg(&rdp_message_queue, NULL, OS_MESG_BLOCK);
 
         // Copy a version of the txture with the CPU for reference.
-        u16 *restrict pixels = (u16 *)IMAGE;
+        u16 *restrict pixels = (u16 *)img_ball;
         for (int y = 0; y < 32; y++) {
             for (int x = 0; x < 32; x++) {
                 framebuffers[which_framebuffer][y * SCREEN_WIDTH + x] =

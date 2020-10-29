@@ -1,24 +1,11 @@
+package(default_visibility = ["//assets:__pkg__"])
+
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
-genrule(
-    name = "Ariella_32x32_rgba16_dat",
-    srcs = ["Ariella_32x32.png"],
-    outs = ["Ariella_32x32_rgba16.dat"],
-    tools = ["//tools/texture"],
+[genrule(
+    name = name,
+    srcs = [name + ".png"],
+    outs = [name + ".dat"],
     cmd = "$(location //tools/texture) -output=$@ $<",
-)
-
-genrule(
-    name = "Ariella_32x32_rgba16",
-    srcs = ["Ariella_32x32_rgba16_dat"],
-    outs = ["Ariella_32x32_rgba16.o"],
-    cmd = "ln -s $< Ariella_32x32_rgba16; mips32-elf-objcopy --input-target=binary --output-target=elf32-bigmips Ariella_32x32_rgba16 $@",
-)
-
-cc_library(
-    name = "test",
-    srcs = [
-        ":Ariella_32x32_rgba16",
-    ],
-    visibility = ["//visibility:public"],
-)
+    tools = ["//tools/texture"],
+) for name in ["Ariella_32x32", "Ball"]]

@@ -20,7 +20,7 @@ cc_binary(
         "$(location //n64:link.lds)",
     ],
     deps = [
-        "//assets/test",
+        "//assets",
         "//n64",
         "@n64sdk//:gspF3DEX2.xbus",
         "@n64sdk//:rspboot",
@@ -29,7 +29,12 @@ cc_binary(
 
 genrule(
     name = "Thornmarked",
-    srcs = [":Thornmarked.elf"],
+    srcs = [
+        ":Thornmarked.elf",
+        "//assets:assets.dat",
+    ],
     outs = ["Thornmarked.n64"],
-    cmd = "mips32-elf-objcopy -O binary $< $@; makemask $@",
+    cmd = ("mips32-elf-objcopy -O binary $(location :Thornmarked.elf) $@; " +
+           "cat $(location //assets:assets.dat) >>$@; " +
+           "makemask $@"),
 )

@@ -25,6 +25,11 @@ SECTIONS {
         _text_end = .;
     } >ram AT>rom
 
+    pakdata : ALIGN(16) {
+        . = .;
+    } >rom
+    _pakdata_offset = LOADADDR(pakdata);
+
     .bss (NOLOAD) : ALIGN(16) {
         _bss_start = .;
         *(.bss .bss.*)
