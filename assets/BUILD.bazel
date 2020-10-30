@@ -3,6 +3,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 SRCS = [
     "//assets/test:Ariella_32x32",
     "//assets/test:Ball",
+    "//assets/fonts/grenze_gotisch:grenze_gotisch.font",
 ]
 
 genrule(

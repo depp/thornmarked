@@ -7,4 +7,5 @@ bitmap_font(
     format = "i.4",
     texsize = (64, 128),
     charset = "//assets/fonts:charset.txt",
+    visibility = ["//assets:__pkg__"],
 )

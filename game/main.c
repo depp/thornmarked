@@ -1,8 +1,10 @@
+#include "game/defs.h"
+
+#include "assets/assets.h"
+
 #include <ultra64.h>
 
 #include <stdint.h>
-
-#include "assets/assets.h"
 
 #define ARRAY_COUNT(x) (sizeof((x)) / sizeof((x)[0]))
 
@@ -241,8 +243,8 @@ static void load_pak_data(void *dest, uint32_t offset, uint32_t size) {
     osInvalDCache(dest, size);
 }
 
-static void load_pak_object(void *dest, int index) {
-    struct pak_object obj = pak_objects[index - 1];
+void asset_load(void *dest, int asset_id) {
+    struct pak_object obj = pak_objects[asset_id - 1];
     load_pak_data(dest, sizeof(pak_objects) + obj.offset, obj.size);
 }
 
@@ -258,8 +260,9 @@ static void main(void *arg) {
 
     // Load the pak header.
     load_pak_data(pak_objects, 0, sizeof(pak_objects));
-    load_pak_object(img_cat, IMG_CAT);
-    load_pak_object(img_ball, IMG_BALL);
+    asset_load(img_cat, IMG_CAT);
+    asset_load(img_ball, IMG_BALL);
+    font_load(FONT_GG);
 
     int which_framebuffer = 0;
     unsigned hue = 0;
@@ -271,11 +274,12 @@ static void main(void *arg) {
         // Set up display lists.
 
         unsigned color = make_hue(hue);
+        color = (color & 0b1110011100111000) >> 2;
         hue++;
         if (hue == 6 << 5)
             hue = 0;
 
-        Gfx glist[16], *glistp = glist;
+        Gfx glist[100], *glistp = glist;
         gSPSegment(glistp++, 0, 0);
         gSPDisplayList(glistp++, rdpinit_dl);
         gSPDisplayList(glistp++, rspinit_dl);
@@ -285,6 +289,7 @@ static void main(void *arg) {
         clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(color | (color << 16));
         gSPDisplayList(glistp++, clearframebuffer_dl);
         gSPDisplayList(glistp++, sprite_dl);
+        glistp = text_render(glistp, "Hello, world! Release every zig!");
         gDPFullSync(glistp++);
         gSPEndDisplayList(glistp++);
 

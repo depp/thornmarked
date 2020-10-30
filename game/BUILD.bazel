@@ -9,8 +9,10 @@ alias(
 cc_binary(
     name = "Thornmarked.elf",
     srcs = [
+        "defs.h",
         "main.c",
         "stack.s",
+        "text.c",
     ],
     additional_linker_inputs = ["//n64:link.lds"],
     copts = COPTS + ["-ffreestanding"],
