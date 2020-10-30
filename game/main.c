@@ -166,8 +166,8 @@ static Gfx clearframebuffer_dl[] = {
     gsSPEndDisplayList(),
 };
 
-static uint16_t img_cat[32 * 32] __attribute__((unused, aligned(16)));
-static uint16_t img_ball[32 * 32] __attribute__((unused, aligned(16)));
+static uint16_t img_cat[32 * 32] __attribute__((aligned(16)));
+static uint16_t img_ball[32 * 32] __attribute__((aligned(16)));
 
 static Gfx sprite_dl[] = {
     gsDPPipeSync(),
