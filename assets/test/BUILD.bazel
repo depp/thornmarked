@@ -6,6 +6,9 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
     name = name,
     srcs = [name + ".png"],
     outs = [name + ".dat"],
-    cmd = "$(location //tools/texture) -output=$@ $<",
-    tools = ["//tools/texture"],
-) for name in ["Ariella_32x32", "Ball"]]
+    cmd = "$(location //tools/textureconvert) -format rgba.16 -output=$@ $<",
+    tools = ["//tools/textureconvert"],
+) for name in [
+    "Ariella_32x32",
+    "Ball",
+]]
