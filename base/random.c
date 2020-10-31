@@ -21,3 +21,13 @@ uint32_t rand_next(struct rand *restrict r) {
     x = ((x >> ((x >> 28) + 4)) ^ x) * 277803737u;
     return (x >> 22) ^ x;
 }
+
+int rand_range_fast(struct rand *restrict r, int min, int max) {
+    if (max <= min) {
+        return min;
+    }
+    uint32_t range = (max - min) + 1;
+    uint32_t val = rand_next(r);
+    uint32_t off = ((val >> 16) * range) >> 16;
+    return min + off;
+}

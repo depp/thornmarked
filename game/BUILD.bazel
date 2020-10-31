@@ -23,6 +23,7 @@ cc_binary(
     ],
     deps = [
         "//assets",
+        "//base:random",
         "//n64",
         "@n64sdk//:gspF3DEX2.xbus",
         "@n64sdk//:rspboot",

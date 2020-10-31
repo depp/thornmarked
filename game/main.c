@@ -1,6 +1,7 @@
 #include "game/defs.h"
 
 #include "assets/assets.h"
+#include "base/random.h"
 
 #include <ultra64.h>
 
@@ -134,9 +135,6 @@ static Gfx sprite_dl[] = {
     gsDPLoadTextureBlock(img_cat, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0,
                          G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0, G_TX_NOLOD,
                          G_TX_NOLOD),
-    gsSPTextureRectangle(40 << 2, 10 << 2, (40 + 32 - 1) << 2,
-                         (10 + 32 - 1) << 2, 0, 0, 0, 4 << 10, 1 << 10),
-    gsDPPipeSync(),
     gsSPEndDisplayList(),
 };
 
@@ -198,6 +196,82 @@ void asset_load(void *dest, int asset_id) {
     load_pak_data(dest, sizeof(pak_objects) + obj.offset, obj.size);
 }
 
+enum {
+    BALL_SIZE = 32,
+    NUM_BALLS = 10,
+    MARGIN = 10 + BALL_SIZE / 2,
+    MIN_X = MARGIN,
+    MIN_Y = MARGIN,
+    MAX_X = SCREEN_WIDTH - MARGIN - 1,
+    MAX_Y = SCREEN_HEIGHT - MARGIN - 1,
+    VEL_BASE = 2,
+    VEL_RAND = 2,
+};
+
+struct ball {
+    int x;
+    int y;
+    int vx;
+    int vy;
+};
+
+static struct rand game_rand;
+static struct ball balls[NUM_BALLS];
+
+static void game_init(void) {
+    OSTime time = osGetTime();
+    rand_init(&game_rand, time, 0x243F6A88); // Pi fractional digits.
+    for (int i = 0; i < NUM_BALLS; i++) {
+        balls[i] = (struct ball){
+            .x = rand_range_fast(&game_rand, MIN_X, MAX_X),
+            .y = rand_range_fast(&game_rand, MIN_Y, MAX_Y),
+            .vx = rand_range_fast(&game_rand, VEL_BASE, VEL_BASE + VEL_RAND),
+            .vy = rand_range_fast(&game_rand, VEL_BASE, VEL_BASE + VEL_RAND),
+        };
+        unsigned dir = rand_next(&game_rand);
+        if ((dir & 1) != 0) {
+            balls[i].vx = -balls[i].vx;
+        }
+        if ((dir & 2) != 0) {
+            balls[i].vy = -balls[i].vy;
+        }
+    }
+}
+
+static void game_update(void) {
+    for (int i = 0; i < NUM_BALLS; i++) {
+        struct ball *restrict b = &balls[i];
+        b->x += b->vx;
+        b->y += b->vy;
+        if (b->x > MAX_X) {
+            b->x = MAX_X * 2 - b->x;
+            b->vx = -b->vx;
+        } else if (b->x < MIN_X) {
+            b->x = MIN_X * 2 - b->x;
+            b->vx = -b->vx;
+        }
+        if (b->y > MAX_Y) {
+            b->y = MAX_Y * 2 - b->y;
+            b->vy = -b->vy;
+        } else if (b->y < MIN_Y) {
+            b->y = MIN_Y * 2 - b->y;
+            b->vy = -b->vy;
+        }
+    }
+}
+
+static Gfx *game_render(Gfx *dl) {
+    for (int i = 0; i < NUM_BALLS; i++) {
+        struct ball *restrict b = &balls[i];
+        int x = b->x - BALL_SIZE / 2;
+        int y = b->y - BALL_SIZE / 2;
+        gSPTextureRectangle(dl++, x << 2, y << 2, (x + BALL_SIZE - 1) << 2,
+                            (y + BALL_SIZE - 1) << 2, 0, 0, 0, 4 << 10,
+                            1 << 10);
+    }
+    return dl;
+}
+
 static Gfx display_list[1024];
 
 static void main(void *arg) {
@@ -216,12 +290,16 @@ static void main(void *arg) {
     asset_load(img_ball, IMG_BALL);
     font_load(FONT_GG);
 
+    game_init();
+
     int which_framebuffer = 0;
     tlist.t.ucode_boot = (u64 *)rspbootTextStart;
     tlist.t.ucode_boot_size =
         (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart;
 
     for (;;) {
+        game_update();
+
         // Set up display lists.
         Gfx *glist_start = display_list, *glistp = display_list;
         gSPSegment(glistp++, 0, 0);
@@ -233,6 +311,8 @@ static void main(void *arg) {
         clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(0);
         gSPDisplayList(glistp++, clearframebuffer_dl);
         gSPDisplayList(glistp++, sprite_dl);
+        gDPPipeSync(glistp++);
+        glistp = game_render(glistp);
         glistp = text_render(glistp, 10, SCREEN_HEIGHT - 15, "My cool game!");
         gDPFullSync(glistp++);
         gSPEndDisplayList(glistp++);
