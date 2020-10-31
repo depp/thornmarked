@@ -78,56 +78,6 @@ static void idle(void *arg) {
     for (;;) {}
 }
 
-// Create a 16-bit RGBA color from components. Color components must be 5-bit,
-// and the alpha component must be 1-bit.
-static unsigned rgba16(unsigned r, unsigned g, unsigned b, unsigned a) {
-    unsigned c = 0;
-    c |= (r & 31) << 11;
-    c |= (g & 31) << 6;
-    c |= (b & 31) << 1;
-    c |= a & 1;
-    return c;
-}
-
-// Create a fully saturated color from a hue. The hue goes from 0 to 6<<5.
-static unsigned make_hue(unsigned hue) {
-    unsigned r, g, b;
-    switch (hue >> 5) {
-    default:
-    case 0:
-        r = 31;
-        g = hue;
-        b = 0;
-        break;
-    case 1:
-        r = ~hue;
-        g = 31;
-        b = 0;
-        break;
-    case 2:
-        r = 0;
-        g = 31;
-        b = hue;
-        break;
-    case 3:
-        r = 0;
-        g = ~hue;
-        b = 31;
-        break;
-    case 4:
-        r = hue;
-        g = 0;
-        b = 31;
-        break;
-    case 5:
-        r = 31;
-        g = 0;
-        b = ~hue;
-        break;
-    }
-    return rgba16(r, g, b, 0);
-}
-
 // Viewport scaling parameters.
 static const Vp viewport = {{
     .vscale = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
@@ -265,19 +215,12 @@ static void main(void *arg) {
     font_load(FONT_GG);
 
     int which_framebuffer = 0;
-    unsigned hue = 0;
     tlist.t.ucode_boot = (u64 *)rspbootTextStart;
     tlist.t.ucode_boot_size =
         (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart;
 
     for (;;) {
         // Set up display lists.
-
-        unsigned color = make_hue(hue);
-        color = (color & 0b1110011100111000) >> 2;
-        hue++;
-        if (hue == 6 << 5)
-            hue = 0;
 
         Gfx glist[100], *glistp = glist;
         gSPSegment(glistp++, 0, 0);
@@ -286,7 +229,7 @@ static void main(void *arg) {
         clearframebuffer_dl[1] =
             (Gfx)gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
                                    framebuffers[which_framebuffer]);
-        clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(color | (color << 16));
+        clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(0);
         gSPDisplayList(glistp++, clearframebuffer_dl);
         gSPDisplayList(glistp++, sprite_dl);
         glistp = text_render(glistp, "Hello, world! Release every zig!");
@@ -300,16 +243,6 @@ static void main(void *arg) {
 
         osSpTaskStart(&tlist);
         osRecvMesg(&rdp_message_queue, NULL, OS_MESG_BLOCK);
-
-        // Copy a version of the txture with the CPU for reference.
-        u16 *restrict pixels = (u16 *)img_ball;
-        for (int y = 0; y < 32; y++) {
-            for (int x = 0; x < 32; x++) {
-                framebuffers[which_framebuffer][y * SCREEN_WIDTH + x] =
-                    pixels[y * 32 + x];
-            }
-        }
-        osWritebackDCacheAll();
 
         osViSwapBuffer(framebuffers[which_framebuffer]);
         // Remove any old retrace message and wait for a new one.
