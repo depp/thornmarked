@@ -41,7 +41,8 @@ static OSMesg retrace_message_buffer;
 static OSMesgQueue rdp_message_queue;
 static OSMesg rdp_message_buffer;
 
-static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT];
+static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
+    __attribute__((aligned(16)));
 
 // Idle thread. Creates other threads then drops to lowest priority.
 static void idle(void *arg);
