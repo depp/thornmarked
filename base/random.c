@@ -31,3 +31,11 @@ int rand_range_fast(struct rand *restrict r, int min, int max) {
     uint32_t off = ((val >> 16) * range) >> 16;
     return min + off;
 }
+
+float rand_fnext(struct rand *restrict r) {
+    return (float)rand_next(r) * (1.0f / 4294967296.0f);
+}
+
+float rand_frange(struct rand *restrict r, float min, float max) {
+    return min + rand_fnext(r) * (max - min);
+}

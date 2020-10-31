@@ -5,6 +5,7 @@
 
 #include <ultra64.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define ARRAY_COUNT(x) (sizeof((x)) / sizeof((x)[0]))
@@ -205,15 +206,15 @@ enum {
     MIN_Y = MARGIN,
     MAX_X = SCREEN_WIDTH - MARGIN - 1,
     MAX_Y = SCREEN_HEIGHT - MARGIN - 1,
-    VEL_BASE = 2,
-    VEL_RAND = 2,
+    VEL_BASE = 50,
+    VEL_RAND = 50,
 };
 
 struct ball {
-    int x;
-    int y;
-    int vx;
-    int vy;
+    float x;
+    float y;
+    float vx;
+    float vy;
 };
 
 static struct rand game_rand;
@@ -224,10 +225,10 @@ static void game_init(void) {
     rand_init(&game_rand, time, 0x243F6A88); // Pi fractional digits.
     for (int i = 0; i < NUM_BALLS; i++) {
         balls[i] = (struct ball){
-            .x = rand_range_fast(&game_rand, MIN_X, MAX_X),
-            .y = rand_range_fast(&game_rand, MIN_Y, MAX_Y),
-            .vx = rand_range_fast(&game_rand, VEL_BASE, VEL_BASE + VEL_RAND),
-            .vy = rand_range_fast(&game_rand, VEL_BASE, VEL_BASE + VEL_RAND),
+            .x = rand_frange(&game_rand, MIN_X, MAX_X),
+            .y = rand_frange(&game_rand, MIN_Y, MAX_Y),
+            .vx = rand_frange(&game_rand, VEL_BASE, VEL_BASE + VEL_RAND),
+            .vy = rand_frange(&game_rand, VEL_BASE, VEL_BASE + VEL_RAND),
         };
         unsigned dir = rand_next(&game_rand);
         if ((dir & 1) != 0) {
@@ -239,11 +240,16 @@ static void game_init(void) {
     }
 }
 
-static void game_update(void) {
+static void game_update(uint32_t delta_time) {
+    float dt = (float)delta_time * (1.0f / (float)OS_CPU_COUNTER);
+    // Clamp to 100ms, in case something gets out of hand.
+    if (dt > 0.1f) {
+        dt = 0.1f;
+    }
     for (int i = 0; i < NUM_BALLS; i++) {
         struct ball *restrict b = &balls[i];
-        b->x += b->vx;
-        b->y += b->vy;
+        b->x += b->vx * dt;
+        b->y += b->vy * dt;
         if (b->x > MAX_X) {
             b->x = MAX_X * 2 - b->x;
             b->vx = -b->vx;
@@ -298,8 +304,18 @@ static void main(void *arg) {
     tlist.t.ucode_boot_size =
         (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart;
 
+    // We don't care about the high 32 bits.
+    uint32_t prev_time = 0;
+    bool first_frame = true;
+
     for (;;) {
-        game_update();
+        uint32_t cur_time = osGetTime();
+        if (!first_frame) {
+            game_update(cur_time - prev_time);
+        } else {
+            first_frame = false;
+        }
+        prev_time = cur_time;
 
         // Set up display lists.
         Gfx *glist_start = display_list, *glistp = display_list;
