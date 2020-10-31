@@ -314,7 +314,7 @@ static void main(void *arg) {
         gSPDisplayList(glistp++, sprite_dl);
         gDPPipeSync(glistp++);
         glistp = game_render(glistp);
-        glistp = text_render(glistp, 10, SCREEN_HEIGHT - 15, "My cool game!");
+        glistp = text_render(glistp, 20, SCREEN_HEIGHT - 18, "My cool game!");
         gDPFullSync(glistp++);
         gSPEndDisplayList(glistp++);
 
