@@ -232,7 +232,7 @@ static void main(void *arg) {
         clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(0);
         gSPDisplayList(glistp++, clearframebuffer_dl);
         gSPDisplayList(glistp++, sprite_dl);
-        glistp = text_render(glistp, "Hello, world! Release every zig!");
+        glistp = text_render(glistp, 10, SCREEN_HEIGHT - 15, "My cool game!");
         gDPFullSync(glistp++);
         gSPEndDisplayList(glistp++);
 

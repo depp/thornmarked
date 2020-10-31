@@ -77,7 +77,7 @@ static uint16_t *text_to_glyphs(uint16_t *gptr, const char *text) {
     return gptr;
 }
 
-Gfx *text_render(Gfx *dl, const char *text) {
+Gfx *text_render(Gfx *dl, int x, int y, const char *text) {
     gDPPipeSync(dl++);
     gDPSetCycleType(dl++, G_CYC_1CYCLE);
     gDPSetRenderMode(dl++, G_RM_OPA_SURF, G_RM_NOOP2);
@@ -85,8 +85,6 @@ Gfx *text_render(Gfx *dl, const char *text) {
     gDPLoadTextureBlock_4b(dl++, tex->pixels, G_IM_FMT_I, tex->width,
                            tex->height, 0, 0, 0, 0, 0, 0, 0);
     uint16_t *gend = text_to_glyphs(glyphs, text);
-    int x = 16;
-    int y = 100;
     for (uint16_t *gptr = glyphs; gptr != gend; gptr++) {
         struct font_glyph *restrict gi = glyphinfo + *gptr;
         if (gi->size[0] != 0) {
