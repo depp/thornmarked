@@ -198,6 +198,8 @@ void asset_load(void *dest, int asset_id) {
     load_pak_data(dest, sizeof(pak_objects) + obj.offset, obj.size);
 }
 
+static Gfx display_list[1024];
+
 static void main(void *arg) {
     (void)arg;
 
@@ -221,8 +223,7 @@ static void main(void *arg) {
 
     for (;;) {
         // Set up display lists.
-
-        Gfx glist[100], *glistp = glist;
+        Gfx *glist_start = display_list, *glistp = display_list;
         gSPSegment(glistp++, 0, 0);
         gSPDisplayList(glistp++, rdpinit_dl);
         gSPDisplayList(glistp++, rspinit_dl);
@@ -237,9 +238,10 @@ static void main(void *arg) {
         gSPEndDisplayList(glistp++);
 
         osWritebackDCache(&clearframebuffer_dl[1], sizeof(Gfx) * 3);
-        osWritebackDCache(glist, sizeof(*glist) * (glistp - glist));
-        tlist.t.data_ptr = (u64 *)glist;
-        tlist.t.data_size = sizeof(*glist) * (glistp - glist);
+        osWritebackDCache(glist_start,
+                          sizeof(*glist_start) * (glistp - glist_start));
+        tlist.t.data_ptr = (u64 *)glist_start;
+        tlist.t.data_size = sizeof(*glist_start) * (glistp - glist_start);
 
         osSpTaskStart(&tlist);
         osRecvMesg(&rdp_message_queue, NULL, OS_MESG_BLOCK);
