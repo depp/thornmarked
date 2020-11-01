@@ -17,6 +17,7 @@ SRCDIR = pathlib.Path(__file__).resolve().parent
 
 def die(*msg):
     print('Error:', *msg, file=sys.stderr)
+    raise SystemExit(1)
 
 def find_program(name, *, extra_paths=[]):
     """Return the path to a program."""
