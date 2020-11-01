@@ -138,6 +138,8 @@ def main(argv):
         help='run ROM from the given artifact archive')
     p.add_argument('-revision', '-r', type=int,
         help='run rom from artifact with the given revision')
+    p.add_argument('-no-run', '-n', action='store_true',
+        help='do not run, just show information about artifact')
     args = p.parse_args(argv)
 
     artifact = args.artifact
@@ -147,6 +149,8 @@ def main(argv):
         rom = pathlib.Path(SRCDIR, 'bazel-bin', 'game', ROM)
     else:
         rom = extract_artifact(artifact)
+    if args.no_run:
+        return
     if args.hardware:
         hardware(rom, args)
     else:
