@@ -32,6 +32,9 @@ static OSThread main_thread;
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
 
+static OSMesgQueue cont_message_queue;
+static OSMesg cont_message_buffer;
+
 static OSMesgQueue dma_message_queue;
 static OSMesg dma_message_buffer;
 static OSIoMesg dma_io_message_buffer;
@@ -284,7 +287,14 @@ static Gfx display_list[1024];
 static void main(void *arg) {
     (void)arg;
 
+    u8 cont_mask;
+    OSContStatus cont_status[MAXCONTROLLERS];
+    OSContPad cont_pad[MAXCONTROLLERS] = {};
+
     // Set up message queues.
+    osCreateMesgQueue(&cont_message_queue, &cont_message_buffer, 1);
+    osSetEventMesg(OS_EVENT_SI, &cont_message_queue, NULL);
+    osContInit(&cont_message_queue, &cont_mask, cont_status);
     osCreateMesgQueue(&dma_message_queue, &dma_message_buffer, 1);
     osCreateMesgQueue(&rdp_message_queue, &rdp_message_buffer, 1);
     osSetEventMesg(OS_EVENT_DP, &rdp_message_queue, NULL);
@@ -297,6 +307,18 @@ static void main(void *arg) {
     asset_load(img_ball, IMG_BALL);
     font_load(FONT_GG);
 
+    // Scan for first controller.
+    uint32_t controller_index = 0;
+    bool has_controller = false;
+    for (int i = 0; i < MAXCONTROLLERS; i++) {
+        if ((cont_mask & (1u << i)) != 0 && cont_status[i].errno == 0 &&
+            (cont_status[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL) {
+            controller_index = i;
+            has_controller = true;
+            break;
+        }
+    }
+
     game_init();
 
     int which_framebuffer = 0;
@@ -307,6 +329,10 @@ static void main(void *arg) {
     // We don't care about the high 32 bits.
     uint32_t prev_time = 0;
     bool first_frame = true;
+    bool is_pressed = false;
+
+    // Current background color.
+    uint16_t color = 0;
 
     for (;;) {
         uint32_t cur_time = osGetTime();
@@ -317,6 +343,14 @@ static void main(void *arg) {
         }
         prev_time = cur_time;
 
+        if (has_controller) {
+            bool was_pressed = is_pressed;
+            is_pressed = (cont_pad[controller_index].button & A_BUTTON) != 0;
+            if (!was_pressed && is_pressed) {
+                color = rand_next(&game_rand);
+            }
+        }
+
         // Set up display lists.
         Gfx *glist_start = display_list, *glistp = display_list;
         gSPSegment(glistp++, 0, 0);
@@ -325,7 +359,7 @@ static void main(void *arg) {
         clearframebuffer_dl[1] =
             (Gfx)gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
                                    framebuffers[which_framebuffer]);
-        clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(0);
+        clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(color | (color << 16));
         gSPDisplayList(glistp++, clearframebuffer_dl);
         gSPDisplayList(glistp++, sprite_dl);
         gDPPipeSync(glistp++);
@@ -344,10 +378,13 @@ static void main(void *arg) {
         osRecvMesg(&rdp_message_queue, NULL, OS_MESG_BLOCK);
 
         osViSwapBuffer(framebuffers[which_framebuffer]);
+        osContStartReadData(&cont_message_queue);
         // Remove any old retrace message and wait for a new one.
         if (MQ_IS_FULL(&retrace_message_queue))
             osRecvMesg(&retrace_message_queue, NULL, OS_MESG_BLOCK);
         osRecvMesg(&retrace_message_queue, NULL, OS_MESG_BLOCK);
+        osRecvMesg(&cont_message_queue, NULL, OS_MESG_BLOCK);
+        osContGetReadData(cont_pad);
         which_framebuffer ^= 1;
     }
 }
