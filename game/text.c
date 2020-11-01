@@ -80,7 +80,8 @@ static uint16_t *text_to_glyphs(uint16_t *gptr, const char *text) {
 Gfx *text_render(Gfx *dl, int x, int y, const char *text) {
     gDPPipeSync(dl++);
     gDPSetCycleType(dl++, G_CYC_1CYCLE);
-    gDPSetRenderMode(dl++, G_RM_OPA_SURF, G_RM_NOOP2);
+    gDPSetRenderMode(dl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
+    gDPSetCombineMode(dl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
     struct font_texture *tex = textures[0];
     gDPLoadTextureBlock_4b(dl++, tex->pixels, G_IM_FMT_I, tex->width,
                            tex->height, 0, 0, 0, 0, 0, 0, 0);
