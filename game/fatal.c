@@ -64,9 +64,118 @@ static void cs_putc(struct cscreen *cs, char c) {
     }
 }
 
-static void cs_puts(struct cscreen *restrict cs, const char *s) {
+static void cs_puts(struct cscreen *cs, const char *s) {
     for (; *s != '\0'; s++) {
         cs_putc(cs, *s);
+    }
+}
+
+static void cs_putnum(struct cscreen *cs, char *buf, int bufsize, int width) {
+    if (width < 1) {
+        width = 1;
+    } else if (width > bufsize) {
+        width = bufsize;
+    }
+    char *end = buf + bufsize;
+    char *ptr = buf;
+    char *stop = end - width;
+    while (ptr < stop && *ptr == '0') {
+        ptr++;
+    }
+    for (; ptr < end; ptr++) {
+        cs_putc(cs, *ptr);
+    }
+}
+
+static void cs_putd(struct cscreen *cs, unsigned x, int width) {
+    char buf[10];
+    for (int i = 0; i < 10; i++) {
+        buf[9 - i] = '0' + (x % 10);
+        x /= 10;
+    }
+    cs_putnum(cs, buf, sizeof(buf), width);
+}
+
+static void cs_putx(struct cscreen *cs, unsigned x, int width) {
+    static const char hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                 '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    char buf[8];
+    for (int i = 0; i < 8; i++) {
+        buf[7 - i] = hex[(x >> (4 * i)) & 15];
+    }
+    cs_putnum(cs, buf, sizeof(buf), width);
+}
+
+static const char *cs_vputfit(struct cscreen *cs, const char *restrict fmt,
+                              va_list *ap) {
+    for (;;) {
+        unsigned c = (unsigned char)*fmt++;
+        switch (c) {
+        case '\0':
+            return fmt;
+            // Conversion specifiers.
+        case 'd':
+        case 'i': {
+            int ival = va_arg(*ap, int);
+            unsigned uval;
+            if (ival < 0) {
+                cs_putc(cs, '-');
+                uval = -ival;
+            } else {
+                uval = ival;
+            }
+            cs_putd(cs, uval, 1);
+            return fmt;
+        }
+        case 'o': {
+            va_arg(*ap, unsigned);
+            cs_puts(cs, "%o");
+            return fmt;
+        }
+        case 'u': {
+            unsigned uval = va_arg(*ap, unsigned);
+            cs_putd(cs, uval, 1);
+            return fmt;
+        }
+        case 'x':
+        case 'X': {
+            unsigned xval = va_arg(*ap, unsigned);
+            cs_putx(cs, xval, 1);
+            return fmt;
+        }
+        case 'c': {
+            int cval = va_arg(*ap, int);
+            cs_putc(cs, cval);
+            return fmt;
+        }
+        case 'p': {
+            void *pval = va_arg(*ap, void *);
+            cs_puts(cs, "$");
+            cs_putx(cs, (uintptr_t)pval, 8);
+            return fmt;
+        }
+        case 's': {
+            const char *sval = va_arg(*ap, const char *);
+            cs_puts(cs, sval);
+            return fmt;
+        }
+        case '%':
+            cs_putc(cs, '%');
+            return fmt;
+        }
+    }
+}
+
+static void cs_vputf(struct cscreen *cs, const char *restrict fmt, va_list ap) {
+    for (;;) {
+        unsigned c = (unsigned char)*fmt++;
+        if (c == '\0') {
+            return;
+        } else if (c == '%') {
+            fmt = cs_vputfit(cs, fmt, &ap);
+        } else {
+            cs_putc(cs, c);
+        }
     }
 }
 
@@ -74,13 +183,12 @@ static void fatal_thread(void *arg) {
     struct fatal_ctx *ctx = arg;
     const char *msg = ctx->msg;
     va_list ap = ctx->ap;
-    (void)ap;
     struct cscreen cs;
     bzero(&cs, sizeof(cs));
     cs.ptr = cs.chars;
     cs.rowend = cs.chars + COLS;
-    cs_puts(&cs, "The game has crashed :-(\n");
-    cs_puts(&cs, msg);
+    cs_puts(&cs, "The game has crashed! :-(\n");
+    cs_vputf(&cs, msg, ap);
 
     uint16_t *fb = framebuffers[0];
     osViSetMode(&osViModeNtscLpn1);
