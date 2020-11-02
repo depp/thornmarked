@@ -14,7 +14,8 @@ void asset_load(void *dest, int asset_id);
 Gfx *text_render(Gfx *dl, int x, int y, const char *text);
 
 // Show a "fatal error" screen.
-noreturn void fatal_error(void);
+noreturn void fatal_error(const char *msg, ...)
+    __attribute__((format(printf, 1, 2)));
 
 enum {
     // Size of the framebuffer, in pixels.

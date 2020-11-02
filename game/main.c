@@ -333,7 +333,7 @@ static void main(void *arg) {
     for (;;) {
         frame_count++;
         if (frame_count == 100) {
-            fatal_error();
+            fatal_error("Framebuffers = %p", framebuffers);
         }
         uint32_t cur_time = osGetTime();
         if (!first_frame) {
