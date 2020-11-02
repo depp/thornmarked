@@ -1,0 +1,26 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# Terminus v 4.48
+
+genrule(
+    name = "ter-u12n-header",
+    srcs = ["ter-u12n.bdf"],
+    outs = ["ter-u12n.h"],
+    cmd = (
+        "$(location //tools/font) " +
+        "-tool-raster=$(location //tools/font/raster) " +
+        "-font=$(location ter-u12n.bdf) " +
+        "-size=12 " +
+        "-out-fallback=$@"
+    ),
+    tools = [
+        "//tools/font",
+        "//tools/font/raster",
+    ],
+)
+
+cc_library(
+    name = "ter-u12n",
+    hdrs = ["ter-u12n-header"],
+    visibility = ["//visibility:public"],
+)

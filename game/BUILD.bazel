@@ -10,6 +10,7 @@ cc_binary(
     name = "Thornmarked.elf",
     srcs = [
         "defs.h",
+        "fatal.c",
         "main.c",
         "stack.s",
         "text.c",
@@ -23,6 +24,7 @@ cc_binary(
     ],
     deps = [
         "//assets",
+        "//assets/fonts/terminus:ter-u12n",
         "//base:random",
         "//n64",
         "@n64sdk//:gspF3DEX2.xbus",

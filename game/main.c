@@ -13,10 +13,6 @@
 enum {
     // Maximum number of simultaneous PI requests.
     PI_MSG_COUNT = 8,
-
-    // Size of the framebuffer, in pixels.
-    SCREEN_WIDTH = 320,
-    SCREEN_HEIGHT = 240,
 };
 
 // Stacks (defined in linker script).
@@ -26,7 +22,7 @@ extern u8 _idle_thread_stack[];
 // Handle to access ROM data, from osCartRomInit.
 static OSPiHandle *rom_handle;
 
-static OSThread idle_thread;
+OSThread idle_thread;
 static OSThread main_thread;
 
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
@@ -45,8 +41,7 @@ static OSMesg retrace_message_buffer;
 static OSMesgQueue rdp_message_queue;
 static OSMesg rdp_message_buffer;
 
-static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
-    __attribute__((aligned(16)));
+u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT] __attribute__((aligned(16)));
 
 // Idle thread. Creates other threads then drops to lowest priority.
 static void idle(void *arg);
@@ -334,7 +329,12 @@ static void main(void *arg) {
     // Current background color.
     uint16_t color = 0;
 
+    int frame_count = 0;
     for (;;) {
+        frame_count++;
+        if (frame_count == 100) {
+            fatal_error();
+        }
         uint32_t cur_time = osGetTime();
         if (!first_frame) {
             game_update(cur_time - prev_time);
