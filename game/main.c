@@ -216,9 +216,22 @@ struct ball {
 };
 
 struct game_state {
+    // True if the first frame has already passed.
+    bool after_first_frame;
+
+    // Timestamp of last frame, low 32 bits.
+    uint32_t last_frame_time;
+
+    // True if button is currently pressed.
     bool is_pressed;
+
+    // Background color.
     uint16_t color;
+
+    // Random number generator state.
     struct rand rand;
+
+    // Balls on screen.
     struct ball balls[NUM_BALLS];
 };
 
@@ -242,19 +255,27 @@ static void game_init(struct game_state *restrict gs) {
     }
 }
 
-static void game_update(struct game_state *restrict gs, uint32_t delta_time,
-                        OSContPad controller) {
+static void game_update(struct game_state *restrict gs, OSContPad controller) {
     bool was_pressed = gs->is_pressed;
     gs->is_pressed = (controller.button & A_BUTTON) != 0;
     if (!was_pressed && gs->is_pressed) {
         gs->color = rand_next(&gs->rand);
     }
 
-    float dt = (float)delta_time * (1.0f / (float)OS_CPU_COUNTER);
-    // Clamp to 100ms, in case something gets out of hand.
-    if (dt > 0.1f) {
-        dt = 0.1f;
+    uint32_t cur_time = osGetTime();
+    uint32_t delta_time = cur_time - gs->last_frame_time;
+    gs->last_frame_time = cur_time;
+    if (!gs->after_first_frame) {
+        gs->after_first_frame = true;
+        return;
     }
+    // Clamp to 100ms, in case something gets out of hand.
+    const uint32_t MAX_DELTA = OS_CPU_COUNTER / 10;
+    if (delta_time > MAX_DELTA) {
+        delta_time = MAX_DELTA;
+    }
+    float dt = (float)((int)delta_time) * (1.0f / (float)OS_CPU_COUNTER);
+
     for (int i = 0; i < NUM_BALLS; i++) {
         struct ball *restrict b = &gs->balls[i];
         b->x += b->vx * dt;
@@ -352,27 +373,17 @@ static void main(void *arg) {
     tlist.t.ucode_boot_size =
         (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart;
 
-    // We don't care about the high 32 bits.
-    uint32_t prev_time = 0;
-    bool first_frame = true;
-
     int frame_count = 0;
     for (;;) {
         frame_count++;
         if (frame_count == 100) {
             fatal_error("Framebuffers = %p\n", framebuffers);
         }
-        uint32_t cur_time = osGetTime();
-        if (!first_frame) {
-            OSContPad controller = {0, 0, 0, 0};
-            if (has_controller) {
-                controller = cont_pad[controller_index];
-            }
-            game_update(&game_state, cur_time - prev_time, controller);
-        } else {
-            first_frame = false;
+        OSContPad controller = {0, 0, 0, 0};
+        if (has_controller) {
+            controller = cont_pad[controller_index];
         }
-        prev_time = cur_time;
+        game_update(&game_state, controller);
 
         // Set up display lists.
         Gfx *dl_start = display_list;
