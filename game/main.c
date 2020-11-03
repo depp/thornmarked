@@ -107,18 +107,6 @@ static const Gfx rdpinit_dl[] = {
     gsSPEndDisplayList(),
 };
 
-// Clear the color framebuffer.
-static Gfx clearframebuffer_dl[] = {
-    gsDPSetCycleType(G_CYC_FILL),
-    gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
-                      framebuffers[0]),
-    gsDPPipeSync(),
-    // This must be in array position [3] because we modify it.
-    gsDPSetFillColor(0),
-    gsDPFillRectangle(0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1),
-    gsSPEndDisplayList(),
-};
-
 static uint16_t img_cat[32 * 32] __attribute__((aligned(16)));
 static uint16_t img_ball[32 * 32] __attribute__((aligned(16)));
 
@@ -315,11 +303,16 @@ static Gfx *render(Gfx *dl, uint16_t *framebuffer) {
     gSPSegment(dl++, 0, 0);
     gSPDisplayList(dl++, rdpinit_dl);
     gSPDisplayList(dl++, rspinit_dl);
-    clearframebuffer_dl[1] = (Gfx)gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b,
-                                                    SCREEN_WIDTH, framebuffer);
-    clearframebuffer_dl[3] =
-        (Gfx)gsDPSetFillColor(game_state.color | (game_state.color << 16));
-    gSPDisplayList(dl++, clearframebuffer_dl);
+
+    // Clear the color framebuffer.
+    gDPSetCycleType(dl++, G_CYC_FILL);
+    gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+                     framebuffer);
+    gDPPipeSync(dl++);
+    gDPSetFillColor(dl++, game_state.color | (game_state.color << 16));
+    gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+
+    // Render game.
     gSPDisplayList(dl++, sprite_dl);
     gDPPipeSync(dl++);
     dl = game_render(&game_state, dl);
@@ -389,7 +382,6 @@ static void main(void *arg) {
         Gfx *dl_start = display_list;
         Gfx *dl_end = render(dl_start, framebuffers[which_framebuffer]);
 
-        osWritebackDCache(&clearframebuffer_dl[1], sizeof(Gfx) * 3);
         osWritebackDCache(dl_start, sizeof(*dl_start) * (dl_end - dl_start));
         tlist.t.data_ptr = (u64 *)dl_start;
         tlist.t.data_size = sizeof(*dl_start) * (dl_end - dl_start);
