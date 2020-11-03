@@ -216,6 +216,8 @@ struct ball {
 };
 
 struct game_state {
+    bool is_pressed;
+    uint16_t color;
     struct rand rand;
     struct ball balls[NUM_BALLS];
 };
@@ -240,7 +242,14 @@ static void game_init(struct game_state *restrict gs) {
     }
 }
 
-static void game_update(struct game_state *restrict gs, uint32_t delta_time) {
+static void game_update(struct game_state *restrict gs, uint32_t delta_time,
+                        OSContPad controller) {
+    bool was_pressed = gs->is_pressed;
+    gs->is_pressed = (controller.button & A_BUTTON) != 0;
+    if (!was_pressed && gs->is_pressed) {
+        gs->color = rand_next(&gs->rand);
+    }
+
     float dt = (float)delta_time * (1.0f / (float)OS_CPU_COUNTER);
     // Clamp to 100ms, in case something gets out of hand.
     if (dt > 0.1f) {
@@ -281,13 +290,14 @@ static Gfx *game_render(struct game_state *restrict gs, Gfx *dl) {
 
 struct game_state game_state;
 
-static Gfx *render(Gfx *dl, uint16_t *framebuffer, unsigned color) {
+static Gfx *render(Gfx *dl, uint16_t *framebuffer) {
     gSPSegment(dl++, 0, 0);
     gSPDisplayList(dl++, rdpinit_dl);
     gSPDisplayList(dl++, rspinit_dl);
     clearframebuffer_dl[1] = (Gfx)gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b,
                                                     SCREEN_WIDTH, framebuffer);
-    clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(color | (color << 16));
+    clearframebuffer_dl[3] =
+        (Gfx)gsDPSetFillColor(game_state.color | (game_state.color << 16));
     gSPDisplayList(dl++, clearframebuffer_dl);
     gSPDisplayList(dl++, sprite_dl);
     gDPPipeSync(dl++);
@@ -345,10 +355,6 @@ static void main(void *arg) {
     // We don't care about the high 32 bits.
     uint32_t prev_time = 0;
     bool first_frame = true;
-    bool is_pressed = false;
-
-    // Current background color.
-    uint16_t color = 0;
 
     int frame_count = 0;
     for (;;) {
@@ -358,23 +364,19 @@ static void main(void *arg) {
         }
         uint32_t cur_time = osGetTime();
         if (!first_frame) {
-            game_update(&game_state, cur_time - prev_time);
+            OSContPad controller = {0, 0, 0, 0};
+            if (has_controller) {
+                controller = cont_pad[controller_index];
+            }
+            game_update(&game_state, cur_time - prev_time, controller);
         } else {
             first_frame = false;
         }
         prev_time = cur_time;
 
-        if (has_controller) {
-            bool was_pressed = is_pressed;
-            is_pressed = (cont_pad[controller_index].button & A_BUTTON) != 0;
-            if (!was_pressed && is_pressed) {
-                color = rand_next(&game_state.rand);
-            }
-        }
-
         // Set up display lists.
         Gfx *dl_start = display_list;
-        Gfx *dl_end = render(dl_start, framebuffers[which_framebuffer], color);
+        Gfx *dl_end = render(dl_start, framebuffers[which_framebuffer]);
 
         osWritebackDCache(&clearframebuffer_dl[1], sizeof(Gfx) * 3);
         osWritebackDCache(dl_start, sizeof(*dl_start) * (dl_end - dl_start));
