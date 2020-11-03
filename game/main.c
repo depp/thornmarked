@@ -215,37 +215,39 @@ struct ball {
     float vy;
 };
 
-static struct rand game_rand;
-static struct ball balls[NUM_BALLS];
+struct game_state {
+    struct rand rand;
+    struct ball balls[NUM_BALLS];
+};
 
-static void game_init(void) {
+static void game_init(struct game_state *restrict gs) {
     OSTime time = osGetTime();
-    rand_init(&game_rand, time, 0x243F6A88); // Pi fractional digits.
+    rand_init(&gs->rand, time, 0x243F6A88); // Pi fractional digits.
     for (int i = 0; i < NUM_BALLS; i++) {
-        balls[i] = (struct ball){
-            .x = rand_frange(&game_rand, MIN_X, MAX_X),
-            .y = rand_frange(&game_rand, MIN_Y, MAX_Y),
-            .vx = rand_frange(&game_rand, VEL_BASE, VEL_BASE + VEL_RAND),
-            .vy = rand_frange(&game_rand, VEL_BASE, VEL_BASE + VEL_RAND),
+        gs->balls[i] = (struct ball){
+            .x = rand_frange(&gs->rand, MIN_X, MAX_X),
+            .y = rand_frange(&gs->rand, MIN_Y, MAX_Y),
+            .vx = rand_frange(&gs->rand, VEL_BASE, VEL_BASE + VEL_RAND),
+            .vy = rand_frange(&gs->rand, VEL_BASE, VEL_BASE + VEL_RAND),
         };
-        unsigned dir = rand_next(&game_rand);
+        unsigned dir = rand_next(&gs->rand);
         if ((dir & 1) != 0) {
-            balls[i].vx = -balls[i].vx;
+            gs->balls[i].vx = -gs->balls[i].vx;
         }
         if ((dir & 2) != 0) {
-            balls[i].vy = -balls[i].vy;
+            gs->balls[i].vy = -gs->balls[i].vy;
         }
     }
 }
 
-static void game_update(uint32_t delta_time) {
+static void game_update(struct game_state *restrict gs, uint32_t delta_time) {
     float dt = (float)delta_time * (1.0f / (float)OS_CPU_COUNTER);
     // Clamp to 100ms, in case something gets out of hand.
     if (dt > 0.1f) {
         dt = 0.1f;
     }
     for (int i = 0; i < NUM_BALLS; i++) {
-        struct ball *restrict b = &balls[i];
+        struct ball *restrict b = &gs->balls[i];
         b->x += b->vx * dt;
         b->y += b->vy * dt;
         if (b->x > MAX_X) {
@@ -265,9 +267,9 @@ static void game_update(uint32_t delta_time) {
     }
 }
 
-static Gfx *game_render(Gfx *dl) {
+static Gfx *game_render(struct game_state *restrict gs, Gfx *dl) {
     for (int i = 0; i < NUM_BALLS; i++) {
-        struct ball *restrict b = &balls[i];
+        struct ball *restrict b = &gs->balls[i];
         int x = b->x - BALL_SIZE / 2;
         int y = b->y - BALL_SIZE / 2;
         gSPTextureRectangle(dl++, x << 2, y << 2, (x + BALL_SIZE - 1) << 2,
@@ -276,6 +278,8 @@ static Gfx *game_render(Gfx *dl) {
     }
     return dl;
 }
+
+struct game_state game_state;
 
 static Gfx *render(Gfx *dl, uint16_t *framebuffer, unsigned color) {
     gSPSegment(dl++, 0, 0);
@@ -287,7 +291,7 @@ static Gfx *render(Gfx *dl, uint16_t *framebuffer, unsigned color) {
     gSPDisplayList(dl++, clearframebuffer_dl);
     gSPDisplayList(dl++, sprite_dl);
     gDPPipeSync(dl++);
-    dl = game_render(dl);
+    dl = game_render(&game_state, dl);
     dl = text_render(dl, 20, SCREEN_HEIGHT - 18, "My cool game!");
     gDPFullSync(dl++);
     gSPEndDisplayList(dl++);
@@ -331,7 +335,7 @@ static void main(void *arg) {
         }
     }
 
-    game_init();
+    game_init(&game_state);
 
     int which_framebuffer = 0;
     tlist.t.ucode_boot = (u64 *)rspbootTextStart;
@@ -354,7 +358,7 @@ static void main(void *arg) {
         }
         uint32_t cur_time = osGetTime();
         if (!first_frame) {
-            game_update(cur_time - prev_time);
+            game_update(&game_state, cur_time - prev_time);
         } else {
             first_frame = false;
         }
@@ -364,7 +368,7 @@ static void main(void *arg) {
             bool was_pressed = is_pressed;
             is_pressed = (cont_pad[controller_index].button & A_BUTTON) != 0;
             if (!was_pressed && is_pressed) {
-                color = rand_next(&game_rand);
+                color = rand_next(&game_state.rand);
             }
         }
 
