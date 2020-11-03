@@ -369,14 +369,13 @@ static void main(void *arg) {
         }
 
         // Set up display lists.
-        Gfx *glist_start = display_list, *glistp = display_list;
-        glistp = render(glistp, framebuffers[which_framebuffer], color);
+        Gfx *dl_start = display_list;
+        Gfx *dl_end = render(dl_start, framebuffers[which_framebuffer], color);
 
         osWritebackDCache(&clearframebuffer_dl[1], sizeof(Gfx) * 3);
-        osWritebackDCache(glist_start,
-                          sizeof(*glist_start) * (glistp - glist_start));
-        tlist.t.data_ptr = (u64 *)glist_start;
-        tlist.t.data_size = sizeof(*glist_start) * (glistp - glist_start);
+        osWritebackDCache(dl_start, sizeof(*dl_start) * (dl_end - dl_start));
+        tlist.t.data_ptr = (u64 *)dl_start;
+        tlist.t.data_size = sizeof(*dl_start) * (dl_end - dl_start);
 
         osSpTaskStart(&tlist);
         osRecvMesg(&rdp_message_queue, NULL, OS_MESG_BLOCK);
