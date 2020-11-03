@@ -277,6 +277,23 @@ static Gfx *game_render(Gfx *dl) {
     return dl;
 }
 
+static Gfx *render(Gfx *dl, uint16_t *framebuffer, unsigned color) {
+    gSPSegment(dl++, 0, 0);
+    gSPDisplayList(dl++, rdpinit_dl);
+    gSPDisplayList(dl++, rspinit_dl);
+    clearframebuffer_dl[1] = (Gfx)gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b,
+                                                    SCREEN_WIDTH, framebuffer);
+    clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(color | (color << 16));
+    gSPDisplayList(dl++, clearframebuffer_dl);
+    gSPDisplayList(dl++, sprite_dl);
+    gDPPipeSync(dl++);
+    dl = game_render(dl);
+    dl = text_render(dl, 20, SCREEN_HEIGHT - 18, "My cool game!");
+    gDPFullSync(dl++);
+    gSPEndDisplayList(dl++);
+    return dl;
+}
+
 static Gfx display_list[1024];
 
 static void main(void *arg) {
@@ -353,20 +370,7 @@ static void main(void *arg) {
 
         // Set up display lists.
         Gfx *glist_start = display_list, *glistp = display_list;
-        gSPSegment(glistp++, 0, 0);
-        gSPDisplayList(glistp++, rdpinit_dl);
-        gSPDisplayList(glistp++, rspinit_dl);
-        clearframebuffer_dl[1] =
-            (Gfx)gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
-                                   framebuffers[which_framebuffer]);
-        clearframebuffer_dl[3] = (Gfx)gsDPSetFillColor(color | (color << 16));
-        gSPDisplayList(glistp++, clearframebuffer_dl);
-        gSPDisplayList(glistp++, sprite_dl);
-        gDPPipeSync(glistp++);
-        glistp = game_render(glistp);
-        glistp = text_render(glistp, 20, SCREEN_HEIGHT - 18, "My cool game!");
-        gDPFullSync(glistp++);
-        gSPEndDisplayList(glistp++);
+        glistp = render(glistp, framebuffers[which_framebuffer], color);
 
         osWritebackDCache(&clearframebuffer_dl[1], sizeof(Gfx) * 3);
         osWritebackDCache(glist_start,
