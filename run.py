@@ -28,10 +28,12 @@ def find_program(name, *, extra_paths=[]):
     die('could not find program:', repr(name))
     raise SystemExit(1)
 
-def run(args):
+def run(args, *, exec=False):
     strargs = [str(arg) for arg in args]
     print(*[shlex.quote(arg) for arg in strargs], file=sys.stderr)
-    os.execvp(args[0], args)
+    if exec:
+        os.execvp(args[0], args)
+    return subprocess.run(args, check=True)
 
 def lsmod():
     proc = subprocess.run(['lsmod'], stdout=subprocess.PIPE)
@@ -60,19 +62,25 @@ def hardware(rom, args):
         print('Modules are loaded which interfere with UNFLoader:', *rmmods)
         if confirm('Unload these modules (sudo rmmod)? [y/n] '):
             subprocess.run(['sudo', 'rmmod', *rmmods], check=True)
-    run(['sudo', 'UNFLoader', '-r', rom])
+    try:
+        run(['sudo', 'UNFLoader', '-r', rom])
+    except subprocess.CalledProcessError as ex:
+        print(ex, file=sys.stderr)
+        raise SystemExit(1)
+    finally:
+        subprocess.call(['stty', 'sane'])
 
 def cen64(rom, args):
     exe = find_program('cen64', extra_paths=EXTRA_PATHS)
-    run([exe, SRCDIR / 'sdk/pifdata.bin', rom, *args.emulator_opts])
+    run([exe, SRCDIR / 'sdk/pifdata.bin', rom, *args.emulator_opts], exec=True)
 
 def mame(rom, args):
     exe = find_program('mame', extra_paths=EXTRA_PATHS)
-    run([exe, 'n64', '-cart', rom, *args.emulator_opts])
+    run([exe, 'n64', '-cart', rom, *args.emulator_opts], exec=True)
 
 def mupen64(rom, args):
     exe = find_program('mupen64plus', extra_paths=EXTRA_PATHS)
-    run([exe, rom, *args.emulator_opts])
+    run([exe, rom, *args.emulator_opts], exec=True)
 
 def find_artifact(revision):
     dir = pathlib.Path.home() / 'Documents/Artifacts'
