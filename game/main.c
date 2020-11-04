@@ -2,6 +2,7 @@
 
 #include "assets/assets.h"
 #include "base/random.h"
+#include "game/console.h"
 #include "scheduler.h"
 
 #include <ultra64.h>
@@ -300,6 +301,10 @@ static Gfx *render(Gfx *dl, uint16_t *framebuffer) {
     gDPPipeSync(dl++);
     dl = game_render(&game_state, dl);
     dl = text_render(dl, 20, SCREEN_HEIGHT - 18, "Scheduler in operation");
+
+    // Render debugging text overlay.
+    dl = console_draw_displaylist(&console, dl);
+
     gDPFullSync(dl++);
     gSPEndDisplayList(dl++);
     return dl;
@@ -419,16 +424,9 @@ static void main(void *arg) {
     scheduler_start(&scheduler);
     int frame_num = 0;
     for (int current_task = 0;; current_task ^= 1) {
+        console_init(&console);
+        console_printf(&console, "Frame %d", frame_num);
         frame_num++;
-        if (frame_num == 100) {
-            fatal_error(
-                "fatal error at frame=%d\n"
-                "it works\n"
-                "hex = $%x\n"
-                "a very long line that must be wrapped because it is so long "
-                "so long so very very long",
-                frame_num, 12345);
-        }
         // Wait until the task and framebuffer are both free to use.
         while (st->task_running[current_task])
             process_event(st, true);
