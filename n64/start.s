@@ -9,9 +9,8 @@ _start:
 	# Zero BSS.
 	la	$a0, _bss_start
 	la	$a1, _bss_end
-	jal	bzero
 	subu	$a1, $a1, $a0
+	jal	bzero
 
 	# Jump to C entry point.
 	j	boot
-	nop
