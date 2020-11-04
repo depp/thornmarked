@@ -425,7 +425,7 @@ static void main(void *arg) {
     int frame_num = 0;
     for (int current_task = 0;; current_task ^= 1) {
         console_init(&console);
-        console_printf(&console, "Frame %d", frame_num);
+        console_printf(&console, "Frame %d\n", frame_num);
         frame_num++;
         // Wait until the task and framebuffer are both free to use.
         while (st->task_running[current_task])
@@ -435,7 +435,7 @@ static void main(void *arg) {
         while (process_event(st, false) == 0) {}
 
         if (!st->controler_read_active) {
-            osContStartQuery(&st->evt_queue);
+            osContStartReadData(&st->evt_queue);
             st->controler_read_active = true;
         }
         game_update(&game_state);
