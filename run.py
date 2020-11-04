@@ -55,7 +55,7 @@ def confirm(prompt):
 
 def hardware(rom, args):
     mods = lsmod()
-    rmmods = mods.intersection(['ftdi_sio', 'usbserial'])
+    rmmods = [mod for mod in ['ftdi_sio', 'usbserial'] if mod in mods]
     if rmmods:
         print('Modules are loaded which interfere with UNFLoader:', *rmmods)
         if confirm('Unload these modules (sudo rmmod)? [y/n] '):
