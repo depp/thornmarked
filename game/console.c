@@ -235,7 +235,7 @@ static void console_texture_init(struct console_texture *restrict ct) {
     for (int row = 0; row < TEX_ROWS; row++) {
         for (int col = 0; col < TEX_COLS; col++) {
             int idx = row * TEX_COLS + col;
-            if (idx > FONT_NCHARS) {
+            if (idx >= FONT_NCHARS) {
                 break;
             }
             ct->charpos[idx] = (struct console_texpos){
