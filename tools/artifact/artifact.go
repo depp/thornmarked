@@ -20,6 +20,8 @@ import (
 
 const fileName = "Thornmarked.n64"
 
+var filelist = []string{"Thornmarked.elf", "Thornmarked.n64"}
+
 var wsdir string
 
 // runGit runs git and returns standard output.
@@ -163,6 +165,31 @@ func buildArtifact() error {
 	return nil
 }
 
+func addFile(info *buildInfo, tw *tar.Writer, name string) error {
+	inpath := filepath.Join(wsdir, "bazel-bin/game", name)
+	fp, err := os.Open(inpath)
+	if err != nil {
+		return err
+	}
+	defer fp.Close()
+	st, err := fp.Stat()
+	if err != nil {
+		return err
+	}
+	if err := tw.WriteHeader(&tar.Header{
+		Name:    name,
+		Size:    st.Size(),
+		Mode:    0444,
+		ModTime: info.BuildTimestamp,
+	}); err != nil {
+		return err
+	}
+	if _, err := io.Copy(tw, fp); err != nil {
+		return err
+	}
+	return nil
+}
+
 func createPackage(info *buildInfo, filename string) error {
 	ofp, err := ioutil.TempFile(filepath.Dir(filename), "temp.*.gz")
 	if err != nil {
@@ -194,26 +221,10 @@ func createPackage(info *buildInfo, filename string) error {
 		return err
 	}
 
-	inpath := filepath.Join(wsdir, "bazel-bin/game", fileName)
-	fp, err := os.Open(inpath)
-	if err != nil {
-		return err
-	}
-	defer fp.Close()
-	st, err := fp.Stat()
-	if err != nil {
-		return err
-	}
-	if err := tw.WriteHeader(&tar.Header{
-		Name:    fileName,
-		Size:    st.Size(),
-		Mode:    0444,
-		ModTime: info.BuildTimestamp,
-	}); err != nil {
-		return err
-	}
-	if _, err := io.Copy(tw, fp); err != nil {
-		return err
+	for _, name := range filelist {
+		if err := addFile(info, tw, name); err != nil {
+			return nil
+		}
 	}
 
 	if err := tw.Close(); err != nil {
