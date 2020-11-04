@@ -47,3 +47,7 @@ static void fatal_thread(void *arg) {
         while (osGetTime() - start < OS_CPU_COUNTER / 10) {}
     }
 }
+
+noreturn void assert_fail(const char *file, int line, const char *pred) {
+    fatal_error("\nAssertion failed\n%s:%d\n%s", file, line, pred);
+}
