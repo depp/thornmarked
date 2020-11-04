@@ -15,8 +15,8 @@ struct scheduler_framebuffer {
     // Switch to this framebuffer.
     void *ptr;
 
-    // Send this message to this queue after the framebuffer is swapped to the
-    // screen.
+    // Send this message to this queue after the framebuffer is no longer on
+    // screen, after another framebuffer has replaced it.
     OSMesgQueue *done_queue;
     OSMesg done_mesg;
 };
