@@ -9,9 +9,13 @@ alias(
 cc_binary(
     name = "Thornmarked.elf",
     srcs = [
+        "corelib.h",
         "defs.h",
         "fatal.c",
         "main.c",
+        "memset.c",
+        "scheduler.c",
+        "scheduler.h",
         "stack.s",
         "text.c",
     ],
@@ -25,6 +29,7 @@ cc_binary(
     deps = [
         "//assets",
         "//assets/fonts/terminus:ter-u12n",
+        "//base:defs",
         "//base:random",
         "//n64",
         "@n64sdk//:gspF3DEX2.xbus",

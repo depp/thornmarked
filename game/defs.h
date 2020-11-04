@@ -27,3 +27,11 @@ extern u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((aligned(16)));
 
 extern OSThread idle_thread;
+
+enum {
+    // Thread priorities.
+    PRIORITY_IDLE_INIT = 10,
+    PRIORITY_IDLE = OS_PRIORITY_IDLE,
+    PRIORITY_MAIN = 10,
+    PRIORITY_SCHEDULER = 11,
+};

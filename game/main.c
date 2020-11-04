@@ -2,6 +2,7 @@
 
 #include "assets/assets.h"
 #include "base/random.h"
+#include "scheduler.h"
 
 #include <ultra64.h>
 
@@ -28,18 +29,9 @@ static OSThread main_thread;
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
 
-static OSMesgQueue cont_message_queue;
-static OSMesg cont_message_buffer;
-
 static OSMesgQueue dma_message_queue;
 static OSMesg dma_message_buffer;
 static OSIoMesg dma_io_message_buffer;
-
-static OSMesgQueue retrace_message_queue;
-static OSMesg retrace_message_buffer;
-
-static OSMesgQueue rdp_message_queue;
-static OSMesg rdp_message_buffer;
 
 u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT] __attribute__((aligned(16)));
 
@@ -55,7 +47,8 @@ void boot(void);
 void boot(void) {
     osInitialize();
     rom_handle = osCartRomInit();
-    osCreateThread(&idle_thread, 1, idle, NULL, _idle_thread_stack, 10);
+    osCreateThread(&idle_thread, 1, idle, NULL, _idle_thread_stack,
+                   PRIORITY_IDLE_INIT);
     osStartThread(&idle_thread);
 }
 
@@ -64,18 +57,20 @@ static void idle(void *arg) {
 
     // Initialize video.
     osCreateViManager(OS_PRIORITY_VIMGR);
-    osViSetMode(&osViModeTable[OS_VI_NTSC_LPN1]);
+    osViSetMode(&osViModeNtscLpn1);
+    osViBlack(1);
 
     // Initialize peripheral manager.
     osCreatePiManager(OS_PRIORITY_PIMGR, &pi_message_queue, pi_message_buffer,
                       PI_MSG_COUNT);
 
     // Start main thread.
-    osCreateThread(&main_thread, 3, main, NULL, _main_thread_stack, 10);
+    osCreateThread(&main_thread, 3, main, NULL, _main_thread_stack,
+                   PRIORITY_MAIN);
     osStartThread(&main_thread);
 
     // Idle loop.
-    osSetThreadPri(0, 0);
+    osSetThreadPri(NULL, PRIORITY_IDLE);
     for (;;) {}
 }
 
@@ -133,21 +128,6 @@ enum {
 
 static u64 sp_dram_stack[SP_STACK_SIZE / 8]
     __attribute__((section("uninit.rsp")));
-// static u64 rdp_output[RDP_OUTPUT_LEN] __attribute__((section("uninit.rsp"));
-
-static OSTask tlist = {{
-    .type = M_GFXTASK,
-    .flags = OS_TASK_DP_WAIT,
-    .ucode = (u64 *)gspF3DEX2_xbusTextStart,
-    .ucode_size = SP_UCODE_SIZE,
-    .ucode_data = (u64 *)gspF3DEX2_xbusDataStart,
-    .ucode_data_size = SP_UCODE_DATA_SIZE,
-    .dram_stack = sp_dram_stack,
-    .dram_stack_size = sizeof(sp_dram_stack),
-    // .output_buff = rdp_output + RDP_OUTPUT_LEN,
-    // Refer to osSpTaskStart docs... this is a pointer past the edn.
-    // .output_buff_size = sizeof(rdp_output),
-}};
 
 // Offset in cartridge where data is stored.
 extern u8 _pakdata_offset[];
@@ -210,6 +190,9 @@ struct game_state {
     // Timestamp of last frame, low 32 bits.
     uint32_t last_frame_time;
 
+    // Current controller inputs.
+    OSContPad controller;
+
     // True if button is currently pressed.
     bool is_pressed;
 
@@ -243,9 +226,9 @@ static void game_init(struct game_state *restrict gs) {
     }
 }
 
-static void game_update(struct game_state *restrict gs, OSContPad controller) {
+static void game_update(struct game_state *restrict gs) {
     bool was_pressed = gs->is_pressed;
-    gs->is_pressed = (controller.button & A_BUTTON) != 0;
+    gs->is_pressed = (gs->controller.button & A_BUTTON) != 0;
     if (!was_pressed && gs->is_pressed) {
         gs->color = rand_next(&gs->rand);
     }
@@ -316,30 +299,99 @@ static Gfx *render(Gfx *dl, uint16_t *framebuffer) {
     gSPDisplayList(dl++, sprite_dl);
     gDPPipeSync(dl++);
     dl = game_render(&game_state, dl);
-    dl = text_render(dl, 20, SCREEN_HEIGHT - 18, "My cool game!");
+    dl = text_render(dl, 20, SCREEN_HEIGHT - 18, "Scheduler in operation");
     gDPFullSync(dl++);
     gSPEndDisplayList(dl++);
     return dl;
 }
 
-static Gfx display_list[1024];
+static Gfx display_lists[2][1024];
+static struct scheduler scheduler;
+
+// Event types for events on the main thread.
+enum {
+    EVT_CONTROL,  // Controller update.
+    EVT_TASKDONE, // RCP task complete.
+    EVT_FBDONE,   // Framebuffer no longer in use.
+};
+
+// Create an event for the main thread.
+static OSMesg make_event(unsigned type, unsigned value) {
+    uintptr_t p = (value << 8) | type;
+    return (OSMesg)p;
+}
+
+// Get the event type for an event.
+static unsigned event_type(OSMesg evt) {
+    return (uintptr_t)evt & 0xff;
+}
+
+// Get the associated value for an event.
+static unsigned event_value(OSMesg evt) {
+    return (uintptr_t)evt >> 8;
+}
+
+// State of the main thread.
+struct main_state {
+    // Whether each task is running.
+    bool task_running[2];
+    // Whether each framebuffer is being used.
+    bool framebuffer_in_use[2];
+    // Whether a controller read is in progress.
+    bool controler_read_active;
+    // The tasks.
+    struct scheduler_task tasks[2];
+    // Whether we have a controller connected.
+    bool has_controller;
+    // Which controller is connected.
+    int controller_index;
+
+    // Queue receiving scheduler / controller events.
+    OSMesgQueue evt_queue;
+    OSMesg evt_buffer[16];
+};
+
+// Read the next event sent to the main thread and process it.
+static int process_event(struct main_state *restrict st, int flags) {
+    OSMesg evt;
+    int ret = osRecvMesg(&st->evt_queue, &evt, flags);
+    if (ret != 0)
+        return ret;
+    int type = event_type(evt);
+    int value = event_value(evt);
+    switch (type) {
+    case EVT_CONTROL:;
+        OSContPad controller_state[MAXCONTROLLERS];
+        osContGetReadData(controller_state);
+        st->controler_read_active = false;
+        struct game_state *restrict gs = &game_state;
+        if (st->has_controller) {
+            gs->controller = controller_state[st->controller_index];
+        }
+        break;
+    case EVT_TASKDONE:
+        st->task_running[value] = false;
+        break;
+    case EVT_FBDONE:
+        st->framebuffer_in_use[value] = false;
+        break;
+    default:
+        fatal_error("Bad message type: %d", type);
+    }
+    return 0;
+}
+
+static struct main_state main_state;
 
 static void main(void *arg) {
     (void)arg;
-
-    u8 cont_mask;
-    OSContStatus cont_status[MAXCONTROLLERS];
-    OSContPad cont_pad[MAXCONTROLLERS] = {};
+    struct main_state *st = &main_state;
 
     // Set up message queues.
-    osCreateMesgQueue(&cont_message_queue, &cont_message_buffer, 1);
-    osSetEventMesg(OS_EVENT_SI, &cont_message_queue, NULL);
-    osContInit(&cont_message_queue, &cont_mask, cont_status);
+    osCreateMesgQueue(&st->evt_queue, st->evt_buffer,
+                      ARRAY_COUNT(st->evt_buffer));
+    osSetEventMesg(OS_EVENT_SI, &st->evt_queue, NULL);
     osCreateMesgQueue(&dma_message_queue, &dma_message_buffer, 1);
-    osCreateMesgQueue(&rdp_message_queue, &rdp_message_buffer, 1);
-    osSetEventMesg(OS_EVENT_DP, &rdp_message_queue, NULL);
-    osCreateMesgQueue(&retrace_message_queue, &retrace_message_buffer, 1);
-    osViSetEvent(&retrace_message_queue, NULL, 1); // 1 = every frame
 
     // Load the pak header.
     load_pak_data(pak_objects, 0, sizeof(pak_objects));
@@ -348,55 +400,71 @@ static void main(void *arg) {
     font_load(FONT_GG);
 
     // Scan for first controller.
-    uint32_t controller_index = 0;
-    bool has_controller = false;
-    for (int i = 0; i < MAXCONTROLLERS; i++) {
-        if ((cont_mask & (1u << i)) != 0 && cont_status[i].errno == 0 &&
-            (cont_status[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL) {
-            controller_index = i;
-            has_controller = true;
-            break;
+    {
+        u8 cont_mask;
+        OSContStatus cont_status[MAXCONTROLLERS];
+        osContInit(&st->evt_queue, &cont_mask, cont_status);
+        for (int i = 0; i < MAXCONTROLLERS; i++) {
+            if ((cont_mask & (1u << i)) != 0 && cont_status[i].errno == 0 &&
+                (cont_status[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL) {
+                st->controller_index = i;
+                st->has_controller = true;
+                break;
+            }
         }
     }
 
     game_init(&game_state);
 
-    int which_framebuffer = 0;
-    tlist.t.ucode_boot = (u64 *)rspbootTextStart;
-    tlist.t.ucode_boot_size =
-        (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart;
+    scheduler_start(&scheduler);
+    for (int current_task = 0;; current_task ^= 1) {
+        // Wait until the task and framebuffer are both free to use.
+        while (st->task_running[current_task])
+            process_event(st, true);
+        while (st->framebuffer_in_use[current_task])
+            process_event(st, true);
+        while (process_event(st, false) == 0) {}
 
-    int frame_count = 0;
-    for (;;) {
-        frame_count++;
-        if (frame_count == 100) {
-            fatal_error("Framebuffers = %p\n", framebuffers);
+        if (!st->controler_read_active) {
+            osContStartQuery(&st->evt_queue);
+            st->controler_read_active = true;
         }
-        OSContPad controller = {0, 0, 0, 0};
-        if (has_controller) {
-            controller = cont_pad[controller_index];
-        }
-        game_update(&game_state, controller);
+        game_update(&game_state);
 
         // Set up display lists.
-        Gfx *dl_start = display_list;
-        Gfx *dl_end = render(dl_start, framebuffers[which_framebuffer]);
+        Gfx *dl_start = display_lists[current_task];
+        Gfx *dl_end = render(dl_start, framebuffers[current_task]);
 
+        struct scheduler_task *task = &st->tasks[current_task];
+        *task = (struct scheduler_task){
+            .task = {{
+                .type = M_GFXTASK,
+                .flags = OS_TASK_DP_WAIT,
+                .ucode_boot = (u64 *)rspbootTextStart,
+                .ucode_boot_size =
+                    (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart,
+                .ucode_data = (u64 *)gspF3DEX2_xbusDataStart,
+                .ucode_data_size = SP_UCODE_DATA_SIZE,
+                .ucode = (u64 *)gspF3DEX2_xbusTextStart,
+                .ucode_size = SP_UCODE_SIZE,
+                .dram_stack = sp_dram_stack,
+                .dram_stack_size = sizeof(sp_dram_stack),
+                // No output_buff.
+                .data_ptr = (u64 *)dl_start,
+                .data_size = sizeof(*dl_start) * (dl_end - dl_start),
+            }},
+            .done_queue = &st->evt_queue,
+            .done_mesg = make_event(EVT_TASKDONE, current_task),
+            .framebuffer =
+                {
+                    .ptr = framebuffers[current_task],
+                    .done_queue = &st->evt_queue,
+                    .done_mesg = make_event(EVT_FBDONE, current_task),
+                },
+        };
         osWritebackDCache(dl_start, sizeof(*dl_start) * (dl_end - dl_start));
-        tlist.t.data_ptr = (u64 *)dl_start;
-        tlist.t.data_size = sizeof(*dl_start) * (dl_end - dl_start);
-
-        osSpTaskStart(&tlist);
-        osRecvMesg(&rdp_message_queue, NULL, OS_MESG_BLOCK);
-
-        osViSwapBuffer(framebuffers[which_framebuffer]);
-        osContStartReadData(&cont_message_queue);
-        // Remove any old retrace message and wait for a new one.
-        if (MQ_IS_FULL(&retrace_message_queue))
-            osRecvMesg(&retrace_message_queue, NULL, OS_MESG_BLOCK);
-        osRecvMesg(&retrace_message_queue, NULL, OS_MESG_BLOCK);
-        osRecvMesg(&cont_message_queue, NULL, OS_MESG_BLOCK);
-        osContGetReadData(cont_pad);
-        which_framebuffer ^= 1;
+        scheduler_submit(&scheduler, task);
+        st->task_running[current_task] = true;
+        st->framebuffer_in_use[current_task] = true;
     }
 }
