@@ -9,6 +9,8 @@ alias(
 cc_binary(
     name = "Thornmarked.elf",
     srcs = [
+        "console.c",
+        "console.h",
         "corelib.h",
         "defs.h",
         "fatal.c",

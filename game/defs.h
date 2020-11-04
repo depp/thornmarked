@@ -14,7 +14,7 @@ void asset_load(void *dest, int asset_id);
 Gfx *text_render(Gfx *dl, int x, int y, const char *text);
 
 // Show a "fatal error" screen.
-noreturn void fatal_error(const char *msg, ...)
+noreturn void fatal_error(const char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
 
 enum {

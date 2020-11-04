@@ -417,7 +417,18 @@ static void main(void *arg) {
     game_init(&game_state);
 
     scheduler_start(&scheduler);
+    int frame_num = 0;
     for (int current_task = 0;; current_task ^= 1) {
+        frame_num++;
+        if (frame_num == 100) {
+            fatal_error(
+                "fatal error at frame=%d\n"
+                "it works\n"
+                "hex = $%x\n"
+                "a very long line that must be wrapped because it is so long "
+                "so long so very very long",
+                frame_num, 12345);
+        }
         // Wait until the task and framebuffer are both free to use.
         while (st->task_running[current_task])
             process_event(st, true);
