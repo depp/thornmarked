@@ -50,6 +50,7 @@ cc_toolchain_config(
     cpu = "mips3",
     toolchain_identifier = "n64",
     compile_flags = [
+        "-D_ULTRA64",
         # "-U_FORTIFY_SOURCE",
         # "-fstack-protector",
         "-Wall",
