@@ -5,6 +5,7 @@ load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 cc_library(
     name = "libultra",
     srcs = ["start.s"],
+    defines = ["F3DEX_GBI_2"],
     visibility = ["//visibility:public"],
     deps = ["@n64sdk//:libultra"],
 )

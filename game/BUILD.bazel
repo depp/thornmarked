@@ -20,7 +20,6 @@ cc_binary(
         "text.c",
     ],
     copts = COPTS,
-    defines = ["F3DEX_GBI_2"],
     deps = [
         "//assets",
         "//assets/fonts/terminus:ter-u12n",
