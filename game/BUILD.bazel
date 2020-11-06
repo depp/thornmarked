@@ -31,7 +31,7 @@ cc_binary(
         "//assets/fonts/terminus:ter-u12n",
         "//base",
         "//base:random",
-        "//n64",
+        "//n64:libultra",
         "@n64sdk//:gspF3DEX2.xbus",
         "@n64sdk//:rspboot",
     ],

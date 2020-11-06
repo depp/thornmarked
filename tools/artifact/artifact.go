@@ -156,7 +156,8 @@ type buildInfo struct {
 // buildArtifact builds the desired artifact.
 func buildArtifact() error {
 	fmt.Fprintln(os.Stderr, "Building...")
-	cmd := exec.Command("bazel", "build", "-c", "opt", "--cpu=n64", "//game")
+	cmd := exec.Command(
+		"bazel", "build", "-c", "opt", "--platforms=//n64", "//game")
 	cmd.Stderr = os.Stderr
 	cmd.Dir = wsdir
 	if err := cmd.Run(); err != nil {

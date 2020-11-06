@@ -1,19 +1,12 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_toolchain", "cc_toolchain_suite")
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 
+# LibUltra with startup code.
 cc_library(
-    name = "n64",
+    name = "libultra",
     srcs = ["start.s"],
-    deps = ["@n64sdk//:libultra"],
     visibility = ["//visibility:public"],
-)
-
-cc_toolchain_suite(
-    name = "toolchain",
-    toolchains = {
-        "k8": "@local_config_cc//:cc-compiler-k8",
-        "n64": ":cc-compiler-n64",
-    },
+    deps = ["@n64sdk//:libultra"],
 )
 
 filegroup(
@@ -28,27 +21,22 @@ filegroup(
 
 cc_toolchain(
     name = "cc-compiler-n64",
-    toolchain_identifier = "n64",
-    toolchain_config = ":config-n64",
     all_files = ":compiler_deps",
     ar_files = ":compiler_deps",
     as_files = ":compiler_deps",
     compiler_files = ":compiler_deps",
     dwp_files = ":empty",
     linker_files = ":compiler_deps",
+    module_map = None,
     objcopy_files = ":empty",
     strip_files = ":empty",
     supports_param_files = 1,
-    module_map = None,
+    toolchain_config = ":config-n64",
+    toolchain_identifier = "n64",
 )
 
 cc_toolchain_config(
     name = "config-n64",
-    path = "/opt/n64",
-    system = "mips32-elf",
-    version = "10.2.0",
-    cpu = "mips3",
-    toolchain_identifier = "n64",
     compile_flags = [
         "-D_ULTRA64",
         # "-U_FORTIFY_SOURCE",
@@ -62,16 +50,9 @@ cc_toolchain_config(
         "-G",
         "0",
     ],
-    opt_compile_flags = [
-        "-g0",
-        "-O2",
-        # "-D_FORTIFY_SOURCE=1",
-        "-DNDEBUG",
-        "-ffunction-sections",
-        "-fdata-sections",
-    ],
-    dbg_compile_flags = ["-g"],
+    cpu = "mips3",
     cxx_flags = ["-std=c++0x"],
+    dbg_compile_flags = ["-g"],
     link_flags = [
         # "-fuse-ld=gold",
         "-Wl,-no-as-needed",
@@ -85,7 +66,18 @@ cc_toolchain_config(
     link_libs = [
         "-lgcc",
     ],
+    opt_compile_flags = [
+        "-g0",
+        "-O2",
+        # "-D_FORTIFY_SOURCE=1",
+        "-DNDEBUG",
+        "-ffunction-sections",
+        "-fdata-sections",
+    ],
     opt_link_flags = ["-Wl,--gc-sections"],
+    path = "/opt/n64",
+    system = "mips32-elf",
+    toolchain_identifier = "n64",
     unfiltered_compile_flags = [
         "-fno-canonical-system-headers",
         "-Wno-builtin-macro-redefined",
@@ -93,6 +85,41 @@ cc_toolchain_config(
         "-D__TIMESTAMP__=\"redacted\"",
         "-D__TIME__=\"redacted\"",
     ],
+    version = "10.2.0",
 )
 
 exports_files(["link.lds"])
+
+# The Nintendo 64 "OS" as a target OS.
+constraint_value(
+    name = "os",
+    constraint_setting = "@platforms//os",
+)
+
+# MIPS III CPU with o32 ABI.
+constraint_value(
+    name = "mips3_o32",
+    constraint_setting = "@platforms//cpu",
+)
+
+toolchain(
+    name = "cc-toolchain-n64",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        ":os",
+        ":mips3_o32",
+    ],
+    toolchain = ":cc-compiler-n64",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+platform(
+    name = "n64",
+    constraint_values = [
+        ":os",
+        ":mips3_o32",
+    ],
+)

@@ -5,7 +5,7 @@
       "label": "Build ROM Image",
       "type": "process",
       "command": "bazel",
-      "args": ["build", "--cpu=n64", "//game"],
+      "args": ["build", "--platforms=//n64", "//game"],
       "problemMatcher": {
         "base": "$gcc"
       },
