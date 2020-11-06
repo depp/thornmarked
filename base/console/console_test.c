@@ -58,6 +58,7 @@ void test_main(void) {
     test_printf("i = -999000", "i = %d", -999000);
     test_printf("u = 4000000000", "u = %u", 4000000000u);
     test_printf("s = abc", "s = %s", "abc");
+    test_printf("s = 000", "s = %s", "000");
     test_printf("right [   abc]", "right [%6s]", "abc");
     test_printf("left [abc   ]", "left [%-6s]", "abc");
     test_printf("i = 000123", "i = %06d", 123);
@@ -75,4 +76,7 @@ void test_main(void) {
     test_printf("lli = 1234567890123456789", "lli = %lli",
                 1234567890123456789ll);
     test_printf("c = a", "c = %c", 'a');
+    test_printf("f = 0.000000", "f = %f", 0.0);
+    test_printf("f = 1.000000", "f = %f", 1.0);
+    test_printf("f = 9.375000", "f = %f", 9.375);
 }

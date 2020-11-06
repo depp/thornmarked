@@ -4,7 +4,9 @@
 #include "base/console/internal.h"
 #include "base/defs.h"
 
+#include <limits.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 void console_init(struct console *cs) {
@@ -150,6 +152,35 @@ static void putx(char *restrict buf, uint32_t x,
     for (int i = 0; i < 8; i++) {
         buf[7 - i] = hexdigit[(x >> (4 * i)) & 15];
     }
+}
+
+// Powers of 10 which are exact.
+static const double POWERS_OF_10[23] = {
+    1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8,  1e9,  1e10, 1e11,
+    1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22,
+};
+
+enum {
+    PUTF_LEN = PUTD_LEN + 1,
+};
+
+static bool putf(char *restrict buf, double x, int precision) {
+    if (precision > 22) {
+        precision = 22;
+    } else if (precision < 0) {
+        precision = 0;
+    }
+    double xs = x * POWERS_OF_10[precision];
+    if (xs > LLONG_MAX) {
+        return false;
+    }
+    putd(buf, (long long)xs);
+    int decimal_pos = PUTD_LEN - precision;
+    for (int i = PUTD_LEN; i > decimal_pos; i--) {
+        buf[i] = buf[i - 1];
+    }
+    buf[decimal_pos] = '.';
+    return true;
 }
 
 static const char *trimzero(const char *ptr, const char *end) {
@@ -354,14 +385,57 @@ parse_width:
         cptr = va_arg(*ap, const char *);
         cend = cptr + strlen(cptr);
         break;
+    case 'e':
+    case 'E':
+    case 'f':
+    case 'F':
+    case 'g':
+    case 'G': {
+        bool uppercase = (c & 32) == 0;
+        union {
+            double f;
+            uint64_t i;
+        } val;
+        val.f = va_arg(*ap, double);
+        unsigned exponent = (unsigned)(val.i >> 52) & ((1u << 11) - 1);
+        if ((val.i >> 63) != 0) {
+            val.f = -val.f;
+            prefix[0] = '-';
+        } else if ((flags & FMT_ALWAYSSIGN) != 0) {
+            prefix[0] = '+';
+        } else if ((flags & FMT_SPACE) != 0) {
+            prefix[0] = ' ';
+        }
+        if ((flags & FMT_HASPRECISION) == 0) {
+            precision = 6;
+        }
+        if (exponent == (1 << 11) - 1) {
+            if ((val.i & ((1ull << 52) - 1)) == 0) {
+                cptr = uppercase ? "INF" : "inf";
+            } else {
+                cptr = uppercase ? "NAN" : "nan";
+                prefix[0] = '\0';
+            }
+            cend = cptr + 3;
+        } else {
+            putf(cbuf, val.f, precision);
+            cptr = cbuf;
+            cend = cbuf + PUTF_LEN;
+            int dec_pos = PUTD_LEN - precision;
+            if (dec_pos > 1) {
+                cptr = trimzero(cptr, cptr + dec_pos - 1);
+            }
+        }
+    } break;
     default:
         goto bad_format;
     }
-    cptr = trimzero(cptr, cend);
-    int clen = cend - cptr;
+    int clen;
     int plen = (prefix[0] != '\0') + (prefix[1] != '\0');
     int zlen = 0;
     if ((flags & FMT_INT) != 0) {
+        cptr = trimzero(cptr, cend);
+        clen = cend - cptr;
         // Note: '-' has precedence over '0'.
         if ((flags & (FMT_ZEROPAD | FMT_HASPRECISION)) == FMT_ZEROPAD) {
             zlen = width - clen - plen;
@@ -375,6 +449,8 @@ parse_width:
         if (zlen < 0) {
             zlen = 0;
         }
+    } else {
+        clen = cend - cptr;
     }
     int slen = width - clen - plen - zlen;
     int llen = 0, rlen = 0;
