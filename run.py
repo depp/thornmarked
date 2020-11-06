@@ -5,10 +5,12 @@ import os
 import pathlib
 import re
 import shlex
+import shutil
 import subprocess
 import sys
+import urllib.parse
 
-ROM = 'Thornmarked.n64'
+DEFAULT_TARGET = '//game'
 EXTRA_PATHS = [
     '/usr/games',
 ]
@@ -18,6 +20,12 @@ SRCDIR = pathlib.Path(__file__).resolve().parent
 def die(*msg):
     print('Error:', *msg, file=sys.stderr)
     raise SystemExit(1)
+
+VERBOSE = False
+
+def log(*msg):
+    if VERBOSE:
+        print(*msg, file=sys.stderr)
 
 def find_program(name, *, extra_paths=[]):
     """Return the path to a program."""
@@ -82,18 +90,22 @@ def mupen64(rom, args):
     exe = find_program('mupen64plus', extra_paths=EXTRA_PATHS)
     run([exe, rom, *args.emulator_opts], exec=True)
 
-def find_artifact(revision):
+def list_artifacts():
     dir = pathlib.Path.home() / 'Documents/Artifacts'
     find_revision = re.compile(r'\.r(\d+)\.')
-    matches = []
-    has_artifact = False
     for item in dir.iterdir():
         m = find_revision.search(item.name)
         if m is not None:
-            has_artifact = True
             item_rev = int(m.group(1), 10)
-            if item_rev == revision:
-                matches.append(item)
+            yield item_rev, item
+
+def find_artifact(revision):
+    matches = []
+    has_artifact = False
+    for item_rev, item in list_artifacts():
+        has_artifact = True
+        if item_rev == revision:
+            matches.append(item)
     if not has_artifact:
         die('could not find any artifacts in directory:', dir)
     if not matches:
@@ -102,11 +114,19 @@ def find_artifact(revision):
         die('multiple artifacts with revision:', revision)
     return matches[0]
 
-def extract_artifact(artifact):
+HAVE_TEMP_DIR = False
+def get_temp_dir():
+    """Get the temporary directory, clearing it if it hasn't been used yet."""
+    global CLEARED_TEMP_DIR
     temp = SRCDIR / 'temp'
-    temp.mkdir(exist_ok=True)
-    for item in temp.iterdir():
-        item.unlink()
+    if not HAVE_TEMP_DIR:
+        temp.mkdir(exist_ok=True)
+        for item in temp.iterdir():
+            item.unlink()
+    return temp
+
+def extract_artifact(artifact):
+    temp = get_temp_dir()
     subprocess.run(
         ['tar', 'xf', artifact],
         cwd=temp,
@@ -125,6 +145,74 @@ def extract_artifact(artifact):
         die('multiple ROMs in artifact')
     return roms[0]
 
+def image_from_binary(binary):
+    """Get a ROM image from the given ELF binary."""
+    temp = get_temp_dir()
+    binary_copy = temp / binary.name
+    shutil.copy(binary, binary_copy)
+    image = temp / (binary.name + '.n64')
+    run(['mips32-elf-objcopy', '-O', 'binary', binary_copy, image])
+    run(['makemask', image])
+    return image
+
+def get_image(args):
+    """Return a path to the image to run."""
+    # From -image:
+    if args.image is not None:
+        printv()
+        return pathlib.Path(args.image)
+
+    # From -binary:
+    if args.binary is not None:
+        return image_from_binary(pathlib.Path(args.binary))
+
+    # From -artifact or -revision:
+    artifact = args.artifact
+    if args.revision is not None:
+        artifact = find_artifact(args.revision)
+    if artifact is not None:
+        return extract_artifact(artifact)
+
+    # From -target:
+    target = args.target
+    if target is None:
+        target = DEFAULT_TARGET
+    temp = get_temp_dir()
+    args = [
+        'bazel', 'build',
+        '--platforms=//n64',
+        '--compilation_mode=' + args.compilation_mode,
+        '--build_event_json_file=temp/build.json',
+        target,
+    ]
+    run(args)
+    cevent = None
+    with open(temp/'build.json') as fp:
+        for line in fp:
+            item = json.loads(line)
+            if 'targetCompleted' in item['id']:
+                cevent = item
+    if cevent is None:
+        die('no targetCompleted event found')
+    completed = cevent['completed']
+    if not completed['success']:
+        die('success = false')
+    output = completed['importantOutput']
+    if not output:
+        die('no output in targetCompleted event')
+    if len(output) != 1:
+        if VERBOSE:
+            json.dump(output, sys.stderr, indent='  ')
+            sys.stderr.write('\n')
+        die('target has multiple outputs')
+    uri = urllib.parse.urlparse(output[0]['uri'])
+    if uri.scheme != 'file':
+        die('output URI is not a file:', uri.scheme)
+    outfile = pathlib.Path(uri.path)
+    if outfile.suffix != '.n64':
+        return image_from_binary(outfile)
+    return outfile
+
 def main(argv):
     emulators = {
         'cen64': cen64,
@@ -137,33 +225,49 @@ def main(argv):
         description='Run game',
         allow_abbrev=False,
     )
-    p.add_argument('-hardware', action='store_true',
+    p.add_argument('-verbose', '-v', action='store_true',
+        help='verbose output')
+    g = p.add_mutually_exclusive_group()
+    g.add_argument('-hardware', action='store_true',
         help='use UNFLoader to write the ROM image to a flashcart')
-    p.add_argument('-emulator', choices=emulators, default='cen64',
+    g.add_argument('-emulator', choices=emulators, default='cen64',
         help='emulator to run game with')
-    p.add_argument('emulator_opts', nargs='*',
-        help='additional options to pass emulator')
-    p.add_argument('-artifact',
-        help='run ROM from the given artifact archive')
-    p.add_argument('-revision', '-r', type=int,
-        help='run rom from artifact with the given revision')
+    p.add_argument('-eopt', action='append', dest='emulator_opts',
+        default=[], help='additional options to pass emulator')
+    p.add_argument('-bopt', action='append', dest='bazel_opts',
+        default=[], help='additional options to pass Bazel')
+    p.add_argument('-compilation-mode', '-c', default='fastbuild',
+        help='Bazel compilation mode')
     p.add_argument('-no-run', '-n', action='store_true',
         help='do not run, just show information about artifact')
+    p.add_argument('-list', '-l', action='store_true',
+        help='list available artifacts')
+    g = p.add_mutually_exclusive_group()
+    g.add_argument('-artifact',
+        help='run ROM from the given artifact archive')
+    g.add_argument('-revision', '-r', type=int,
+        help='run rom from artifact with the given revision')
+    g.add_argument('-image', '-i', help='run a specific ROM image')
+    g.add_argument('-binary', '-b', help='run a specific ELF binary')
+    g.add_argument('-target', '-t', help='Bazel target to run')
     args = p.parse_args(argv)
+    global VERBOSE
+    VERBOSE = args.verbose
 
-    artifact = args.artifact
-    if artifact is None and args.revision is not None:
-        artifact = find_artifact(args.revision)
-    if artifact is None:
-        rom = pathlib.Path(SRCDIR, 'bazel-bin', 'game', ROM)
-    else:
-        rom = extract_artifact(artifact)
+    if args.list:
+        for row in sorted(list_artifacts()):
+            print('{0[0]:4d}  {0[1].name}'.format(row))
+        return
+
+    image = get_image(args)
+
     if args.no_run:
+        print('ROM Image:', image)
         return
     if args.hardware:
-        hardware(rom, args)
+        hardware(image, args)
     else:
-        emulators[args.emulator](rom, args)
+        emulators[args.emulator](image, args)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
