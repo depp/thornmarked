@@ -44,7 +44,7 @@ SECTIONS {
     } >ram
 
     uninit.rdp (NOLOAD) : ALIGN(16) {
-        *(uniti.rdp)
+        *(uninit.rdp)
     }
 
     /DISCARD/ : {
