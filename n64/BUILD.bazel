@@ -19,6 +19,11 @@ filegroup(
     srcs = [],
 )
 
+filegroup(
+    name = "linker_deps",
+    srcs = ["link.lds"],
+)
+
 cc_toolchain(
     name = "cc-compiler-n64",
     all_files = ":compiler_deps",
@@ -26,7 +31,7 @@ cc_toolchain(
     as_files = ":compiler_deps",
     compiler_files = ":compiler_deps",
     dwp_files = ":empty",
-    linker_files = ":compiler_deps",
+    linker_files = ":linker_deps",
     module_map = None,
     objcopy_files = ":empty",
     strip_files = ":empty",
@@ -62,6 +67,7 @@ cc_toolchain_config(
         # "-lstdc++",
         # "-lm",
         "-nostdlib",  # new
+        "-T", "n64/link.lds",
     ],
     link_libs = [
         "-lgcc",
@@ -87,8 +93,6 @@ cc_toolchain_config(
     ],
     version = "10.2.0",
 )
-
-exports_files(["link.lds"])
 
 # The Nintendo 64 "OS" as a target OS.
 constraint_value(

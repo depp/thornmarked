@@ -19,13 +19,8 @@ cc_binary(
         "stack.s",
         "text.c",
     ],
-    additional_linker_inputs = ["//n64:link.lds"],
     copts = COPTS + ["-ffreestanding"],
     defines = ["F3DEX_GBI_2"],
-    linkopts = [
-        "-T",
-        "$(location //n64:link.lds)",
-    ],
     deps = [
         "//assets",
         "//assets/fonts/terminus:ter-u12n",
