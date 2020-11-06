@@ -1,0 +1,35 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//base:copts.bzl", "COPTS")
+
+cc_library(
+    name = "testlib",
+    srcs = [
+        "quote.c",
+        "testlib.c",
+    ] + select({
+        "//n64:os": ["stack.s"],
+        "//conditions:default": [],
+    }),
+    hdrs = [
+        "testlib.h",
+    ],
+    copts = COPTS,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//base",
+    ] + select({
+        "//n64:os": ["//base/console"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_test(
+    name = "example_ok",
+    size = "small",
+    srcs = [
+        "example_ok.c",
+    ],
+    deps = [
+        ":testlib",
+    ],
+)

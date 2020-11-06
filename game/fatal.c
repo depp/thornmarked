@@ -1,5 +1,7 @@
-#include "game/console.h"
 #include "game/defs.h"
+
+#include "base/console/console.h"
+#include "base/console/n64.h"
 
 #include <stdarg.h>
 #include <stdbool.h>

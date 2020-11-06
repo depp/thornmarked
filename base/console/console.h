@@ -1,9 +1,7 @@
+// Debugging console we can print to.
 #pragma once
 
-#include <ultra64.h>
-
 #include <stdarg.h>
-#include <stdint.h>
 
 // A console buffer for printing debugging text on the screen.
 struct console;
@@ -23,10 +21,5 @@ void console_printf(struct console *cs, const char *fmt, ...);
 // Write a formatted string to the console.
 void console_vprintf(struct console *cs, const char *fmt, va_list ap);
 
-// Draw the console to the framebuffer using the CPU. Does not flush cache.
-void console_draw_raw(struct console *cs, uint16_t *restrict framebuffer);
-
-// Draw the console to the framebuffer by writing a display list.
-Gfx *console_draw_displaylist(struct console *cs, Gfx *dl);
-
+// The main debugging console.
 extern struct console console;

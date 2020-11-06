@@ -9,8 +9,6 @@ alias(
 cc_binary(
     name = "Thornmarked.elf",
     srcs = [
-        "console.c",
-        "console.h",
         "defs.h",
         "fatal.c",
         "main.c",
@@ -22,9 +20,9 @@ cc_binary(
     copts = COPTS,
     deps = [
         "//assets",
-        "//assets/fonts/terminus:ter-u12n",
         "//base",
         "//base:random",
+        "//base/console",
         "//n64:libultra",
         "@n64sdk//:gspF3DEX2.xbus",
         "@n64sdk//:rspboot",

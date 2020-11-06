@@ -100,12 +100,14 @@ cc_toolchain_config(
 constraint_value(
     name = "os",
     constraint_setting = "@platforms//os",
+    visibility = ["//visibility:public"],
 )
 
 # MIPS III CPU with o32 ABI.
 constraint_value(
     name = "mips3_o32",
     constraint_setting = "@platforms//cpu",
+    visibility = ["//visibility:public"],
 )
 
 toolchain(

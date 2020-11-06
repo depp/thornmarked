@@ -1,8 +1,9 @@
 #include "game/defs.h"
 
 #include "assets/assets.h"
+#include "base/console/console.h"
+#include "base/console/n64.h"
 #include "base/random.h"
-#include "game/console.h"
 #include "scheduler.h"
 
 #include <ultra64.h>
