@@ -41,7 +41,9 @@ def run(args, *, exec=False):
     print(*[shlex.quote(arg) for arg in strargs], file=sys.stderr)
     if exec:
         os.execvp(args[0], args)
-    return subprocess.run(args, check=True)
+    proc = subprocess.run(args)
+    if proc.returncode:
+        die('Command failed:', args[0])
 
 def lsmod():
     proc = subprocess.run(['lsmod'], stdout=subprocess.PIPE)
