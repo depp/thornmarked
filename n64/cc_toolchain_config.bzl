@@ -560,6 +560,7 @@ def _impl(ctx):
         action_configs = action_configs,
         cxx_builtin_include_directories = [
             "%s/lib/gcc/%s/%s/include" % (path, system, version),
+            "%s/lib/gcc/%s/%s/include-fixed" % (path, system, version),
         ],
         toolchain_identifier = ctx.attr.toolchain_identifier,
         host_system_name = "local",
