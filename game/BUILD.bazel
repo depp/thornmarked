@@ -19,7 +19,7 @@ cc_binary(
         "stack.s",
         "text.c",
     ],
-    copts = COPTS + ["-ffreestanding"],
+    copts = COPTS,
     defines = ["F3DEX_GBI_2"],
     deps = [
         "//assets",
