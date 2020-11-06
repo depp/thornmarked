@@ -67,7 +67,8 @@ cc_toolchain_config(
         # "-lstdc++",
         # "-lm",
         "-nostdlib",  # new
-        "-T", "n64/link.lds",
+        "-T",
+        "n64/link.lds",
     ],
     link_libs = [
         "-lgcc",
