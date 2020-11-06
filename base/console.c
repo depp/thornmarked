@@ -1,7 +1,7 @@
-#include "base/console/console.h"
+#include "base/console.h"
 
 #include "base/base.h"
-#include "base/console/internal.h"
+#include "base/console_internal.h"
 #include "base/defs.h"
 
 #include <limits.h>

@@ -17,10 +17,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//base",
-    ] + select({
-        "//n64:os": ["//base/console"],
-        "//conditions:default": [],
-    }),
+    ],
 )
 
 cc_test(

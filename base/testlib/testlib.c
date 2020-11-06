@@ -8,8 +8,8 @@
 
 #if _ULTRA64
 
-#include "base/console/console.h"
-#include "base/console/n64.h"
+#include "base/console.h"
+#include "base/console_n64.h"
 
 #include <ultra64.h>
 

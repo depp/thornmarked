@@ -1,6 +1,6 @@
-#include "base/console/console.h"
+#include "base/console.h"
 #include "base/base.h"
-#include "base/console/internal.h"
+#include "base/console_internal.h"
 #include "base/testlib/testlib.h"
 
 #include <stdbool.h>

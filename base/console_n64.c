@@ -1,8 +1,8 @@
-#include "base/console/n64.h"
+#include "base/console_n64.h"
 
 #define INCLUDE_FONT_DATA 1
 
-#include "base/console/internal.h"
+#include "base/console_internal.h"
 
 #include <stdalign.h>
 #include <stdbool.h>

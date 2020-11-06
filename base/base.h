@@ -1,7 +1,14 @@
 // Base library. Includes functions certain from stdlib.
 #pragma once
 
+#include "base/defs.h"
+
+// =============================================================================
+// Standard Library Functions
+// =============================================================================
+
 #include <stddef.h>
+#include <stdnoreturn.h>
 
 #if __STDC_HOSTED__
 
@@ -26,3 +33,20 @@ int memcmp(const void *s1, const void *s2, size_t n)
 size_t strlen(const char *s) __attribute__((pure, nonnull(1)));
 
 #endif
+
+// =============================================================================
+// Error Handling
+// =============================================================================
+
+// Show a "fatal error" screen.
+noreturn void fatal_error(const char *fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+
+// Assertion failure function, called by assert macro.
+noreturn void assert_fail(const char *file, int line, const char *pred);
+
+#define assert(p)                                \
+    do {                                         \
+        if (!(p))                                \
+            assert_fail(__FILE__, __LINE__, #p); \
+    } while (0)
