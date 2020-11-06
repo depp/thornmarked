@@ -38,6 +38,7 @@ struct scheduler {
 
     // Pointer to the currently executing task.
     struct scheduler_task *task_running;
+    OSTime task_starttime;
 
     // Framebuffers: framebuffer[0] is on-screen right now, framebuffer[1] being
     // swapped in by the VI thread, and framebufer[2] is waiting. The
@@ -57,6 +58,10 @@ struct scheduler_task {
     // Send this message to this queue when the RCP task is done.
     OSMesgQueue *done_queue;
     OSMesg done_mesg;
+
+    // RCP task runtime, elapsed CPU counter value (delta osGetTime). Filled in
+    // by the scheduler after the task finishes.
+    int runtime;
 
     // The framebuffer to be displayed on screen after the RCP task is done.
     struct scheduler_framebuffer framebuffer;

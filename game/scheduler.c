@@ -3,6 +3,7 @@
 #include "base/defs.h"
 #include "game/defs.h"
 
+#include <limits.h>
 #include <stdint.h>
 
 enum {
@@ -29,6 +30,12 @@ static void scheduler_main(void *arg) {
             sc->task_running = NULL;
             if (task == NULL) {
                 fatal_error("NULL task");
+            }
+            uint64_t delta = osGetTime() - sc->task_starttime;
+            if (delta > INT_MAX) {
+                task->runtime = INT_MAX;
+            } else {
+                task->runtime = delta;
             }
             if (task->framebuffer.ptr != NULL) {
                 unsigned pending = sc->framebuffers_pending;
@@ -101,6 +108,7 @@ static void scheduler_main(void *arg) {
             sc->pending_count--;
 
             // Run.
+            sc->task_starttime = osGetTime();
             osSpTaskLoad(&task->task);
             osSpTaskStartGo(&task->task);
             sc->task_running = task;

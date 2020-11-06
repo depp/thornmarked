@@ -352,6 +352,9 @@ struct main_state {
     // Which controller is connected.
     int controller_index;
 
+    // Elapsed time on RCP.
+    int rcp_time;
+
     // Queue receiving scheduler / controller events.
     OSMesgQueue evt_queue;
     OSMesg evt_buffer[16];
@@ -377,6 +380,7 @@ static int process_event(struct main_state *restrict st, int flags) {
         break;
     case EVT_TASKDONE:
         st->task_running[value] = false;
+        st->rcp_time = st->tasks[value].runtime;
         break;
     case EVT_FBDONE:
         st->framebuffer_in_use[value] = false;
@@ -427,6 +431,7 @@ static void main(void *arg) {
     for (int current_task = 0;; current_task ^= 1) {
         console_init(&console);
         console_printf(&console, "Frame %d\n", frame_num);
+        console_printf(&console, "Time: %d\n", st->rcp_time);
         frame_num++;
         // Wait until the task and framebuffer are both free to use.
         while (st->task_running[current_task])
