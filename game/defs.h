@@ -13,19 +13,6 @@ void asset_load(void *dest, int asset_id);
 // Create a display list to draw the given text.
 Gfx *text_render(Gfx *dl, int x, int y, const char *text);
 
-// Show a "fatal error" screen.
-noreturn void fatal_error(const char *fmt, ...)
-    __attribute__((format(printf, 1, 2)));
-
-// Assertion failure function, called by assert macro.
-noreturn void assert_fail(const char *file, int line, const char *pred);
-
-#define assert(p)                                \
-    do {                                         \
-        if (!(p))                                \
-            assert_fail(__FILE__, __LINE__, #p); \
-    } while (0)
-
 enum {
     // Size of the framebuffer, in pixels.
     SCREEN_WIDTH = 320,

@@ -1,4 +1,4 @@
-#include "game/defs.h"
+#include "base/base.h"
 
 #include "base/console.h"
 #include "base/console_n64.h"
@@ -7,9 +7,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern u8 _idle_thread_stack[];
+static OSThread fatal_thread;
+static u8 fatal_thread_stack[256]
+    __attribute__((section("uninit"), aligned(16)));
 
-static void fatal_thread(void *arg);
+static void fatal_thread_func(void *arg);
 
 noreturn void fatal_error(const char *fmt, ...) {
     struct console *cs = &console;
@@ -20,22 +22,22 @@ noreturn void fatal_error(const char *fmt, ...) {
     console_vprintf(cs, fmt, ap);
     va_end(ap);
 
-    // Usurp the idle thread and turn it into a maximum-priority thread to
-    // display the fault message.
-    osStopThread(&idle_thread);
-    osDestroyThread(&idle_thread);
-
-    osCreateThread(&idle_thread, 1, fatal_thread, cs, _idle_thread_stack,
+    osCreateThread(&fatal_thread, 1, fatal_thread_func, cs,
+                   fatal_thread_stack + ARRAY_COUNT(fatal_thread_stack),
                    OS_PRIORITY_APPMAX);
-    osStartThread(&idle_thread);
+    osStartThread(&fatal_thread);
     osStopThread(NULL);
     __builtin_unreachable();
 }
 
-static void fatal_thread(void *arg) {
+static void fatal_thread_func(void *arg) {
     struct console *cs = arg;
+    enum {
+        SCREEN_WIDTH = 320,
+        SCREEN_HEIGHT = 240,
+    };
 
-    uint16_t *fb = framebuffers[0];
+    uint16_t *fb = (uint16_t *)(uintptr_t)0x80300000;
     osViSetMode(&osViModeNtscLpn1);
     osViSetSpecialFeatures(OS_VI_GAMMA_OFF);
     osViBlack(false);

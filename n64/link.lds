@@ -40,7 +40,7 @@ SECTIONS {
     } >ram
 
     uninit (NOLOAD) : ALIGN(16) {
-        *(uninit.*)
+        *(uninit uninit.*)
     } >ram
 
     uninit.rdp (NOLOAD) : ALIGN(16) {

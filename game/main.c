@@ -1,6 +1,7 @@
 #include "game/defs.h"
 
 #include "assets/assets.h"
+#include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
 #include "base/random.h"
@@ -10,8 +11,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#define ARRAY_COUNT(x) (sizeof((x)) / sizeof((x)[0]))
 
 enum {
     // Maximum number of simultaneous PI requests.

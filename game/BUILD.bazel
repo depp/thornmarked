@@ -10,7 +10,6 @@ cc_binary(
     name = "Thornmarked.elf",
     srcs = [
         "defs.h",
-        "fatal.c",
         "main.c",
         "scheduler.c",
         "scheduler.h",

@@ -1,6 +1,6 @@
 #include "game/scheduler.h"
 
-#include "base/defs.h"
+#include "base/base.h"
 #include "game/defs.h"
 
 #include <limits.h>
