@@ -431,7 +431,8 @@ static void main(void *arg) {
     for (int current_task = 0;; current_task ^= 1) {
         console_init(&console);
         console_printf(&console, "Frame %d\n", frame_num);
-        console_printf(&console, "Time: %d\n", st->rcp_time);
+        console_printf(&console, "Time: %5.1f ms\n",
+                       (double)st->rcp_time * (1.0e3 / OS_CPU_COUNTER));
         frame_num++;
         // Wait until the task and framebuffer are both free to use.
         while (st->task_running[current_task])
