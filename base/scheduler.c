@@ -1,11 +1,14 @@
 #include "base/scheduler.h"
 
 #include "base/base.h"
+#include "base/console.h"
 
 #include <limits.h>
 #include <stdint.h>
 
+// Scheduler events. Event 0 is invalid in order to catch errors.
 enum {
+    EVT_INVALID,
     EVT_TASK,  // New task submitted.
     EVT_RDP,   // RDP is done.
     EVT_VSYNC, // Vertical refresh.
@@ -13,18 +16,30 @@ enum {
 
 static void scheduler_main(void *arg) {
     struct scheduler *sc = arg;
+    struct console *cs = NULL;
+    // cs = console_new(CONSOLE_SCROLL);
+    int n = 0;
     for (;;) {
-        OSMesg mesg;
-        osRecvMesg(&sc->evt_queue, &mesg, OS_MESG_BLOCK);
-        switch ((uintptr_t)mesg) {
+        // console_newline(cs);
+        // console_printf(cs, "%d: ", n);
+        n++;
+        int evt;
+        {
+            OSMesg mesg;
+            osRecvMesg(&sc->evt_queue, &mesg, OS_MESG_BLOCK);
+            evt = (uintptr_t)mesg;
+        }
+        switch (evt) {
         case EVT_TASK:
+            // console_puts(cs, "EVT_TASK ");
             break;
 
         case EVT_RDP: {
+            // console_puts(cs, "EVT_RDP ");
             struct scheduler_task *restrict task = sc->task_running;
             sc->task_running = NULL;
             if (task == NULL) {
-                fatal_error("NULL task");
+                fatal_error_con(cs, "NULL task");
             }
             uint64_t delta = osGetTime() - sc->task_starttime;
             if (delta > INT_MAX) {
@@ -35,7 +50,7 @@ static void scheduler_main(void *arg) {
             if (task->framebuffer.ptr != NULL) {
                 unsigned pending = sc->framebuffers_pending;
                 if (pending >= 2) {
-                    fatal_error("Framebuffer overflow");
+                    fatal_error_con(cs, "Framebuffer overflow");
                 }
                 if (pending == 0) {
                     osViSwapBuffer(task->framebuffer.ptr);
@@ -51,12 +66,13 @@ static void scheduler_main(void *arg) {
                 int r = osSendMesg(task->done_queue, task->done_mesg,
                                    OS_MESG_NOBLOCK);
                 if (r != 0) {
-                    fatal_error("Dropped RCP task done message");
+                    fatal_error_con(cs, "Dropped RCP task done message");
                 }
             }
         } break;
 
         case EVT_VSYNC: {
+            // console_puts(cs, "EVT_VSYNC ");
             unsigned pending = sc->framebuffers_pending;
             if (pending > 0) {
                 struct scheduler_framebuffer *restrict fb = sc->framebuffers;
@@ -64,7 +80,7 @@ static void scheduler_main(void *arg) {
                     int r = osSendMesg(fb[0].done_queue, fb[0].done_mesg,
                                        OS_MESG_NOBLOCK);
                     if (r != 0) {
-                        fatal_error("Dropped VSYNC message");
+                        fatal_error_con(cs, "Dropped VSYNC message");
                     }
                 }
                 fb[0] = fb[1];
@@ -78,7 +94,7 @@ static void scheduler_main(void *arg) {
         } break;
 
         default:
-            fatal_error("scheduler event: %u", (unsigned)(uintptr_t)mesg);
+            fatal_error_con(cs, "Invalid scheduler event: %d", evt);
         }
 
         // Read tasks from the task queue.
@@ -86,7 +102,7 @@ static void scheduler_main(void *arg) {
             OSMesg mesg;
             while (osRecvMesg(&sc->task_queue, &mesg, OS_MESG_NOBLOCK) == 0) {
                 if (sc->pending_count >= ARRAY_COUNT(sc->pending_tasks)) {
-                    fatal_error("Task overflow");
+                    fatal_error_con(cs, "Task overflow");
                 }
                 sc->pending_tasks[sc->pending_count++] = mesg;
             }
