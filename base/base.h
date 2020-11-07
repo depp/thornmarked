@@ -48,6 +48,10 @@ noreturn void fatal_error_con(struct console *cs, const char *fmt, ...)
 noreturn void fatal_error(const char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
 
+// Show an error for when the display list overflows.
+noreturn void fatal_dloverflow_func(const char *file, int line);
+#define fatal_dloverflow() fatal_dloverflow_func(__FILE__, __LINE__)
+
 // Assertion failure function, called by assert macro.
 noreturn void assert_fail(const char *file, int line, const char *pred);
 

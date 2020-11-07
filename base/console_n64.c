@@ -2,6 +2,7 @@
 
 #define INCLUDE_FONT_DATA 1
 
+#include "base/base.h"
 #include "base/console_internal.h"
 
 #include <stdalign.h>
@@ -98,7 +99,7 @@ static const Gfx console_dl[] = {
     gsSPEndDisplayList(),
 };
 
-Gfx *console_draw_displaylist(struct console *cs, Gfx *dl) {
+Gfx *console_draw_displaylist(struct console *cs, Gfx *dl, Gfx *dl_end) {
     struct console_rowptr rows[CON_ROWS];
     int nrows = console_rows(cs, rows);
     if (nrows == 0) {
@@ -108,10 +109,17 @@ Gfx *console_draw_displaylist(struct console *cs, Gfx *dl) {
     if (!ct->did_init) {
         console_texture_init(ct);
     }
+    if (dl == dl_end) {
+        fatal_dloverflow();
+    }
     gSPDisplayList(dl++, console_dl);
     for (int row = 0; row < nrows; row++) {
         const uint8_t *ptr = rows[row].start, *end = rows[row].end;
         int cy = CON_YMARGIN + row * FONT_HEIGHT;
+        int width = end - ptr;
+        if (width * 3 > dl_end - dl) {
+            fatal_dloverflow();
+        }
         for (int col = 0; col < end - ptr; col++) {
             unsigned c = ptr[col];
             int cx = CON_XMARGIN + col * FONT_WIDTH;

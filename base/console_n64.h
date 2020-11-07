@@ -11,4 +11,4 @@ struct console;
 void console_draw_raw(struct console *cs, uint16_t *restrict framebuffer);
 
 // Draw the console to the framebuffer by writing a display list.
-Gfx *console_draw_displaylist(struct console *cs, Gfx *dl);
+Gfx *console_draw_displaylist(struct console *cs, Gfx *dl, Gfx *dl_end);

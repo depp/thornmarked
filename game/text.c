@@ -1,5 +1,6 @@
 #include "game/defs.h"
 
+#include "base/base.h"
 #include "base/pak/pak.h"
 
 #include <ultra64.h>
@@ -79,7 +80,10 @@ static uint16_t *text_to_glyphs(uint16_t *gptr, const char *text) {
     return gptr;
 }
 
-Gfx *text_render(Gfx *dl, int x, int y, const char *text) {
+Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text) {
+    if (16 > dl_end - dl) {
+        fatal_dloverflow();
+    }
     gDPPipeSync(dl++);
     gDPSetCycleType(dl++, G_CYC_1CYCLE);
     gDPSetPrimColor(dl++, 0, 0, 255, 128, 0, 255);
@@ -92,6 +96,9 @@ Gfx *text_render(Gfx *dl, int x, int y, const char *text) {
     for (uint16_t *gptr = glyphs; gptr != gend; gptr++) {
         struct font_glyph *restrict gi = glyphinfo + *gptr;
         if (gi->size[0] != 0) {
+            if (3 > dl_end - dl) {
+                fatal_dloverflow();
+            }
             int dx = x + gi->offset[0];
             int dy = y + gi->offset[1];
             gSPTextureRectangle(dl++, dx << 2, dy << 2, (dx + gi->size[0]) << 2,

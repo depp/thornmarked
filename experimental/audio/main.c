@@ -242,6 +242,7 @@ static void main(void *arg) {
                 console_printf(&console, "Frame %d\n", frame_num);
                 console_printf(&console, "Controller: 0x%04x\n", cont_state);
                 Gfx *dl_start = display_list;
+                Gfx *dl_end = display_list + ARRAY_COUNT(display_list);
                 Gfx *dl = dl_start;
                 gSPSegment(dl++, 0, 0);
                 gSPDisplayList(dl++, rspinit_dl);
@@ -254,7 +255,7 @@ static void main(void *arg) {
                 gDPSetFillColor(dl++, color);
                 gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1,
                                  SCREEN_HEIGHT - 1);
-                dl = console_draw_displaylist(&console, dl);
+                dl = console_draw_displaylist(&console, dl, dl_end);
                 gDPFullSync(dl++);
                 gSPEndDisplayList(dl++);
                 osWritebackDCache(dl_start,

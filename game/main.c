@@ -244,7 +244,7 @@ static Gfx *game_render(struct game_state *restrict gs, Gfx *dl) {
 
 struct game_state game_state;
 
-static Gfx *render(Gfx *dl, uint16_t *framebuffer) {
+static Gfx *render(Gfx *dl, Gfx *dl_end, uint16_t *framebuffer) {
     gSPSegment(dl++, 0, 0);
     gSPDisplayList(dl++, rdpinit_dl);
     gSPDisplayList(dl++, rspinit_dl);
@@ -261,10 +261,14 @@ static Gfx *render(Gfx *dl, uint16_t *framebuffer) {
     gSPDisplayList(dl++, sprite_dl);
     gDPPipeSync(dl++);
     dl = game_render(&game_state, dl);
-    dl = text_render(dl, 20, SCREEN_HEIGHT - 18, "Scheduler in operation");
+    dl = text_render(dl, dl_end, 20, SCREEN_HEIGHT - 18,
+                     "Scheduler in operation");
 
     // Render debugging text overlay.
-    dl = console_draw_displaylist(&console, dl);
+    dl = console_draw_displaylist(&console, dl, dl_end);
+    if (2 > dl_end - dl) {
+        fatal_dloverflow();
+    }
 
     gDPFullSync(dl++);
     gSPEndDisplayList(dl++);
@@ -410,7 +414,9 @@ static void main(void *arg) {
 
         // Set up display lists.
         Gfx *dl_start = display_lists[current_task];
-        Gfx *dl_end = render(dl_start, framebuffers[current_task]);
+        Gfx *dl_end = display_lists[current_task] +
+                      ARRAY_COUNT(display_lists[current_task]);
+        Gfx *dl = render(dl_start, dl_end, framebuffers[current_task]);
 
         struct scheduler_task *task = &st->tasks[current_task];
         *task = (struct scheduler_task){
@@ -428,7 +434,7 @@ static void main(void *arg) {
                 .dram_stack_size = sizeof(sp_dram_stack),
                 // No output_buff.
                 .data_ptr = (u64 *)dl_start,
-                .data_size = sizeof(*dl_start) * (dl_end - dl_start),
+                .data_size = sizeof(*dl_start) * (dl - dl_start),
             }},
             .done_queue = &st->evt_queue,
             .done_mesg = make_event(EVT_TASKDONE, current_task),
@@ -439,7 +445,7 @@ static void main(void *arg) {
                     .done_mesg = make_event(EVT_FBDONE, current_task),
                 },
         };
-        osWritebackDCache(dl_start, sizeof(*dl_start) * (dl_end - dl_start));
+        osWritebackDCache(dl_start, sizeof(*dl_start) * (dl - dl_start));
         scheduler_submit(&scheduler, task);
         st->task_running[current_task] = true;
         st->framebuffer_in_use[current_task] = true;

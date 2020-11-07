@@ -8,7 +8,7 @@
 void font_load(int asset_id);
 
 // Create a display list to draw the given text.
-Gfx *text_render(Gfx *dl, int x, int y, const char *text);
+Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text);
 
 enum {
     // Size of the framebuffer, in pixels.
