@@ -1,4 +1,4 @@
-def n64_rom(name, program, data):
+def n64_rom(name, program, data, visibility=None):
     """Create a Nintendo 64 ROM image with the given program and data."""
     native.genrule(
         name = name,
@@ -10,4 +10,5 @@ def n64_rom(name, program, data):
         cmd = ("mips32-elf-objcopy -O binary $(location %s) $@; " % program +
                "cat $(location %s) >>$@; " % data +
                "makemask $@"),
+        visibility = visibility,
     )

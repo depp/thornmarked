@@ -5,6 +5,7 @@ load("//n64:defs.bzl", "n64_rom")
 alias(
     name = "game",
     actual = ":Thornmarked",
+    visibility = ["//:__pkg__"],
 )
 
 cc_binary(

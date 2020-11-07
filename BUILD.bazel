@@ -1,0 +1,14 @@
+filegroup(
+    name = "rom_images",
+    srcs = [
+        "//experimental/audio",
+        "//game",
+    ],
+)
+
+test_suite(
+    name = "tests",
+    tests = [
+        "//base:console_test",
+    ],
+)

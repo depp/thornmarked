@@ -8,6 +8,7 @@ cc_binary(
         "stack.s",
     ],
     copts = COPTS,
+    visibility = ["//:__pkg__"],
     deps = [
         "//base",
         "//n64:libultra",
