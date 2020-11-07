@@ -40,11 +40,16 @@ SECTIONS {
     } >ram
 
     uninit (NOLOAD) : ALIGN(16) {
-        *(uninit uninit.*)
+        *(uninit uninit.stack)
     } >ram
 
-    uninit.rdp (NOLOAD) : ALIGN(16) {
-        *(uninit.rdp)
+    _heap1_start = ALIGN(16);
+
+    cfb 0x80300000 (NOLOAD) : {
+        _heap1_end = .;
+        *(uninit.cfb)
+        . = ALIGN(16);
+        _heap2_start = .;
     }
 
     /DISCARD/ : {

@@ -18,7 +18,8 @@ enum {
     SCREEN_HEIGHT = 240,
 };
 
-static uint16_t framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT];
+static uint16_t framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
+    __attribute__((section("uninit.cfb"), aligned(16)));
 
 static void test_show(uint16_t *framebuffer) {
     console_draw_raw(&console, framebuffer);

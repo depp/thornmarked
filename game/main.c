@@ -34,7 +34,8 @@ static OSMesgQueue dma_message_queue;
 static OSMesg dma_message_buffer;
 static OSIoMesg dma_io_message_buffer;
 
-u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT] __attribute__((aligned(16)));
+static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
+    __attribute__((section("uninit.cfb"), aligned(16)));
 
 // Idle thread. Creates other threads then drops to lowest priority.
 static void idle(void *arg);
@@ -127,8 +128,7 @@ enum {
     RDP_OUTPUT_LEN = 64 * 1024,
 };
 
-static u64 sp_dram_stack[SP_STACK_SIZE / 8]
-    __attribute__((section("uninit.rsp")));
+static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
 
 // Offset in cartridge where data is stored.
 extern u8 _pakdata_offset[];
@@ -396,6 +396,8 @@ static void main(void *arg) {
     (void)arg;
     struct main_state *st = &main_state;
 
+    mem_init();
+
     // Set up message queues.
     osCreateMesgQueue(&st->evt_queue, st->evt_buffer,
                       ARRAY_COUNT(st->evt_buffer));
@@ -430,6 +432,7 @@ static void main(void *arg) {
     for (int current_task = 0;; current_task ^= 1) {
         console_init(&console);
         console_printf(&console, "Frame %d\n", frame_num);
+        console_printf(&console, "Framebuffer: %p\n", framebuffers);
         console_printf(&console, "Time: %5.1f ms\n",
                        (double)st->rcp_time * (1.0e3 / OS_CPU_COUNTER));
         frame_num++;

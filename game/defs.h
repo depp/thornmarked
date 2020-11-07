@@ -19,11 +19,6 @@ enum {
     SCREEN_HEIGHT = 240,
 };
 
-extern u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
-    __attribute__((aligned(16)));
-
-extern OSThread idle_thread;
-
 enum {
     // Thread priorities.
     PRIORITY_IDLE_INIT = 10,
