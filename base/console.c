@@ -16,6 +16,12 @@ void console_init(struct console *cs, console_type ctype) {
     cs->ctype = ctype;
 }
 
+struct console *console_new(console_type ctype) {
+    struct console *cs = mem_alloc(sizeof(*cs));
+    console_init(cs, ctype);
+    return cs;
+}
+
 static void console_nextrow(struct console *cs) {
     cs->rows[cs->row] = (struct console_row){
         .start = cs->rowstart - cs->chars,
@@ -39,6 +45,12 @@ static void console_nextrow(struct console *cs) {
             cs->row = 0;
         }
         cs->ptr = cs->rowstart;
+    }
+}
+
+void console_newline(struct console *cs) {
+    if (cs->rowstart != cs->ptr) {
+        console_nextrow(cs);
     }
 }
 

@@ -7,27 +7,44 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+static const char *FATAL_MESSAGE = "The game has crashed :-(\n";
+
 static OSThread fatal_thread;
 static u8 fatal_thread_stack[256]
     __attribute__((section("uninit"), aligned(16)));
 
 static void fatal_thread_func(void *arg);
 
-noreturn void fatal_error(const char *fmt, ...) {
-    struct console *cs = &console;
-    console_init(cs, CONSOLE_TRUNCATE);
-    console_puts(cs, "The game has crashed! :-(\n");
-    va_list ap;
-    va_start(ap, fmt);
+static noreturn void fatal_error_impl(struct console *cs, const char *fmt,
+                                      va_list ap) {
+    if (cs == NULL) {
+        cs = &console;
+        console_init(cs, CONSOLE_TRUNCATE);
+    } else {
+        console_newline(cs);
+    }
+    console_puts(cs, FATAL_MESSAGE);
     console_vprintf(cs, fmt, ap);
-    va_end(ap);
-
     osCreateThread(&fatal_thread, 1, fatal_thread_func, cs,
                    fatal_thread_stack + ARRAY_COUNT(fatal_thread_stack),
                    OS_PRIORITY_APPMAX);
     osStartThread(&fatal_thread);
     osStopThread(NULL);
     __builtin_unreachable();
+}
+
+noreturn void fatal_error_con(struct console *cs, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    fatal_error_impl(cs, fmt, ap);
+    va_end(ap);
+}
+
+noreturn void fatal_error(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    fatal_error_impl(NULL, fmt, ap);
+    va_end(ap);
 }
 
 static void fatal_thread_func(void *arg) {

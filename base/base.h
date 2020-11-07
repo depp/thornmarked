@@ -38,6 +38,12 @@ size_t strlen(const char *s) __attribute__((pure, nonnull(1)));
 // Error Handling
 // =============================================================================
 
+struct console;
+
+// Show a "fatal error" screen using the given console.
+noreturn void fatal_error_con(struct console *cs, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
 // Show a "fatal error" screen.
 noreturn void fatal_error(const char *fmt, ...)
     __attribute__((format(printf, 1, 2)));

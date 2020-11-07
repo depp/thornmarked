@@ -15,6 +15,12 @@ struct console;
 // Initialize the console.
 void console_init(struct console *cs, console_type ctype);
 
+// Allocate a new console.
+struct console *console_new(console_type ctype);
+
+// Start a new line if we are not at the beginning of a line.
+void console_newline(struct console *cs);
+
 // Write a single character to the console.
 void console_putc(struct console *cs, int c);
 
