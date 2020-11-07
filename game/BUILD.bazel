@@ -1,5 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//base:copts.bzl", "COPTS")
+load("//n64:defs.bzl", "n64_rom")
 
 alias(
     name = "game",
@@ -28,14 +29,8 @@ cc_binary(
     ],
 )
 
-genrule(
+n64_rom(
     name = "Thornmarked",
-    srcs = [
-        ":Thornmarked.elf",
-        "//assets:assets.dat",
-    ],
-    outs = ["Thornmarked.n64"],
-    cmd = ("mips32-elf-objcopy -O binary $(location :Thornmarked.elf) $@; " +
-           "cat $(location //assets:assets.dat) >>$@; " +
-           "makemask $@"),
+    program = ":Thornmarked.elf",
+    data = "//assets:assets.dat",
 )
