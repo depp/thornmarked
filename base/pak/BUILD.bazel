@@ -1,0 +1,17 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//base:copts.bzl", "COPTS")
+
+cc_library(
+    name = "pak",
+    srcs = [
+        "pak.c",
+    ],
+    hdrs = [
+        "pak.h",
+    ],
+    copts = COPTS,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//n64:libultra",
+    ],
+)

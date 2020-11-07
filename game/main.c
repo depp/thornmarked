@@ -4,8 +4,9 @@
 #include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
+#include "base/pak/pak.h"
 #include "base/random.h"
-#include "scheduler.h"
+#include "game/scheduler.h"
 
 #include <ultra64.h>
 
@@ -21,18 +22,11 @@ enum {
 extern u8 _main_thread_stack[];
 extern u8 _idle_thread_stack[];
 
-// Handle to access ROM data, from osCartRomInit.
-static OSPiHandle *rom_handle;
-
 OSThread idle_thread;
 static OSThread main_thread;
 
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
-
-static OSMesgQueue dma_message_queue;
-static OSMesg dma_message_buffer;
-static OSIoMesg dma_io_message_buffer;
 
 static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((section("uninit.cfb"), aligned(16)));
@@ -48,7 +42,6 @@ void boot(void);
 
 void boot(void) {
     osInitialize();
-    rom_handle = osCartRomInit();
     osCreateThread(&idle_thread, 1, idle, NULL, _idle_thread_stack,
                    PRIORITY_IDLE_INIT);
     osStartThread(&idle_thread);
@@ -130,40 +123,8 @@ enum {
 
 static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
 
-// Offset in cartridge where data is stored.
-extern u8 _pakdata_offset[];
-
-// Descriptor for an object in the pak.
-struct pak_object {
-    uint32_t offset;
-    uint32_t size;
-};
-
 // Info for the pak objects, to be loaded from cartridge.
-static struct pak_object pak_objects[PAK_SIZE] __attribute__((aligned(16)));
-
-static void load_pak_data(void *dest, uint32_t offset, uint32_t size) {
-    osWritebackDCache(dest, size);
-    osInvalDCache(dest, size);
-    dma_io_message_buffer = (OSIoMesg){
-        .hdr =
-            {
-                .pri = OS_MESG_PRI_NORMAL,
-                .retQueue = &dma_message_queue,
-            },
-        .dramAddr = dest,
-        .devAddr = (uint32_t)_pakdata_offset + offset,
-        .size = size,
-    };
-    osEPiStartDma(rom_handle, &dma_io_message_buffer, OS_READ);
-    osRecvMesg(&dma_message_queue, NULL, OS_MESG_BLOCK);
-    osInvalDCache(dest, size);
-}
-
-void asset_load(void *dest, int asset_id) {
-    struct pak_object obj = pak_objects[asset_id - 1];
-    load_pak_data(dest, sizeof(pak_objects) + obj.offset, obj.size);
-}
+struct pak_object pak_objects[PAK_SIZE] __attribute__((aligned(16)));
 
 enum {
     BALL_SIZE = 32,
@@ -397,17 +358,15 @@ static void main(void *arg) {
     struct main_state *st = &main_state;
 
     mem_init();
+    pak_init(PAK_SIZE);
 
     // Set up message queues.
     osCreateMesgQueue(&st->evt_queue, st->evt_buffer,
                       ARRAY_COUNT(st->evt_buffer));
     osSetEventMesg(OS_EVENT_SI, &st->evt_queue, NULL);
-    osCreateMesgQueue(&dma_message_queue, &dma_message_buffer, 1);
 
-    // Load the pak header.
-    load_pak_data(pak_objects, 0, sizeof(pak_objects));
-    asset_load(img_cat, IMG_CAT);
-    asset_load(img_ball, IMG_BALL);
+    pak_load_asset_sync(img_cat, IMG_CAT);
+    pak_load_asset_sync(img_ball, IMG_BALL);
     font_load(FONT_GG);
 
     // Scan for first controller.
