@@ -85,6 +85,18 @@ static void console_texture_init(struct console_texture *restrict ct) {
 
 static struct console_texture alignas(8) console_texture;
 
+static const Gfx console_dl[] = {
+    gsDPPipeSync(),
+    gsDPSetTexturePersp(G_TP_NONE),
+    gsDPSetTextureFilter(G_TF_POINT),
+    gsDPSetCycleType(G_CYC_1CYCLE),
+    gsDPSetRenderMode(G_RM_OPA_SURF, G_RM_OPA_SURF2),
+    gsDPSetCombineMode(G_CC_DECALRGB, G_CC_DECALRGB),
+    gsDPLoadTextureBlock_4b(console_texture.pixels, G_IM_FMT_I, TEX_WIDTH,
+                            TEX_HEIGHT, 0, 0, 0, 0, 0, 0, 0),
+    gsSPEndDisplayList(),
+};
+
 Gfx *console_draw_displaylist(struct console *cs, Gfx *dl) {
     int nrows = console_nrows(cs);
     if (nrows == 0) {
@@ -94,14 +106,7 @@ Gfx *console_draw_displaylist(struct console *cs, Gfx *dl) {
     if (!ct->did_init) {
         console_texture_init(ct);
     }
-    gDPPipeSync(dl++);
-    gDPSetTexturePersp(dl++, G_TP_NONE);
-    gDPSetTextureFilter(dl++, G_TF_POINT);
-    gDPSetCycleType(dl++, G_CYC_1CYCLE);
-    gDPSetRenderMode(dl++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
-    gDPSetCombineMode(dl++, G_CC_DECALRGB, G_CC_DECALRGB);
-    gDPLoadTextureBlock_4b(dl++, ct->pixels, G_IM_FMT_I, TEX_WIDTH, TEX_HEIGHT,
-                           0, 0, 0, 0, 0, 0, 0);
+    gSPDisplayList(dl++, console_dl);
     uint8_t *ptr = cs->chars;
     for (int row = 0; row < nrows; row++) {
         uint8_t *end = cs->rowends[row];
