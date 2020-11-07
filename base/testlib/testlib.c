@@ -28,7 +28,7 @@ static void test_show(uint16_t *framebuffer) {
 }
 
 void test_start(const char *name) {
-    console_init(&console);
+    console_init(&console, CONSOLE_TRUNCATE);
     console_printf(&console, "Test: %s\n", name);
 }
 
@@ -66,7 +66,7 @@ static void main(void *arg) {
     osCreateViManager(OS_PRIORITY_VIMGR);
     osViSetMode(&osViModeNtscLpn1);
     osViBlack(true);
-    console_init(&console);
+    console_init(&console, CONSOLE_TRUNCATE);
     console_puts(&console, "Running tests...");
     test_show(framebuffers[0]);
     osViBlack(false);
@@ -75,7 +75,7 @@ static void main(void *arg) {
     test_main();
 
     // Print OK message.
-    console_init(&console);
+    console_init(&console, CONSOLE_TRUNCATE);
     console_puts(&console, "OK");
     test_show(framebuffers[1]);
 

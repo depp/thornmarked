@@ -1,7 +1,6 @@
-#include "base/console.h"
+#include "base/console_internal.h"
 
 #include "base/base.h"
-#include "base/console_internal.h"
 #include "base/defs.h"
 
 #include <limits.h>
@@ -9,19 +8,37 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-void console_init(struct console *cs) {
+void console_init(struct console *cs, console_type ctype) {
     cs->ptr = cs->chars;
+    cs->rowstart = cs->chars;
     cs->rowend = cs->chars + CON_COLS;
     cs->row = 0;
+    cs->ctype = ctype;
 }
 
 static void console_nextrow(struct console *cs) {
-    cs->rowends[cs->row] = cs->ptr;
+    cs->rows[cs->row] = (struct console_row){
+        .start = cs->rowstart - cs->chars,
+        .end = cs->ptr - cs->chars,
+    };
     cs->row++;
-    if (cs->row < CON_ROWS) {
-        cs->rowend = cs->ptr + CON_COLS;
+    if (cs->ctype == CONSOLE_TRUNCATE) {
+        cs->rowstart = cs->ptr;
+        if (cs->row < CON_ROWS) {
+            cs->rowend = cs->ptr + CON_COLS;
+        } else {
+            cs->rowend = cs->ptr;
+        }
     } else {
-        cs->rowend = cs->ptr;
+        if (cs->row < CON_ROWS) {
+            cs->rowstart += CON_COLS;
+            cs->rowend += CON_COLS;
+        } else {
+            cs->rowstart = cs->chars;
+            cs->rowend = cs->chars + CON_COLS;
+            cs->row = 0;
+        }
+        cs->ptr = cs->rowstart;
     }
 }
 
@@ -494,12 +511,37 @@ void console_vprintf(struct console *cs, const char *fmt, va_list ap) {
     va_end(aq);
 }
 
-int console_nrows(struct console *cs) {
-    int nrows = cs->row;
-    uint8_t *rowstart = nrows > 0 ? cs->rowends[nrows - 1] : cs->chars;
-    if (cs->ptr != rowstart) {
-        cs->rowends[nrows] = cs->ptr;
-        nrows++;
+int console_rows(struct console *cs, struct console_rowptr *restrict rows) {
+    int pos = cs->row;
+    if (cs->ptr != cs->rowstart) {
+        cs->rows[pos] = (struct console_row){
+            .start = cs->rowstart - cs->chars,
+            .end = cs->ptr - cs->chars,
+        };
+        pos++;
     }
-    return nrows;
+    if (cs->ctype == CONSOLE_TRUNCATE) {
+        for (int i = 0; i < pos; i++) {
+            rows[i] = (struct console_rowptr){
+                .start = cs->chars + cs->rows[i].start,
+                .end = cs->chars + cs->rows[i].end,
+            };
+        }
+        return pos;
+    } else {
+        int i = 0;
+        for (; i < pos; i++) {
+            rows[i + CON_ROWS - pos] = (struct console_rowptr){
+                .start = cs->chars + cs->rows[i].start,
+                .end = cs->chars + cs->rows[i].end,
+            };
+        }
+        for (; i < CON_ROWS; i++) {
+            rows[i - pos] = (struct console_rowptr){
+                .start = cs->chars + cs->rows[i].start,
+                .end = cs->chars + cs->rows[i].end,
+            };
+        }
+        return CON_ROWS;
+    }
 }

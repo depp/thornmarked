@@ -388,8 +388,8 @@ static void main(void *arg) {
 
     scheduler_start(&scheduler, PRIORITY_SCHEDULER, 1);
     int frame_num = 0;
+    console_init(&console, CONSOLE_SCROLL);
     for (int current_task = 0;; current_task ^= 1) {
-        console_init(&console);
         console_printf(&console, "Frame %d\n", frame_num);
         console_printf(&console, "Framebuffer: %p\n", framebuffers);
         console_printf(&console, "Time: %5.1f ms\n",

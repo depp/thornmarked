@@ -11,35 +11,33 @@ static void test_printf(const char *expect, const char *fmt, ...)
 static struct console consoles[2];
 
 static void check_equal(void) {
-    ptrdiff_t len[2] = {consoles[0].ptr - consoles[0].chars,
-                        consoles[1].ptr - consoles[1].chars};
-
-    if (len[0] != len[1] ||
-        memcmp(consoles[0].chars, consoles[1].chars, len[0]) != 0) {
-        test_logf("Expect: %s", quote_mem(consoles[0].chars, len[0]));
-        test_logf("Actual: %s", quote_mem(consoles[1].chars, len[1]));
-        test_fail();
-    }
+    bool ok = true;
     int nrows[2] = {console_nrows(&consoles[0]), console_nrows(&consoles[1])};
     if (nrows[0] == nrows[1]) {
         for (int i = 0; i < nrows[0]; i++) {
-            ptrdiff_t end[2] = {consoles[0].rowends[i] - consoles[0].chars,
-                                consoles[1].rowends[i] - consoles[1].chars};
-            if (end[0] != end[1]) {
-                test_logf("Row %d: expect %td, got %td", i, end[0], end[1]);
-                test_fail();
+            int lens[2] = {consoles[0].rows[i].end - consoles[0].rows[i].start,
+                           consoles[1].rows[i].end - consoles[1].rows[i].start};
+            uint8_t *ptrs[2] = {consoles[0].chars + consoles[0].rows[i].start,
+                                consoles[1].chars + consoles[1].rows[i].start};
+            if (lens[0] != lens[1] || memcmp(ptrs[0], ptrs[1], lens[0]) != 0) {
+                test_logf("Row %d: expect %s", i, quote_mem(ptrs[0], lens[0]));
+                test_logf("Row %d: got    %s", i, quote_mem(ptrs[1], lens[1]));
+                ok = false;
             }
         }
     } else {
         test_logf("Row count: expect %d, got %d", nrows[0], nrows[1]);
+        ok = false;
+    }
+    if (!ok) {
         test_fail();
     }
 }
 
 static void test_printf(const char *expect, const char *fmt, ...) {
-    console_init(&consoles[0]);
+    console_init(&consoles[0], CONSOLE_TRUNCATE);
     console_puts(&consoles[0], expect);
-    console_init(&consoles[1]);
+    console_init(&consoles[1], CONSOLE_TRUNCATE);
     va_list ap;
     va_start(ap, fmt);
     // va_list aq;

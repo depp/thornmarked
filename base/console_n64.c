@@ -8,9 +8,10 @@
 #include <stdbool.h>
 
 void console_draw_raw(struct console *cs, uint16_t *restrict framebuffer) {
-    uint8_t *ptr = cs->chars;
-    for (int row = 0, nrows = console_nrows(cs); row < nrows; row++) {
-        uint8_t *end = cs->rowends[row];
+    struct console_rowptr rows[CON_ROWS];
+    int nrows = console_rows(cs, rows);
+    for (int row = 0; row < nrows; row++) {
+        const uint8_t *ptr = rows[row].start, *end = rows[row].end;
         int cy = CON_YMARGIN + row * FONT_HEIGHT;
         for (int col = 0; col < end - ptr; col++) {
             unsigned c = ptr[col];
@@ -98,7 +99,8 @@ static const Gfx console_dl[] = {
 };
 
 Gfx *console_draw_displaylist(struct console *cs, Gfx *dl) {
-    int nrows = console_nrows(cs);
+    struct console_rowptr rows[CON_ROWS];
+    int nrows = console_rows(cs, rows);
     if (nrows == 0) {
         return dl;
     }
@@ -107,9 +109,8 @@ Gfx *console_draw_displaylist(struct console *cs, Gfx *dl) {
         console_texture_init(ct);
     }
     gSPDisplayList(dl++, console_dl);
-    uint8_t *ptr = cs->chars;
     for (int row = 0; row < nrows; row++) {
-        uint8_t *end = cs->rowends[row];
+        const uint8_t *ptr = rows[row].start, *end = rows[row].end;
         int cy = CON_YMARGIN + row * FONT_HEIGHT;
         for (int col = 0; col < end - ptr; col++) {
             unsigned c = ptr[col];

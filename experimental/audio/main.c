@@ -238,7 +238,7 @@ static void main(void *arg) {
                     controller_read_active = true;
                 }
                 frame_num++;
-                console_init(&console);
+                console_init(&console, CONSOLE_TRUNCATE);
                 console_printf(&console, "Frame %d\n", frame_num);
                 console_printf(&console, "Controller: 0x%04x\n", cont_state);
                 Gfx *dl_start = display_list;

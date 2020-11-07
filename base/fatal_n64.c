@@ -15,7 +15,7 @@ static void fatal_thread_func(void *arg);
 
 noreturn void fatal_error(const char *fmt, ...) {
     struct console *cs = &console;
-    console_init(cs);
+    console_init(cs, CONSOLE_TRUNCATE);
     console_puts(cs, "The game has crashed! :-(\n");
     va_list ap;
     va_start(ap, fmt);
