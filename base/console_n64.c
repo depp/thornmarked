@@ -95,6 +95,8 @@ Gfx *console_draw_displaylist(struct console *cs, Gfx *dl) {
         console_texture_init(ct);
     }
     gDPPipeSync(dl++);
+    gDPSetTexturePersp(dl++, G_TP_NONE);
+    gDPSetTextureFilter(dl++, G_TF_POINT);
     gDPSetCycleType(dl++, G_CYC_1CYCLE);
     gDPSetRenderMode(dl++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
     gDPSetCombineMode(dl++, G_CC_DECALRGB, G_CC_DECALRGB);
