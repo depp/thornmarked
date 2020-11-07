@@ -12,13 +12,14 @@ static struct console consoles[2];
 
 static void check_equal(void) {
     bool ok = true;
-    int nrows[2] = {console_nrows(&consoles[0]), console_nrows(&consoles[1])};
+    struct console_rowptr rows[2][CON_ROWS];
+    int nrows[2] = {console_rows(&consoles[0], rows[0]),
+                    console_rows(&consoles[1], rows[1])};
     if (nrows[0] == nrows[1]) {
         for (int i = 0; i < nrows[0]; i++) {
-            int lens[2] = {consoles[0].rows[i].end - consoles[0].rows[i].start,
-                           consoles[1].rows[i].end - consoles[1].rows[i].start};
-            uint8_t *ptrs[2] = {consoles[0].chars + consoles[0].rows[i].start,
-                                consoles[1].chars + consoles[1].rows[i].start};
+            const uint8_t *ptrs[2] = {rows[0][i].start, rows[1][i].start};
+            int lens[2] = {rows[0][i].end - rows[0][i].start,
+                           rows[1][i].end - rows[1][i].start};
             if (lens[0] != lens[1] || memcmp(ptrs[0], ptrs[1], lens[0]) != 0) {
                 test_logf("Row %d: expect %s", i, quote_mem(ptrs[0], lens[0]));
                 test_logf("Row %d: got    %s", i, quote_mem(ptrs[1], lens[1]));
