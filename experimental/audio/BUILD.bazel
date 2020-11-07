@@ -11,6 +11,7 @@ cc_binary(
     visibility = ["//:__pkg__"],
     deps = [
         "//base",
+        "//base:scheduler",
         "//n64:libultra",
         "@n64sdk//:gspF3DEX2.xbus",
         "@n64sdk//:rspboot",

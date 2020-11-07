@@ -1,6 +1,7 @@
+#include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
-#include "base/defs.h"
+#include "base/scheduler.h"
 
 #include <ultra64.h>
 
@@ -33,9 +34,6 @@ static OSMesgQueue dma_message_queue;
 static OSMesg dma_message_buffer;
 // static OSIoMesg dma_io_message_buffer;
 
-static OSMesg main_message_buffer[16];
-static OSMesgQueue main_message_queue;
-
 u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((section("uninit.cfb"), aligned(16)));
 
@@ -52,6 +50,7 @@ enum {
     PRIORITY_IDLE = OS_PRIORITY_IDLE,
     PRIORITY_IDLE_INIT = 10,
     PRIORITY_MAIN = 10,
+    PRIORITY_SCHEDULER = 12,
 };
 
 void boot(void) {
@@ -119,19 +118,28 @@ enum {
 static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
 
 enum {
+    EVENT_INVALID,
     EVENT_CONTROLLER,
-    EVENT_RDP,
-    EVENT_RETRACE,
+    EVENT_VTASKDONE,
+    EVENT_VBUFDONE,
 };
 
-static inline OSMesg make_event(int type) {
-    return (OSMesg)(uintptr_t)type;
+static inline OSMesg make_event(int type, int value) {
+    return (OSMesg)(uintptr_t)(type | (value << 8));
 }
 
-static unsigned init_controllers(void) {
+static inline int event_type(OSMesg mesg) {
+    return (uintptr_t)mesg & 0xff;
+}
+
+static inline int event_value(OSMesg mesg) {
+    return (uintptr_t)mesg >> 8;
+}
+
+static unsigned init_controllers(OSMesgQueue *mesgq) {
     u8 mask;
     OSContStatus status[MAXCONTROLLERS];
-    osContInit(&main_message_queue, &mask, status);
+    osContInit(mesgq, &mask, status);
     unsigned result;
     for (int i = 0; i < MAXCONTROLLERS; i++) {
         if ((mask & (1u << i)) != 0 && status[i].errno == 0 &&
@@ -186,8 +194,9 @@ static unsigned get_controllers(unsigned mask) {
     return state;
 }
 
-static Gfx display_list[1024];
-static OSTask task;
+static Gfx display_list[4 * 1024];
+static struct scheduler_task task;
+static struct scheduler scheduler;
 
 static unsigned rgb16(unsigned r, unsigned g, unsigned b) {
     unsigned c = ((r << 8) & (31u << 11)) | ((g << 3) & (31u << 3)) |
@@ -195,90 +204,128 @@ static unsigned rgb16(unsigned r, unsigned g, unsigned b) {
     return (c << 16) | c;
 }
 
+struct main_state {
+    unsigned cont_mask;
+    unsigned cont_state;
+    bool controller_read_active;
+    bool task_active;
+    bool framebuffer_active[2];
+    OSMesg message_buffer[16];
+    OSMesgQueue message_queue;
+};
+
+static int main_event(struct main_state *st, int mode) {
+    OSMesg mesg = NULL;
+    int r = osRecvMesg(&st->message_queue, &mesg, mode);
+    if (r != 0) {
+        return r;
+    }
+    int mtype = event_type(mesg);
+    int mvalue = event_value(mesg);
+    // fatal_error_con(&console, "evt = %d, %d", mtype, mvalue);
+    switch (mtype) {
+    case EVENT_CONTROLLER:
+        st->controller_read_active = false;
+        st->cont_state = get_controllers(st->cont_mask);
+        break;
+    case EVENT_VTASKDONE:
+        st->task_active = false;
+        break;
+    case EVENT_VBUFDONE:;
+        st->framebuffer_active[mvalue] = false;
+        break;
+    default:
+        fatal_error_con(&console, "Bad event: %p", &mesg);
+    }
+    return 0;
+}
+
+static struct main_state main_state;
+
 static void main(void *arg) {
     (void)arg;
 
-    // Set up message queues.
-    osCreateMesgQueue(&main_message_queue, main_message_buffer,
-                      ARRAY_COUNT(main_message_buffer));
-    osSetEventMesg(OS_EVENT_SI, &main_message_queue,
-                   make_event(EVENT_CONTROLLER));
-    unsigned cont_mask = init_controllers();
+    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
+        framebuffers[0][i] = 0xffff;
+    }
+    osWritebackDCache(framebuffers[0], sizeof(framebuffers[0]));
 
-    osSetEventMesg(OS_EVENT_DP, &main_message_queue, make_event(EVENT_RDP));
-    osViSetEvent(&main_message_queue, make_event(EVENT_RETRACE),
-                 3); // Every 3rd frame
+    struct main_state *st = &main_state;
+
+    // Set up message queues.
+    osCreateMesgQueue(&st->message_queue, st->message_buffer,
+                      ARRAY_COUNT(st->message_buffer));
+    osSetEventMesg(OS_EVENT_SI, &st->message_queue,
+                   make_event(EVENT_CONTROLLER, 0));
+    st->cont_mask = init_controllers(&st->message_queue);
+
+    scheduler_start(&scheduler, PRIORITY_SCHEDULER, 3);
+
     osCreateMesgQueue(&dma_message_queue, &dma_message_buffer, 1);
 
-    int frame_num = 0;
     int which_buffer = 0;
-    bool controller_read_active = false;
-    bool task_active = false;
-    unsigned cont_state = 0;
-    for (;;) {
-        OSMesg mesg;
-        osRecvMesg(&main_message_queue, &mesg, 0);
-        switch ((uintptr_t)mesg) {
-        case EVENT_CONTROLLER:
-            controller_read_active = false;
-            cont_state = get_controllers(cont_mask);
-            break;
-        case EVENT_RDP:
-            if (task_active) {
-                osViSwapBuffer(framebuffers[which_buffer]);
-                osViBlack(false);
-                task_active = false;
-                which_buffer ^= 1;
-            }
-            break;
-        case EVENT_RETRACE:
-            if (!task_active) {
-                if (!controller_read_active) {
-                    osContStartReadData(&main_message_queue);
-                    controller_read_active = true;
-                }
-                frame_num++;
-                console_init(&console, CONSOLE_TRUNCATE);
-                console_printf(&console, "Frame %d\n", frame_num);
-                console_printf(&console, "Controller: 0x%04x\n", cont_state);
-                Gfx *dl_start = display_list;
-                Gfx *dl_end = display_list + ARRAY_COUNT(display_list);
-                Gfx *dl = dl_start;
-                gSPSegment(dl++, 0, 0);
-                gSPDisplayList(dl++, rspinit_dl);
-                gSPDisplayList(dl++, rdpinit_dl);
-                gDPSetCycleType(dl++, G_CYC_FILL);
-                gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b,
-                                 SCREEN_WIDTH, framebuffers[which_buffer]);
-                gDPPipeSync(dl++);
-                unsigned color = rgb16(49, 155, 181);
-                gDPSetFillColor(dl++, color);
-                gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1,
-                                 SCREEN_HEIGHT - 1);
-                dl = console_draw_displaylist(&console, dl, dl_end);
-                gDPFullSync(dl++);
-                gSPEndDisplayList(dl++);
-                osWritebackDCache(dl_start,
-                                  sizeof(*dl_start) * (dl - dl_start));
-                task = (OSTask){{
-                    .type = M_GFXTASK,
-                    .flags = OS_TASK_DP_WAIT,
-                    .ucode_boot = (u64 *)rspbootTextStart,
-                    .ucode_boot_size =
-                        (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart,
-                    .ucode_data = (u64 *)gspF3DEX2_xbusDataStart,
-                    .ucode_data_size = SP_UCODE_DATA_SIZE,
-                    .ucode = (u64 *)gspF3DEX2_xbusTextStart,
-                    .ucode_size = SP_UCODE_SIZE,
-                    .dram_stack = sp_dram_stack,
-                    .dram_stack_size = sizeof(sp_dram_stack),
-                    .data_ptr = (u64 *)dl_start,
-                    .data_size = sizeof(*dl_start) * (dl - dl_start),
-                }};
-                osSpTaskStart(&task);
-                task_active = true;
-            }
-            break;
+    struct console *cs = &console;
+    console_init(cs, CONSOLE_TRUNCATE);
+    for (int frame_num = 0;; frame_num++) {
+        console_init(cs, CONSOLE_TRUNCATE);
+        console_printf(cs, "Frame %d\n", frame_num);
+        while (st->task_active)
+            main_event(st, OS_MESG_BLOCK);
+        while (st->framebuffer_active[which_buffer])
+            main_event(st, OS_MESG_BLOCK);
+        if (!st->controller_read_active) {
+            osContStartReadData(&st->message_queue);
+            st->controller_read_active = true;
         }
+        console_printf(cs, "Controller %02x\n", st->cont_state);
+        Gfx *dl_start = display_list;
+        Gfx *dl_end = display_list + ARRAY_COUNT(display_list);
+        Gfx *dl = dl_start;
+        gSPSegment(dl++, 0, 0);
+        gSPDisplayList(dl++, rspinit_dl);
+        gSPDisplayList(dl++, rdpinit_dl);
+        gDPSetCycleType(dl++, G_CYC_FILL);
+        gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+                         framebuffers[which_buffer]);
+        gDPPipeSync(dl++);
+        unsigned color = rgb16(49, 155, 181);
+        gDPSetFillColor(dl++, color);
+        gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+        dl = console_draw_displaylist(&console, dl, dl_end);
+        if (2 > dl_end - dl) {
+            fatal_dloverflow();
+        }
+        gDPFullSync(dl++);
+        gSPEndDisplayList(dl++);
+        osWritebackDCache(dl_start, sizeof(*dl_start) * (dl - dl_start));
+        task = (struct scheduler_task){
+            .task = {{
+                .type = M_GFXTASK,
+                .flags = OS_TASK_DP_WAIT,
+                .ucode_boot = (u64 *)rspbootTextStart,
+                .ucode_boot_size =
+                    (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart,
+                .ucode_data = (u64 *)gspF3DEX2_xbusDataStart,
+                .ucode_data_size = SP_UCODE_DATA_SIZE,
+                .ucode = (u64 *)gspF3DEX2_xbusTextStart,
+                .ucode_size = SP_UCODE_SIZE,
+                .dram_stack = sp_dram_stack,
+                .dram_stack_size = sizeof(sp_dram_stack),
+                .data_ptr = (u64 *)dl_start,
+                .data_size = sizeof(*dl_start) * (dl - dl_start),
+            }},
+            .done_queue = &st->message_queue,
+            .done_mesg = make_event(EVENT_VTASKDONE, 0),
+            .framebuffer =
+                {
+                    .ptr = framebuffers[which_buffer],
+                    .done_queue = &st->message_queue,
+                    .done_mesg = make_event(EVENT_VBUFDONE, which_buffer),
+                },
+        };
+        scheduler_submit(&scheduler, &task);
+        st->task_active = true;
+        st->framebuffer_active[which_buffer] = true;
+        which_buffer ^= 1;
     }
 }
