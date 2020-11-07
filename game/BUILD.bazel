@@ -12,8 +12,6 @@ cc_binary(
     srcs = [
         "defs.h",
         "main.c",
-        "scheduler.c",
-        "scheduler.h",
         "stack.s",
         "text.c",
     ],
@@ -22,6 +20,7 @@ cc_binary(
         "//assets",
         "//base",
         "//base:random",
+        "//base:scheduler",
         "//base/pak",
         "//n64:libultra",
         "@n64sdk//:gspF3DEX2.xbus",
@@ -31,6 +30,6 @@ cc_binary(
 
 n64_rom(
     name = "Thornmarked",
-    program = ":Thornmarked.elf",
     data = "//assets:assets.dat",
+    program = ":Thornmarked.elf",
 )

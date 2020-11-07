@@ -1,7 +1,6 @@
-#include "game/scheduler.h"
+#include "base/scheduler.h"
 
 #include "base/base.h"
-#include "game/defs.h"
 
 #include <limits.h>
 #include <stdint.h>
@@ -116,7 +115,7 @@ static void scheduler_main(void *arg) {
     }
 }
 
-void scheduler_start(struct scheduler *sc) {
+void scheduler_start(struct scheduler *sc, int priority) {
     extern u8 _scheduler_thread_stack[];
     osCreateMesgQueue(&sc->task_queue, sc->task_buffer,
                       ARRAY_COUNT(sc->task_buffer));
@@ -125,7 +124,7 @@ void scheduler_start(struct scheduler *sc) {
     osSetEventMesg(OS_EVENT_DP, &sc->evt_queue, (OSMesg)EVT_RDP);
     osViSetEvent(&sc->evt_queue, (OSMesg)EVT_VSYNC, NUM_FIELDS);
     osCreateThread(&sc->thread, 4, scheduler_main, sc, _scheduler_thread_stack,
-                   PRIORITY_SCHEDULER);
+                   priority);
     osStartThread(&sc->thread);
 }
 

@@ -68,7 +68,7 @@ struct scheduler_task {
 };
 
 // Start the scheduler.
-void scheduler_start(struct scheduler *scheduler);
+void scheduler_start(struct scheduler *scheduler, int priority);
 
 // Submit a task to the scheduler.
 void scheduler_submit(struct scheduler *scheduler, struct scheduler_task *task);

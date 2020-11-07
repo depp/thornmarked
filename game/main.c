@@ -6,7 +6,7 @@
 #include "base/console_n64.h"
 #include "base/pak/pak.h"
 #include "base/random.h"
-#include "game/scheduler.h"
+#include "base/scheduler.h"
 
 #include <ultra64.h>
 
@@ -386,7 +386,7 @@ static void main(void *arg) {
 
     game_init(&game_state);
 
-    scheduler_start(&scheduler);
+    scheduler_start(&scheduler, PRIORITY_SCHEDULER);
     int frame_num = 0;
     for (int current_task = 0;; current_task ^= 1) {
         console_init(&console);
