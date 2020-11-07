@@ -386,7 +386,7 @@ static void main(void *arg) {
 
     game_init(&game_state);
 
-    scheduler_start(&scheduler, PRIORITY_SCHEDULER);
+    scheduler_start(&scheduler, PRIORITY_SCHEDULER, 1);
     int frame_num = 0;
     for (int current_task = 0;; current_task ^= 1) {
         console_init(&console);

@@ -6,10 +6,6 @@
 #include <stdint.h>
 
 enum {
-    NUM_FIELDS = 1,
-};
-
-enum {
     EVT_TASK,  // New task submitted.
     EVT_RDP,   // RDP is done.
     EVT_VSYNC, // Vertical refresh.
@@ -115,14 +111,14 @@ static void scheduler_main(void *arg) {
     }
 }
 
-void scheduler_start(struct scheduler *sc, int priority) {
+void scheduler_start(struct scheduler *sc, int priority, int video_divisor) {
     extern u8 _scheduler_thread_stack[];
     osCreateMesgQueue(&sc->task_queue, sc->task_buffer,
                       ARRAY_COUNT(sc->task_buffer));
     osCreateMesgQueue(&sc->evt_queue, sc->evt_buffer,
                       ARRAY_COUNT(sc->evt_buffer));
     osSetEventMesg(OS_EVENT_DP, &sc->evt_queue, (OSMesg)EVT_RDP);
-    osViSetEvent(&sc->evt_queue, (OSMesg)EVT_VSYNC, NUM_FIELDS);
+    osViSetEvent(&sc->evt_queue, (OSMesg)EVT_VSYNC, video_divisor);
     osCreateThread(&sc->thread, 4, scheduler_main, sc, _scheduler_thread_stack,
                    priority);
     osStartThread(&sc->thread);
