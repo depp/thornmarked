@@ -161,7 +161,6 @@ def get_image(args):
     """Return a path to the image to run."""
     # From -image:
     if args.image is not None:
-        printv()
         return pathlib.Path(args.image)
 
     # From -binary:
