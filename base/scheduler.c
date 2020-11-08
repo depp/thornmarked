@@ -6,24 +6,164 @@
 #include <limits.h>
 #include <stdint.h>
 
+// =============================================================================
+// Video State
+// =============================================================================
+
+struct scheduler_vstate {
+    unsigned pending;
+    // Framebuffers: framebuffer[0] is on-screen right now, framebuffer[1] being
+    // swapped in by the VI thread, and framebufer[2] is waiting. The
+    // framebuffers_pending field is the index of the last valid array entry.
+    struct scheduler_framebuffer buffers[3];
+};
+
+static void scheduler_vpush(struct scheduler_vstate *restrict st,
+                            struct scheduler_framebuffer *restrict fb) {
+    if (((uintptr_t)fb->ptr & 15) != 0) {
+        fatal_error("Unaligned framebuffer\nptr=%p", fb->ptr);
+    }
+    if (st->pending >= 2) {
+        fatal_error("Framebuffer overflow");
+    }
+    if (st->pending == 0) {
+        osViSwapBuffer(fb->ptr);
+        if (st->buffers[0].ptr == NULL) {
+            osViBlack(false);
+        }
+    }
+    st->pending++;
+    st->buffers[st->pending] = *fb;
+}
+
+static void scheduler_vpop(struct scheduler_vstate *restrict st) {
+    if (st->pending == 0) {
+        return;
+    }
+    if (st->buffers[0].done_queue != NULL) {
+        int r = osSendMesg(st->buffers[0].done_queue, st->buffers[0].done_mesg,
+                           OS_MESG_NOBLOCK);
+        if (r != 0) {
+            fatal_error("Dropped video buffer message");
+        }
+    }
+    st->buffers[0] = st->buffers[1];
+    st->buffers[1] = st->buffers[2];
+    st->buffers[2] = (struct scheduler_framebuffer){0};
+    if (st->pending > 1) {
+        osViSwapBuffer(st->buffers[1].ptr);
+    }
+    st->pending--;
+}
+
+// =============================================================================
+// Audio State
+// =============================================================================
+
+struct scheduler_astate {
+    unsigned count;
+    // Audiobuffers: audiobuffer[0] and audiobuffer[1] are in the DMA FIFO, and
+    // have been sent to osAiSetNextBuffer. audiobuffer[2] is pending. The
+    // audiobuffers_count is the number of entries in this array that are valid.
+    struct scheduler_audiobuffer buffers[3];
+};
+
+static void scheduler_apush(struct scheduler_astate *restrict st,
+                            struct scheduler_audiobuffer *restrict ab) {
+    if ((((uintptr_t)ab->ptr | ab->size) & 15) != 0) {
+        fatal_error("Unaligned audio buffer\nptr=%p\nsize=%zu", ab->ptr,
+                    ab->size);
+    }
+    if (st->count > 2) {
+        fatal_error("Audio buffer overflow");
+    }
+    if (st->count < 2) {
+        int r = osAiSetNextBuffer(ab->ptr, ab->size);
+        if (r != 0) {
+            fatal_error("Audio device busy");
+        }
+    }
+    st->buffers[st->count] = *ab;
+    st->count++;
+}
+
+static void scheduler_apop(struct scheduler_astate *restrict st) {
+    if (st->count == 0) {
+        return;
+    }
+    if (st->buffers[0].done_queue != NULL) {
+        int r = osSendMesg(st->buffers[0].done_queue, st->buffers[0].done_mesg,
+                           OS_MESG_NOBLOCK);
+        if (r != 0) {
+            fatal_error("Dropped audio buffer message");
+        }
+    }
+    st->buffers[0] = st->buffers[1];
+    st->buffers[1] = st->buffers[2];
+    st->buffers[2] = (struct scheduler_audiobuffer){0};
+    if (st->count > 1) {
+        int r = osAiSetNextBuffer(st->buffers[1].ptr, st->buffers[1].size);
+        if (r != 0) {
+            fatal_error("Audio device busy");
+        }
+    }
+    st->count--;
+}
+
+// =============================================================================
+// Main Scheduler Thread
+// =============================================================================
+
 // Scheduler events. Event 0 is invalid in order to catch errors.
-enum {
+typedef enum {
     EVT_INVALID,
     EVT_TASK,  // New task submitted.
+    EVT_RSP,   // RSP is done.
     EVT_RDP,   // RDP is done.
+    EVT_AUDIO, // Audio buffer consumed.
     EVT_VSYNC, // Vertical refresh.
-};
+} scheduler_event;
+
+typedef enum {
+    STATE_READY,
+    STATE_AUDIO,
+    STATE_VIDEO,
+} scheduler_state;
+
+static void scheduler_done(struct scheduler_task *restrict task,
+                           OSTime starttime) {
+    uint64_t delta = osGetTime() - starttime;
+    if (delta > INT_MAX) {
+        task->runtime = INT_MAX;
+    } else {
+        task->runtime = delta;
+    }
+    if (task->done_queue != NULL) {
+        int r = osSendMesg(task->done_queue, task->done_mesg, OS_MESG_NOBLOCK);
+        if (r != 0) {
+            fatal_error("Dropped task done message");
+        }
+    }
+}
 
 static void scheduler_main(void *arg) {
     struct scheduler *sc = arg;
-    struct console *cs = NULL;
-    // cs = console_new(CONSOLE_SCROLL);
-    int n = 0;
+    scheduler_state state = STATE_READY;
+
+    // List of pending tasks, removed from queue.
+    struct scheduler_task *pending_tasks[SCHEDULER_TASK_BUFSIZE] = {0};
+    unsigned pending_count = 0;
+
+    // Pointer to the currently executing task, and the time when it started.
+    struct scheduler_task *restrict task = NULL;
+    OSTime starttime = 0;
+
+    // Audio and video state.
+    struct scheduler_vstate video = {0};
+    struct scheduler_astate audio = {0};
+
     for (;;) {
-        // console_newline(cs);
-        // console_printf(cs, "%d: ", n);
-        n++;
-        int evt;
+        scheduler_event evt;
         {
             OSMesg mesg;
             osRecvMesg(&sc->evt_queue, &mesg, OS_MESG_BLOCK);
@@ -31,98 +171,97 @@ static void scheduler_main(void *arg) {
         }
         switch (evt) {
         case EVT_TASK:
-            // console_puts(cs, "EVT_TASK ");
             break;
 
-        case EVT_RDP: {
-            // console_puts(cs, "EVT_RDP ");
-            struct scheduler_task *restrict task = sc->task_running;
-            sc->task_running = NULL;
-            if (task == NULL) {
-                fatal_error_con(cs, "NULL task");
-            }
-            uint64_t delta = osGetTime() - sc->task_starttime;
-            if (delta > INT_MAX) {
-                task->runtime = INT_MAX;
-            } else {
-                task->runtime = delta;
-            }
-            if (task->framebuffer.ptr != NULL) {
-                unsigned pending = sc->framebuffers_pending;
-                if (pending >= 2) {
-                    fatal_error_con(cs, "Framebuffer overflow");
+        case EVT_RSP:
+            if (state == STATE_AUDIO) {
+                if ((task->flags & SCHEDULER_TASK_AUDIOBUFFER) != 0) {
+                    scheduler_apush(&audio, &task->data.audiobuffer);
                 }
-                if (pending == 0) {
-                    osViSwapBuffer(task->framebuffer.ptr);
-                    if (sc->framebuffers[0].ptr == NULL) {
-                        osViBlack(false);
-                    }
-                }
-                pending++;
-                sc->framebuffers[pending] = task->framebuffer;
-                sc->framebuffers_pending = pending;
+                scheduler_done(task, starttime);
+                task = NULL;
+                state = STATE_READY;
             }
-            if (task->done_queue != NULL) {
-                int r = osSendMesg(task->done_queue, task->done_mesg,
-                                   OS_MESG_NOBLOCK);
-                if (r != 0) {
-                    fatal_error_con(cs, "Dropped RCP task done message");
-                }
-            }
-        } break;
+            break;
 
-        case EVT_VSYNC: {
-            // console_puts(cs, "EVT_VSYNC ");
-            unsigned pending = sc->framebuffers_pending;
-            if (pending > 0) {
-                struct scheduler_framebuffer *restrict fb = sc->framebuffers;
-                if (fb[0].done_queue != NULL) {
-                    int r = osSendMesg(fb[0].done_queue, fb[0].done_mesg,
-                                       OS_MESG_NOBLOCK);
-                    if (r != 0) {
-                        fatal_error_con(cs, "Dropped VSYNC message");
-                    }
+        case EVT_RDP:
+            if (state == STATE_VIDEO) {
+                if ((task->flags & SCHEDULER_TASK_FRAMEBUFFER) != 0) {
+                    scheduler_vpush(&video, &task->data.framebuffer);
                 }
-                fb[0] = fb[1];
-                fb[1] = fb[2];
-                fb[2] = (struct scheduler_framebuffer){0};
-                if (pending > 1) {
-                    osViSwapBuffer(fb[1].ptr);
-                }
-                sc->framebuffers_pending = pending - 1;
+                scheduler_done(task, starttime);
+                task = NULL;
+                state = STATE_READY;
             }
-        } break;
+            break;
+
+        case EVT_AUDIO:
+            scheduler_apop(&audio);
+            break;
+
+        case EVT_VSYNC:
+            scheduler_vpop(&video);
+            break;
 
         default:
-            fatal_error_con(cs, "Invalid scheduler event: %d", evt);
+            fatal_error("Invalid scheduler event: %d", evt);
         }
 
         // Read tasks from the task queue.
         {
             OSMesg mesg;
             while (osRecvMesg(&sc->task_queue, &mesg, OS_MESG_NOBLOCK) == 0) {
-                if (sc->pending_count >= ARRAY_COUNT(sc->pending_tasks)) {
-                    fatal_error_con(cs, "Task overflow");
+                if (pending_count >= ARRAY_COUNT(pending_tasks)) {
+                    fatal_error("Task overflow");
                 }
-                sc->pending_tasks[sc->pending_count++] = mesg;
+                pending_tasks[pending_count++] = mesg;
             }
         }
 
         // If we are idle and there is a task pending, run it.
-        if (sc->task_running == NULL && sc->pending_count > 0) {
+        while (state == STATE_READY && pending_count > 0) {
             // Dequeue.
-            struct scheduler_task *task = sc->pending_tasks[0];
-            for (unsigned i = 1; i < ARRAY_COUNT(sc->pending_tasks); i++) {
-                sc->pending_tasks[i - 1] = sc->pending_tasks[i];
+            task = pending_tasks[0];
+            for (unsigned i = 1; i < ARRAY_COUNT(pending_tasks); i++) {
+                pending_tasks[i - 1] = pending_tasks[i];
             }
-            sc->pending_tasks[ARRAY_COUNT(sc->pending_tasks) - 1] = NULL;
-            sc->pending_count--;
+            pending_tasks[ARRAY_COUNT(pending_tasks) - 1] = NULL;
+            pending_count--;
 
             // Run.
-            sc->task_starttime = osGetTime();
-            osSpTaskLoad(&task->task);
-            osSpTaskStartGo(&task->task);
-            sc->task_running = task;
+            starttime = osGetTime();
+            switch (task->flags &
+                    (SCHEDULER_TASK_VIDEO | SCHEDULER_TASK_AUDIO)) {
+            case 0:
+                switch (task->flags & (SCHEDULER_TASK_FRAMEBUFFER |
+                                       SCHEDULER_TASK_AUDIOBUFFER)) {
+                case 0:
+                    break;
+                case SCHEDULER_TASK_FRAMEBUFFER:
+                    scheduler_vpush(&video, &task->data.framebuffer);
+                    break;
+                case SCHEDULER_TASK_AUDIOBUFFER:
+                    scheduler_apush(&audio, &task->data.audiobuffer);
+                    break;
+                default:
+                    fatal_error("Invalid task flags");
+                }
+                scheduler_done(task, starttime);
+                task = NULL;
+                break;
+            case SCHEDULER_TASK_VIDEO:
+                osSpTaskLoad(&task->task);
+                osSpTaskStartGo(&task->task);
+                state = STATE_VIDEO;
+                break;
+            case SCHEDULER_TASK_AUDIO:
+                osSpTaskLoad(&task->task);
+                osSpTaskStartGo(&task->task);
+                state = STATE_AUDIO;
+                break;
+            default:
+                fatal_error("Invalid task flags");
+            }
         }
     }
 }
@@ -133,6 +272,8 @@ void scheduler_start(struct scheduler *sc, int priority, int video_divisor) {
                       ARRAY_COUNT(sc->task_buffer));
     osCreateMesgQueue(&sc->evt_queue, sc->evt_buffer,
                       ARRAY_COUNT(sc->evt_buffer));
+    osSetEventMesg(OS_EVENT_AI, &sc->evt_queue, (OSMesg)EVT_AUDIO);
+    osSetEventMesg(OS_EVENT_SP, &sc->evt_queue, (OSMesg)EVT_RSP);
     osSetEventMesg(OS_EVENT_DP, &sc->evt_queue, (OSMesg)EVT_RDP);
     osViSetEvent(&sc->evt_queue, (OSMesg)EVT_VSYNC, video_divisor);
     osCreateThread(&sc->thread, 4, scheduler_main, sc, _scheduler_thread_stack,

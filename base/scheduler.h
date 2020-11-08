@@ -4,10 +4,19 @@
 #include <ultra64.h>
 
 #include <stdbool.h>
+#include <stddef.h>
 
 enum {
-    SCHEDULER_TASK_BUFSIZE = 2,
+    SCHEDULER_TASK_BUFSIZE = 5,
     SCHEDULER_EVT_BUFSIZE = 8,
+};
+
+// Scheduler task flags.
+enum {
+    SCHEDULER_TASK_VIDEO = 01,
+    SCHEDULER_TASK_AUDIO = 02,
+    SCHEDULER_TASK_FRAMEBUFFER = 04,
+    SCHEDULER_TASK_AUDIOBUFFER = 010,
 };
 
 // A framebuffer to be displayed on screen.
@@ -17,6 +26,16 @@ struct scheduler_framebuffer {
 
     // Send this message to this queue after the framebuffer is no longer on
     // screen, after another framebuffer has replaced it.
+    OSMesgQueue *done_queue;
+    OSMesg done_mesg;
+};
+
+struct scheduler_audiobuffer {
+    // Pointer to audio data, and its length in bytes.
+    void *ptr;
+    size_t size;
+
+    // Send this message to this queue after the audio buffer has been consumed.
     OSMesgQueue *done_queue;
     OSMesg done_mesg;
 };
@@ -32,26 +51,14 @@ struct scheduler {
     OSMesgQueue evt_queue;
     OSMesg evt_buffer[SCHEDULER_EVT_BUFSIZE];
 
-    // List of pending tasks, removed from queue.
-    struct scheduler_task *pending_tasks[SCHEDULER_TASK_BUFSIZE];
-    unsigned pending_count;
-
-    // Pointer to the currently executing task.
-    struct scheduler_task *task_running;
-    OSTime task_starttime;
-
-    // Framebuffers: framebuffer[0] is on-screen right now, framebuffer[1] being
-    // swapped in by the VI thread, and framebufer[2] is waiting. The
-    // framebuffers_pending field is the index of the last valid array entry.
-    struct scheduler_framebuffer framebuffers[3];
-    unsigned framebuffers_pending;
-
     // The main scheduler thread.
     OSThread thread;
 };
 
 // A task to be scheduled on the RCP.
 struct scheduler_task {
+    unsigned flags;
+
     // RCP task to run.
     OSTask task;
 
@@ -63,8 +70,13 @@ struct scheduler_task {
     // by the scheduler after the task finishes.
     int runtime;
 
-    // The framebuffer to be displayed on screen after the RCP task is done.
-    struct scheduler_framebuffer framebuffer;
+    union {
+        // The audiobuffer to be played after the RCP task is done.
+        struct scheduler_audiobuffer audiobuffer;
+
+        // The framebuffer to be displayed on screen after the RCP task is done.
+        struct scheduler_framebuffer framebuffer;
+    } data;
 };
 
 // Start the scheduler. The video_divisor is the number of vsyncs per vsync

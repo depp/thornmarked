@@ -420,6 +420,7 @@ static void main(void *arg) {
 
         struct scheduler_task *task = &st->tasks[current_task];
         *task = (struct scheduler_task){
+            .flags = SCHEDULER_TASK_VIDEO | SCHEDULER_TASK_FRAMEBUFFER,
             .task = {{
                 .type = M_GFXTASK,
                 .flags = OS_TASK_DP_WAIT,
@@ -438,11 +439,14 @@ static void main(void *arg) {
             }},
             .done_queue = &st->evt_queue,
             .done_mesg = make_event(EVT_TASKDONE, current_task),
-            .framebuffer =
+            .data =
                 {
-                    .ptr = framebuffers[current_task],
-                    .done_queue = &st->evt_queue,
-                    .done_mesg = make_event(EVT_FBDONE, current_task),
+                    .framebuffer =
+                        {
+                            .ptr = framebuffers[current_task],
+                            .done_queue = &st->evt_queue,
+                            .done_mesg = make_event(EVT_FBDONE, current_task),
+                        },
                 },
         };
         osWritebackDCache(dl_start, sizeof(*dl_start) * (dl - dl_start));

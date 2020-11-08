@@ -122,6 +122,7 @@ enum {
     EVENT_CONTROLLER,
     EVENT_VTASKDONE,
     EVENT_VBUFDONE,
+    EVENT_ABUFDONE,
 };
 
 static inline OSMesg make_event(int type, int value) {
@@ -195,7 +196,7 @@ static unsigned get_controllers(unsigned mask) {
 }
 
 static Gfx display_list[4 * 1024];
-static struct scheduler_task task;
+static struct scheduler_task video_task;
 static struct scheduler scheduler;
 
 static unsigned rgb16(unsigned r, unsigned g, unsigned b) {
@@ -210,6 +211,7 @@ struct main_state {
     bool controller_read_active;
     bool task_active;
     bool framebuffer_active[2];
+    bool audiobuffer_active[3];
     OSMesg message_buffer[16];
     OSMesgQueue message_queue;
 };
@@ -231,8 +233,11 @@ static int main_event(struct main_state *st, int mode) {
     case EVENT_VTASKDONE:
         st->task_active = false;
         break;
-    case EVENT_VBUFDONE:;
+    case EVENT_VBUFDONE:
         st->framebuffer_active[mvalue] = false;
+        break;
+    case EVENT_ABUFDONE:
+        st->audiobuffer_active[mvalue] = false;
         break;
     default:
         fatal_error_con(&console, "Bad event: %p", &mesg);
@@ -242,6 +247,10 @@ static int main_event(struct main_state *st, int mode) {
 
 static struct main_state main_state;
 
+static int16_t audio_buffers[3][4 * 1024]
+    __attribute__((aligned(16), section("uninit")));
+static struct scheduler_task audio_tasks[3] __attribute__((section("uninit")));
+
 static void main(void *arg) {
     (void)arg;
 
@@ -249,6 +258,18 @@ static void main(void *arg) {
         framebuffers[0][i] = 0xffff;
     }
     osWritebackDCache(framebuffers[0], sizeof(framebuffers[0]));
+
+    for (int i = 0; i < 3; i++) {
+        unsigned phase = 0;
+        unsigned rate = ((50 * (i + 4)) << 16) / 22050;
+        for (unsigned j = 0; j < ARRAY_COUNT(audio_buffers[0]) / 2; j++) {
+            audio_buffers[i][j * 2] = phase;
+            audio_buffers[i][j * 2 + 1] = phase;
+            phase += rate;
+        }
+    }
+    osWritebackDCache(audio_buffers, sizeof(audio_buffers));
+    osAiSetFrequency(22050);
 
     struct main_state *st = &main_state;
 
@@ -263,69 +284,103 @@ static void main(void *arg) {
 
     osCreateMesgQueue(&dma_message_queue, &dma_message_buffer, 1);
 
-    int which_buffer = 0;
+    int which_vbuffer = 0;
+    int which_abuffer = 0;
     struct console *cs = &console;
     console_init(cs, CONSOLE_TRUNCATE);
-    for (int frame_num = 0;; frame_num++) {
-        console_init(cs, CONSOLE_TRUNCATE);
-        console_printf(cs, "Frame %d\n", frame_num);
-        while (st->task_active)
+    int frame_number = 0;
+    for (;;) {
+        while ((st->task_active || st->framebuffer_active[which_vbuffer]) &&
+               st->audiobuffer_active[which_abuffer]) {
             main_event(st, OS_MESG_BLOCK);
-        while (st->framebuffer_active[which_buffer])
-            main_event(st, OS_MESG_BLOCK);
-        if (!st->controller_read_active) {
-            osContStartReadData(&st->message_queue);
-            st->controller_read_active = true;
         }
-        console_printf(cs, "Controller %02x\n", st->cont_state);
-        Gfx *dl_start = display_list;
-        Gfx *dl_end = display_list + ARRAY_COUNT(display_list);
-        Gfx *dl = dl_start;
-        gSPSegment(dl++, 0, 0);
-        gSPDisplayList(dl++, rspinit_dl);
-        gSPDisplayList(dl++, rdpinit_dl);
-        gDPSetCycleType(dl++, G_CYC_FILL);
-        gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
-                         framebuffers[which_buffer]);
-        gDPPipeSync(dl++);
-        unsigned color = rgb16(49, 155, 181);
-        gDPSetFillColor(dl++, color);
-        gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
-        dl = console_draw_displaylist(&console, dl, dl_end);
-        if (2 > dl_end - dl) {
-            fatal_dloverflow();
+        while (main_event(st, OS_MESG_NOBLOCK) == 0) {}
+        if (!st->audiobuffer_active[which_abuffer]) {
+            struct scheduler_task *task = &audio_tasks[which_abuffer];
+            *task = (struct scheduler_task){
+                .flags = SCHEDULER_TASK_AUDIOBUFFER,
+                .data =
+                    {
+                        .audiobuffer =
+                            {
+                                .ptr = audio_buffers[which_abuffer],
+                                .size = sizeof(audio_buffers[0]),
+                                .done_queue = &st->message_queue,
+                                .done_mesg =
+                                    make_event(EVENT_ABUFDONE, which_abuffer),
+                            },
+                    },
+            };
+            scheduler_submit(&scheduler, task);
+            st->audiobuffer_active[which_abuffer] = true;
+            which_abuffer++;
+            if (which_abuffer == 3) {
+                which_abuffer = 0;
+            }
         }
-        gDPFullSync(dl++);
-        gSPEndDisplayList(dl++);
-        osWritebackDCache(dl_start, sizeof(*dl_start) * (dl - dl_start));
-        task = (struct scheduler_task){
-            .task = {{
-                .type = M_GFXTASK,
-                .flags = OS_TASK_DP_WAIT,
-                .ucode_boot = (u64 *)rspbootTextStart,
-                .ucode_boot_size =
-                    (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart,
-                .ucode_data = (u64 *)gspF3DEX2_xbusDataStart,
-                .ucode_data_size = SP_UCODE_DATA_SIZE,
-                .ucode = (u64 *)gspF3DEX2_xbusTextStart,
-                .ucode_size = SP_UCODE_SIZE,
-                .dram_stack = sp_dram_stack,
-                .dram_stack_size = sizeof(sp_dram_stack),
-                .data_ptr = (u64 *)dl_start,
-                .data_size = sizeof(*dl_start) * (dl - dl_start),
-            }},
-            .done_queue = &st->message_queue,
-            .done_mesg = make_event(EVENT_VTASKDONE, 0),
-            .framebuffer =
-                {
-                    .ptr = framebuffers[which_buffer],
-                    .done_queue = &st->message_queue,
-                    .done_mesg = make_event(EVENT_VBUFDONE, which_buffer),
-                },
-        };
-        scheduler_submit(&scheduler, &task);
-        st->task_active = true;
-        st->framebuffer_active[which_buffer] = true;
-        which_buffer ^= 1;
+        if (!st->task_active && !st->framebuffer_active[which_vbuffer]) {
+            console_init(&console, CONSOLE_TRUNCATE);
+            console_printf(&console, "Frame %d\n", frame_number);
+            frame_number++;
+            if (!st->controller_read_active) {
+                // osContStartReadData(&st->message_queue);
+                st->controller_read_active = true;
+            }
+            console_printf(cs, "Controller %02x\n", st->cont_state);
+            Gfx *dl_start = display_list;
+            Gfx *dl_end = display_list + ARRAY_COUNT(display_list);
+            Gfx *dl = dl_start;
+            gSPSegment(dl++, 0, 0);
+            gSPDisplayList(dl++, rspinit_dl);
+            gSPDisplayList(dl++, rdpinit_dl);
+            gDPSetCycleType(dl++, G_CYC_FILL);
+            gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+                             framebuffers[which_vbuffer]);
+            gDPPipeSync(dl++);
+            unsigned color = rgb16(49, 155, 181);
+            gDPSetFillColor(dl++, color);
+            gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+            dl = console_draw_displaylist(&console, dl, dl_end);
+            if (2 > dl_end - dl) {
+                fatal_dloverflow();
+            }
+            gDPFullSync(dl++);
+            gSPEndDisplayList(dl++);
+            osWritebackDCache(dl_start, sizeof(*dl_start) * (dl - dl_start));
+            video_task = (struct scheduler_task){
+                .flags = SCHEDULER_TASK_VIDEO | SCHEDULER_TASK_FRAMEBUFFER,
+                .task = {{
+                    .type = M_GFXTASK,
+                    .flags = OS_TASK_DP_WAIT,
+                    .ucode_boot = (u64 *)rspbootTextStart,
+                    .ucode_boot_size =
+                        (uintptr_t)rspbootTextEnd - (uintptr_t)rspbootTextStart,
+                    .ucode_data = (u64 *)gspF3DEX2_xbusDataStart,
+                    .ucode_data_size = SP_UCODE_DATA_SIZE,
+                    .ucode = (u64 *)gspF3DEX2_xbusTextStart,
+                    .ucode_size = SP_UCODE_SIZE,
+                    .dram_stack = sp_dram_stack,
+                    .dram_stack_size = sizeof(sp_dram_stack),
+                    .data_ptr = (u64 *)dl_start,
+                    .data_size = sizeof(*dl_start) * (dl - dl_start),
+                }},
+                .done_queue = &st->message_queue,
+                .done_mesg = make_event(EVENT_VTASKDONE, 0),
+                .data =
+                    {
+                        .framebuffer =
+                            {
+                                .ptr = framebuffers[which_vbuffer],
+                                .done_queue = &st->message_queue,
+                                .done_mesg =
+                                    make_event(EVENT_VBUFDONE, which_vbuffer),
+                            },
+                    },
+            };
+            scheduler_submit(&scheduler, &video_task);
+            st->task_active = true;
+            st->framebuffer_active[which_vbuffer] = true;
+            which_vbuffer ^= 1;
+        }
     }
 }
