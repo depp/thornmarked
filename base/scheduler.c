@@ -80,7 +80,8 @@ static void scheduler_apush(struct scheduler_astate *restrict st,
     if (st->count < 2) {
         int r = osAiSetNextBuffer(ab->ptr, ab->size);
         if (r != 0) {
-            fatal_error("Audio device busy");
+            unsigned len = osAiGetLength();
+            fatal_error("Audio device busy: %u", len);
         }
     }
     st->buffers[st->count] = *ab;
@@ -90,6 +91,21 @@ static void scheduler_apush(struct scheduler_astate *restrict st,
 static void scheduler_apop(struct scheduler_astate *restrict st) {
     if (st->count == 0) {
         return;
+    }
+    // On real hardware, it seems that there is some issue with the ordering of
+    // the events. So we don't assume that the audio device isn't busy just
+    // because this function was called.
+    if (st->count > 2) {
+        // Just try to push the next buffer, and fail otherwise.
+        int r = osAiSetNextBuffer(st->buffers[2].ptr, st->buffers[2].size);
+        if (r != 0) {
+            return;
+        }
+    } else {
+        unsigned len = osAiGetLength();
+        if (len >= st->buffers[1].size) {
+            return;
+        }
     }
     if (st->buffers[0].done_queue != NULL) {
         int r = osSendMesg(st->buffers[0].done_queue, st->buffers[0].done_mesg,
@@ -101,12 +117,6 @@ static void scheduler_apop(struct scheduler_astate *restrict st) {
     st->buffers[0] = st->buffers[1];
     st->buffers[1] = st->buffers[2];
     st->buffers[2] = (struct scheduler_audiobuffer){0};
-    if (st->count > 1) {
-        int r = osAiSetNextBuffer(st->buffers[1].ptr, st->buffers[1].size);
-        if (r != 0) {
-            fatal_error("Audio device busy");
-        }
-    }
     st->count--;
 }
 
