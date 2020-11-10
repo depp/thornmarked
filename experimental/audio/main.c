@@ -34,6 +34,9 @@ static OSThread main_thread;
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
 
+static OSMesg cont_message_buffer[1];
+static OSMesgQueue cont_message_queue;
+
 u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((section("uninit.cfb"), aligned(16)));
 
@@ -203,10 +206,6 @@ static int main_event(struct main_state *st, int mode) {
     }
     struct event_data evt = event_unpack(mesg);
     switch (evt.type) {
-    case EVENT_CONTROLLER:
-        st->controller_read_active = false;
-        st->cont_state = get_controllers(st->cont_mask);
-        break;
     case EVENT_VTASKDONE:
         st->task_active = false;
         break;
@@ -237,18 +236,17 @@ static void main(void *arg) {
 
     mem_init();
     pak_init(PAK_SIZE);
+    audio_init();
 
     struct main_state *st = &main_state;
 
     // Set up message queues.
+    osCreateMesgQueue(&cont_message_queue, cont_message_buffer,
+                      ARRAY_COUNT(cont_message_buffer));
     osCreateMesgQueue(&st->message_queue, st->message_buffer,
                       ARRAY_COUNT(st->message_buffer));
-    osSetEventMesg(OS_EVENT_SI, &st->message_queue,
-                   event_pack((struct event_data){.type = EVENT_CONTROLLER}));
-    st->cont_mask = init_controllers(&st->message_queue);
-
-    // Init audio.
-    audio_init();
+    osSetEventMesg(OS_EVENT_SI, &cont_message_queue, NULL);
+    st->cont_mask = init_controllers(&cont_message_queue);
 
     scheduler_start(&scheduler, PRIORITY_SCHEDULER, 3);
 
@@ -268,11 +266,15 @@ static void main(void *arg) {
             console_init(cs, CONSOLE_TRUNCATE);
             console_printf(&console, "Frame %d\n", frame_number);
             frame_number++;
+            if (osRecvMesg(&cont_message_queue, NULL, OS_MESG_NOBLOCK) == 0) {
+                st->controller_read_active = false;
+                st->cont_state = get_controllers(st->cont_mask);
+            }
             if (!st->controller_read_active) {
-                // osContStartReadData(&st->message_queue);
+                osContStartReadData(&cont_message_queue);
                 st->controller_read_active = true;
             }
-            // console_printf(cs, "Controller %02x\n", st->cont_state);
+            console_printf(cs, "Controller %02x\n", st->cont_state);
             Gfx *dl_start = display_list;
             Gfx *dl_end = display_list + ARRAY_COUNT(display_list);
             Gfx *dl = dl_start;

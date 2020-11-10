@@ -7,7 +7,6 @@
 
 typedef enum {
     EVENT_INVALID,
-    EVENT_CONTROLLER,
     EVENT_VTASKDONE,
     EVENT_VBUFDONE,
     EVENT_AUDIO,
