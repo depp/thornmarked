@@ -5,14 +5,17 @@
 
 #include <ultra64.h>
 
+// Handle to access ROM data, from osCartRomInit.
+extern OSPiHandle *rom_handle;
+
 // Descriptor for an object in the pak.
 struct pak_object {
     uint32_t offset;
     uint32_t size;
 };
 
-// Asset table. This is a 1-based array. This must be defined in the client
-// somewhere in order to have the correct size.
+// Asset table. This must be defined in the client somewhere in order to have
+// the correct size.
 extern struct pak_object pak_objects[];
 
 // Initialize the asset loader.
