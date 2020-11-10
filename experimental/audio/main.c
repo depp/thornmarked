@@ -120,7 +120,7 @@ static unsigned init_controllers(OSMesgQueue *mesgq) {
     u8 mask;
     OSContStatus status[MAXCONTROLLERS];
     osContInit(mesgq, &mask, status);
-    unsigned result;
+    unsigned result = 0;
     for (int i = 0; i < MAXCONTROLLERS; i++) {
         if ((mask & (1u << i)) != 0 && status[i].errno == 0 &&
             (status[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL) {
