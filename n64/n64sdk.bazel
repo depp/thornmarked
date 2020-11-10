@@ -15,6 +15,7 @@ cc_library(
 )
 
 OBJS = [
+    "aspMain.o",
     "gspF3DEX.NoN.fifo.o",
     "gspF3DEX.fifo.o",
     "gspF3DEX2.NoN.fifo.o",

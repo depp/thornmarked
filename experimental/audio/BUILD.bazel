@@ -1,9 +1,31 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//base:copts.bzl", "COPTS")
+load("//n64:defs.bzl", "n64_rom")
+
+DATA = [
+    "//assets/sfx:fanfare",
+]
+
+genrule(
+    name = "assets_files",
+    srcs = ["manifest.txt"] + DATA,
+    outs = [
+        "assets.dat",
+        "assets.h",
+    ],
+    cmd = ("$(execpath //tools/makepak) " +
+           "$(execpath assets.dat) $(execpath assets.h) " +
+           "$(execpath manifest.txt)  " +
+           " ".join(["$(execpaths %s)" % src for src in DATA])),
+    tools = ["//tools/makepak"],
+)
 
 cc_binary(
-    name = "audio",
+    name = "audio.elf",
     srcs = [
+        "assets.h",
+        "audio.c",
+        "defs.h",
         "main.c",
         "stack.s",
     ],
@@ -12,8 +34,16 @@ cc_binary(
     deps = [
         "//base",
         "//base:scheduler",
+        "//base/pak",
         "//n64:libultra",
+        "@n64sdk//:aspMain",
         "@n64sdk//:gspF3DEX2.xbus",
         "@n64sdk//:rspboot",
     ],
+)
+
+n64_rom(
+    name = "audio",
+    data = ":assets.dat",
+    program = ":audio.elf",
 )

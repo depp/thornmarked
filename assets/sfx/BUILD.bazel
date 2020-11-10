@@ -1,0 +1,9 @@
+package(default_visibility = ["//visibility:public"])
+
+genrule(
+    name = "fanfare",
+    srcs = ["fanfare.flac"],
+    outs = ["fanfare.dat"],
+    cmd = "$(execpath //tools/audioconvert) -rate=22050 -input=$< -output=$@",
+    tools = ["//tools/audioconvert"],
+)

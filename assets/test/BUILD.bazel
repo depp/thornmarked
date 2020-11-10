@@ -1,12 +1,10 @@
 package(default_visibility = ["//assets:__pkg__"])
 
-load("@rules_cc//cc:defs.bzl", "cc_library")
-
 [genrule(
     name = name,
     srcs = [name + ".png"],
     outs = [name + ".dat"],
-    cmd = "$(location //tools/textureconvert) -format rgba.16 -output=$@ $<",
+    cmd = "$(execpath //tools/textureconvert) -format rgba.16 -output=$@ $<",
     tools = ["//tools/textureconvert"],
 ) for name in [
     "Ariella_32x32",

@@ -1,12 +1,19 @@
+#include "experimental/audio/defs.h"
+
 #include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
+#include "base/pak/pak.h"
 #include "base/scheduler.h"
+#include "experimental/audio/assets.h"
 
 #include <ultra64.h>
 
 #include <stdbool.h>
 #include <stdint.h>
+
+OSMesg event_pack(struct event_data evt);
+struct event_data event_unpack(OSMesg mesg);
 
 enum {
     // Maximum number of simultaneous PI requests.
@@ -21,18 +28,11 @@ enum {
 extern u8 _main_thread_stack[];
 extern u8 _idle_thread_stack[];
 
-// Handle to access ROM data, from osCartRomInit.
-static OSPiHandle *rom_handle;
-
 OSThread idle_thread;
 static OSThread main_thread;
 
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
-
-static OSMesgQueue dma_message_queue;
-static OSMesg dma_message_buffer;
-// static OSIoMesg dma_io_message_buffer;
 
 u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((section("uninit.cfb"), aligned(16)));
@@ -55,7 +55,6 @@ enum {
 
 void boot(void) {
     osInitialize();
-    rom_handle = osCartRomInit();
     osCreateThread(&idle_thread, 1, idle, NULL, _idle_thread_stack,
                    PRIORITY_IDLE_INIT);
     osStartThread(&idle_thread);
@@ -116,26 +115,6 @@ enum {
 };
 
 static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
-
-enum {
-    EVENT_INVALID,
-    EVENT_CONTROLLER,
-    EVENT_VTASKDONE,
-    EVENT_VBUFDONE,
-    EVENT_ABUFDONE,
-};
-
-static inline OSMesg make_event(int type, int value) {
-    return (OSMesg)(uintptr_t)(type | (value << 8));
-}
-
-static inline int event_type(OSMesg mesg) {
-    return (uintptr_t)mesg & 0xff;
-}
-
-static inline int event_value(OSMesg mesg) {
-    return (uintptr_t)mesg >> 8;
-}
 
 static unsigned init_controllers(OSMesgQueue *mesgq) {
     u8 mask;
@@ -211,7 +190,7 @@ struct main_state {
     bool controller_read_active;
     bool task_active;
     bool framebuffer_active[2];
-    bool audiobuffer_active[3];
+    struct audio_state audio;
     OSMesg message_buffer[16];
     OSMesgQueue message_queue;
 };
@@ -222,10 +201,8 @@ static int main_event(struct main_state *st, int mode) {
     if (r != 0) {
         return r;
     }
-    int mtype = event_type(mesg);
-    int mvalue = event_value(mesg);
-    // fatal_error_con(&console, "evt = %d, %d", mtype, mvalue);
-    switch (mtype) {
+    struct event_data evt = event_unpack(mesg);
+    switch (evt.type) {
     case EVENT_CONTROLLER:
         st->controller_read_active = false;
         st->cont_state = get_controllers(st->cont_mask);
@@ -234,10 +211,10 @@ static int main_event(struct main_state *st, int mode) {
         st->task_active = false;
         break;
     case EVENT_VBUFDONE:
-        st->framebuffer_active[mvalue] = false;
+        st->framebuffer_active[evt.value] = false;
         break;
-    case EVENT_ABUFDONE:
-        st->audiobuffer_active[mvalue] = false;
+    case EVENT_AUDIO:;
+        st->audio.busy &= ~(unsigned)evt.value;
         break;
     default:
         fatal_error_con(&console, "Bad event: %p", &mesg);
@@ -247,9 +224,8 @@ static int main_event(struct main_state *st, int mode) {
 
 static struct main_state main_state;
 
-static int16_t audio_buffers[3][4 * 1024]
-    __attribute__((aligned(16), section("uninit")));
-static struct scheduler_task audio_tasks[3] __attribute__((section("uninit")));
+// Info for the pak objects, to be loaded from cartridge.
+struct pak_object pak_objects[PAK_SIZE] __attribute__((aligned(16)));
 
 static void main(void *arg) {
     (void)arg;
@@ -259,17 +235,8 @@ static void main(void *arg) {
     }
     osWritebackDCache(framebuffers[0], sizeof(framebuffers[0]));
 
-    for (int i = 0; i < 3; i++) {
-        unsigned phase = 0;
-        unsigned rate = ((50 * (i + 4)) << 16) / 22050;
-        for (unsigned j = 0; j < ARRAY_COUNT(audio_buffers[0]) / 2; j++) {
-            audio_buffers[i][j * 2] = phase;
-            audio_buffers[i][j * 2 + 1] = phase;
-            phase += rate;
-        }
-    }
-    osWritebackDCache(audio_buffers, sizeof(audio_buffers));
-    osAiSetFrequency(22050);
+    mem_init();
+    pak_init(PAK_SIZE);
 
     struct main_state *st = &main_state;
 
@@ -277,56 +244,35 @@ static void main(void *arg) {
     osCreateMesgQueue(&st->message_queue, st->message_buffer,
                       ARRAY_COUNT(st->message_buffer));
     osSetEventMesg(OS_EVENT_SI, &st->message_queue,
-                   make_event(EVENT_CONTROLLER, 0));
+                   event_pack((struct event_data){.type = EVENT_CONTROLLER}));
     st->cont_mask = init_controllers(&st->message_queue);
+
+    // Init audio.
+    audio_init();
 
     scheduler_start(&scheduler, PRIORITY_SCHEDULER, 3);
 
-    osCreateMesgQueue(&dma_message_queue, &dma_message_buffer, 1);
-
     int which_vbuffer = 0;
-    int which_abuffer = 0;
     struct console *cs = &console;
-    console_init(cs, CONSOLE_TRUNCATE);
     int frame_number = 0;
     for (;;) {
         while ((st->task_active || st->framebuffer_active[which_vbuffer]) &&
-               st->audiobuffer_active[which_abuffer]) {
+               (st->audio.busy & st->audio.wait) != 0) {
             main_event(st, OS_MESG_BLOCK);
         }
         while (main_event(st, OS_MESG_NOBLOCK) == 0) {}
-        if (!st->audiobuffer_active[which_abuffer]) {
-            struct scheduler_task *task = &audio_tasks[which_abuffer];
-            *task = (struct scheduler_task){
-                .flags = SCHEDULER_TASK_AUDIOBUFFER,
-                .data =
-                    {
-                        .audiobuffer =
-                            {
-                                .ptr = audio_buffers[which_abuffer],
-                                .size = sizeof(audio_buffers[0]),
-                                .done_queue = &st->message_queue,
-                                .done_mesg =
-                                    make_event(EVENT_ABUFDONE, which_abuffer),
-                            },
-                    },
-            };
-            scheduler_submit(&scheduler, task);
-            st->audiobuffer_active[which_abuffer] = true;
-            which_abuffer++;
-            if (which_abuffer == 3) {
-                which_abuffer = 0;
-            }
+        if ((st->audio.busy & st->audio.wait) == 0) {
+            audio_frame(&st->audio, &scheduler, &st->message_queue);
         }
         if (!st->task_active && !st->framebuffer_active[which_vbuffer]) {
-            console_init(&console, CONSOLE_TRUNCATE);
+            console_init(cs, CONSOLE_TRUNCATE);
             console_printf(&console, "Frame %d\n", frame_number);
             frame_number++;
             if (!st->controller_read_active) {
                 // osContStartReadData(&st->message_queue);
                 st->controller_read_active = true;
             }
-            console_printf(cs, "Controller %02x\n", st->cont_state);
+            // console_printf(cs, "Controller %02x\n", st->cont_state);
             Gfx *dl_start = display_list;
             Gfx *dl_end = display_list + ARRAY_COUNT(display_list);
             Gfx *dl = dl_start;
@@ -365,15 +311,18 @@ static void main(void *arg) {
                     .data_size = sizeof(*dl_start) * (dl - dl_start),
                 }},
                 .done_queue = &st->message_queue,
-                .done_mesg = make_event(EVENT_VTASKDONE, 0),
+                .done_mesg =
+                    event_pack((struct event_data){.type = EVENT_VTASKDONE}),
                 .data =
                     {
                         .framebuffer =
                             {
                                 .ptr = framebuffers[which_vbuffer],
                                 .done_queue = &st->message_queue,
-                                .done_mesg =
-                                    make_event(EVENT_VBUFDONE, which_vbuffer),
+                                .done_mesg = event_pack((struct event_data){
+                                    .type = EVENT_VBUFDONE,
+                                    .value = which_vbuffer,
+                                }),
                             },
                     },
             };
