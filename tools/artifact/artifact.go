@@ -18,10 +18,6 @@ import (
 	"time"
 )
 
-const fileName = "Thornmarked.n64"
-
-var filelist = []string{"Thornmarked.elf", "Thornmarked.n64"}
-
 var wsdir string
 
 // runGit runs git and returns standard output.
@@ -154,10 +150,10 @@ type buildInfo struct {
 }
 
 // buildArtifact builds the desired artifact.
-func buildArtifact() error {
+func buildArtifact(args ...string) error {
 	fmt.Fprintln(os.Stderr, "Building...")
-	cmd := exec.Command(
-		"bazel", "build", "-c", "opt", "--platforms=//n64", "//game")
+	cmd := exec.Command("bazel", "build")
+	cmd.Args = append(cmd.Args, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Dir = wsdir
 	if err := cmd.Run(); err != nil {
@@ -166,9 +162,51 @@ func buildArtifact() error {
 	return nil
 }
 
-func addFile(info *buildInfo, tw *tar.Writer, name string) error {
-	inpath := filepath.Join(wsdir, "bazel-bin/game", name)
-	fp, err := os.Open(inpath)
+type pkg struct {
+	filename string
+	ofp      *os.File
+	zfp      *gzip.Writer
+	tw       *tar.Writer
+	tstamp   time.Time
+}
+
+func createPackage(filename string) (*pkg, error) {
+	ofp, err := ioutil.TempFile(filepath.Dir(filename), "temp.*.gz")
+	if err != nil {
+		return nil, err
+	}
+	zfp, err := gzip.NewWriterLevel(ofp, gzip.BestCompression)
+	if err != nil {
+		ofp.Close()
+		os.Remove(ofp.Name())
+		return nil, err
+	}
+	tw := tar.NewWriter(zfp)
+	return &pkg{filename, ofp, zfp, tw, time.Time{}}, nil
+}
+
+func (pk *pkg) putInfo(info *buildInfo) error {
+	dinfo, err := json.Marshal(info)
+	if err != nil {
+		return err
+	}
+	if err := pk.tw.WriteHeader(&tar.Header{
+		Name:    "INFO.json",
+		Size:    int64(len(dinfo)),
+		Mode:    0444,
+		ModTime: info.BuildTimestamp,
+	}); err != nil {
+		return err
+	}
+	if _, err := pk.tw.Write(dinfo); err != nil {
+		return err
+	}
+	pk.tstamp = info.BuildTimestamp
+	return nil
+}
+
+func (pk *pkg) addFile(dest, src string) error {
+	fp, err := os.Open(src)
 	if err != nil {
 		return err
 	}
@@ -177,77 +215,57 @@ func addFile(info *buildInfo, tw *tar.Writer, name string) error {
 	if err != nil {
 		return err
 	}
-	if err := tw.WriteHeader(&tar.Header{
-		Name:    name,
+	if err := pk.tw.WriteHeader(&tar.Header{
+		Name:    dest,
 		Size:    st.Size(),
 		Mode:    0444,
-		ModTime: info.BuildTimestamp,
+		ModTime: pk.tstamp,
 	}); err != nil {
 		return err
 	}
-	if _, err := io.Copy(tw, fp); err != nil {
-		return err
-	}
-	return nil
+	_, err = io.Copy(pk.tw, fp)
+	return err
 }
 
-func createPackage(info *buildInfo, filename string) error {
-	ofp, err := ioutil.TempFile(filepath.Dir(filename), "temp.*.gz")
+func (pk *pkg) close(ok bool) (err error) {
+	if pk.tw == nil {
+		return errors.New("already closed")
+	}
+	e1 := pk.tw.Close()
+	e2 := pk.zfp.Close()
+	e3 := pk.ofp.Chmod(0444)
+	e4 := pk.ofp.Close()
+	switch {
+	case e1 != nil:
+		err = e1
+	case e2 != nil:
+		err = e2
+	case e3 != nil:
+		err = e3
+	case e4 != nil:
+		err = e4
+	case ok:
+		err = os.Rename(pk.ofp.Name(), pk.filename)
+	}
 	if err != nil {
-		return err
+		os.Remove(pk.ofp.Name())
 	}
-	defer func() {
-		ofp.Close()
-		os.Remove(ofp.Name())
-	}()
-	zfp, err := gzip.NewWriterLevel(ofp, gzip.BestCompression)
-	if err != nil {
-		return err
-	}
-	tw := tar.NewWriter(zfp)
-
-	dinfo, err := json.Marshal(info)
-	if err != nil {
-		return err
-	}
-	if err := tw.WriteHeader(&tar.Header{
-		Name:    "INFO.json",
-		Size:    int64(len(dinfo)),
-		Mode:    0444,
-		ModTime: info.BuildTimestamp,
-	}); err != nil {
-		return err
-	}
-	if _, err := tw.Write(dinfo); err != nil {
-		return err
-	}
-
-	for _, name := range filelist {
-		if err := addFile(info, tw, name); err != nil {
-			return nil
-		}
-	}
-
-	if err := tw.Close(); err != nil {
-		return err
-	}
-	if err := zfp.Close(); err != nil {
-		return err
-	}
-	if err := ofp.Close(); err != nil {
-		return err
-	}
-	if err := os.Rename(ofp.Name(), filename); err != nil {
-		return err
-	}
+	pk.tw = nil
+	pk.zfp = nil
+	pk.ofp = nil
 	return nil
 }
 
 func mainE() error {
 	allowDirty := flag.Bool("allow-dirty", false, "allow upload with a dirty repository")
 	flag.Parse()
-	if args := flag.Args(); len(args) != 0 {
-		return fmt.Errorf("unexpected argument: %q", args[0])
+	target := "game"
+	switch args := flag.Args(); len(args) {
+	case 0:
+	case 1:
+		target = args[0]
+	default:
+		return fmt.Errorf("unexpected argument: %q", args[1])
 	}
 	wsdir = os.Getenv("BUILD_WORKSPACE_DIRECTORY")
 	if wsdir == "" {
@@ -266,25 +284,65 @@ func mainE() error {
 	if err != nil {
 		return err
 	}
-	if err := buildArtifact(); err != nil {
-		return err
-	}
+	now := time.Now()
+	binfo := buildInfo{commitInfo: *cinfo, BuildTimestamp: now}
 	home := os.Getenv("HOME")
 	if home == "" {
 		return errors.New("$HOME not set")
 	}
-	now := time.Now()
-	dest := filepath.Join(home, "Documents", "Artifacts",
-		fmt.Sprintf("%s.r%04d.%s.gz", fileName, cinfo.Revision,
-			now.UTC().Format("20060102150405")))
-	if err := os.MkdirAll(filepath.Dir(dest), 0777); err != nil {
+	outdir := filepath.Join(home, "Documents", "Artifacts")
+	suffix := fmt.Sprintf(".r%04d.%s.gz", cinfo.Revision,
+		now.UTC().Format("20060102150405"))
+	if err := os.MkdirAll(outdir, 0777); err != nil {
 		return err
 	}
-	binfo := buildInfo{commitInfo: *cinfo, BuildTimestamp: now}
-	if err := createPackage(&binfo, dest); err != nil {
-		return err
+
+	switch strings.ToLower(target) {
+	case "game":
+		outfile := filepath.Join(outdir, "Thornmarked.n64"+suffix)
+		pk, err := createPackage(outfile)
+		if err != nil {
+			return err
+		}
+		defer pk.close(false)
+		if err := pk.putInfo(&binfo); err != nil {
+			return err
+		}
+		if err := buildArtifact("-c", "opt", "--platforms=//n64", "//game"); err != nil {
+			return err
+		}
+		fileList := []string{"Thornmarked.elf", "Thornmarked.n64"}
+		for _, file := range fileList {
+			if err := pk.addFile(file, filepath.Join(wsdir, "bazel-bin/game", file)); err != nil {
+				return err
+			}
+		}
+		return pk.close(true)
+
+	case "audio":
+		outfile := filepath.Join(outdir, "Audio.n64"+suffix)
+		pk, err := createPackage(outfile)
+		if err != nil {
+			return err
+		}
+		defer pk.close(false)
+		if err := pk.putInfo(&binfo); err != nil {
+			return err
+		}
+		if err := buildArtifact("-c", "opt", "--platforms=//n64", "//experimental/audio"); err != nil {
+			return err
+		}
+		fileList := []string{"audio.elf", "audio.n64"}
+		for _, file := range fileList {
+			if err := pk.addFile(file, filepath.Join(wsdir, "bazel-bin/experimental/audio", file)); err != nil {
+				return err
+			}
+		}
+		return pk.close(true)
+
+	default:
+		return fmt.Errorf("unknown target: %q (valid targets: game, audio)", target)
 	}
-	return nil
 }
 
 func main() {
