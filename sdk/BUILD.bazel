@@ -8,12 +8,21 @@ cc_import(
 )
 
 cc_library(
-    name = "libultra",
+    name = "headers",
     hdrs = ["include/ultra64.h"] + glob(["include/PR/*.h"]),
+    defines = ["_LANGUAGE_C"],
     includes = ["include"],
     visibility = ["//visibility:public"],
-    deps = [":libultra_bin"],
-    defines = ["_LANGUAGE_C"],
+)
+
+cc_library(
+    name = "libultra",
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":headers",
+        ":libultra_bin",
+    ],
 )
 
 OBJS = [
@@ -70,7 +79,7 @@ OBJS = [
 ]
 
 [cc_library(
-    name = name[:len(name)-2],
+    name = name[:len(name) - 2],
     srcs = ["lib/PR/" + name],
     # static_library = "lib/PR/" + name,
     visibility = ["//visibility:public"],
