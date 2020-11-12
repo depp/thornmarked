@@ -212,6 +212,9 @@ void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
     Acmd *al_start = audio_cmdlist[st->current_task];
     Acmd *al_end =
         alAudioFrame(al_start, &cmdlen, (s16 *)K0_TO_PHYS(buffer), AUDIO_BUFSZ);
+    if (al_end - al_start > AUDIO_CLIST_SIZE) {
+        fatal_error("Audio command list overrun\nsize=%td", al_end - al_start);
+    }
 
     // Create and sumbit the task.
     struct scheduler_task *task = &audio_tasks[st->current_task];
