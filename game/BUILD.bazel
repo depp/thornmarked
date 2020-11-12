@@ -24,8 +24,8 @@ cc_binary(
         "//base:scheduler",
         "//base/pak",
         "//n64:libultra",
-        "@n64sdk//:gspF3DEX2.xbus",
-        "@n64sdk//:rspboot",
+        "//sdk:gspF3DEX2.xbus",
+        "//sdk:rspboot",
     ],
 )
 

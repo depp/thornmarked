@@ -7,7 +7,7 @@ cc_library(
     srcs = ["start.s"],
     defines = ["F3DEX_GBI_2"],
     visibility = ["//visibility:public"],
-    deps = ["@n64sdk//:libultra"],
+    deps = ["//sdk:libultra"],
 )
 
 filegroup(
