@@ -2,21 +2,25 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//base:copts.bzl", "COPTS")
 load("//n64:defs.bzl", "n64_rom")
 
-DATA = [
-    "//assets/sfx:fanfare",
-]
-
 genrule(
     name = "assets_files",
-    srcs = ["manifest.txt"] + DATA,
+    srcs = [
+        "manifest.txt",
+        "//assets/music:01_Surrender_of_Innocence_adpcm",
+        "//assets/music:02_Underground_Tension_adpcm",
+        "//assets/music:03_Progression_adpcm",
+        "//assets/music:04_Under_the_Moon_adpcm",
+        "//assets/music:05_Descent_Into_Madness_adpcm",
+        "//assets/sfx:fanfare",
+    ],
     outs = [
         "assets.dat",
         "assets.h",
     ],
     cmd = ("$(execpath //tools/makepak) " +
-           "$(execpath assets.dat) $(execpath assets.h) " +
+           "-dir $(GENDIR)/assets " +
            "$(execpath manifest.txt)  " +
-           " ".join(["$(execpaths %s)" % src for src in DATA])),
+           "$(execpath assets.dat) $(execpath assets.h)"),
     tools = ["//tools/makepak"],
 )
 

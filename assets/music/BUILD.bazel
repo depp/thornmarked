@@ -27,6 +27,7 @@ NAMES = [
         "//tools/audio/encode:vadpcm_enc",
         "//tools/audio/tabledesign",
     ],
+    visibility = ["//visibility:public"],
 ) for name in NAMES]
 
 [genrule(

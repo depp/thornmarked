@@ -103,6 +103,8 @@ static ALGlobals audio_globals;
 static ALSndPlayer audio_sndp;
 
 void audio_init(void) {
+    const int obj = TRACK1_SURRENDER_OF_INNOCENCE;
+
     // Mark all DMA buffers as "old" so they get used.
     for (int i = 0; i < AUDIO_DMA_COUNT; i++) {
         audio_dma[i].age = 1;
@@ -111,7 +113,7 @@ void audio_init(void) {
     osCreateMesgQueue(&audio_dmaqueue, audio_dmaqueue_buffer,
                       ARRAY_COUNT(audio_dmaqueue_buffer));
 
-    int audio_rate = osAiSetFrequency(22050);
+    int audio_rate = osAiSetFrequency(32000);
 
     alHeapInit(&audio_hp, audio_heap, sizeof(audio_heap));
     ALSynConfig scfg = {
@@ -131,7 +133,6 @@ void audio_init(void) {
         .heap = &audio_hp,
     };
     alSndpNew(&audio_sndp, &pcfg);
-
     static ALEnvelope sndenv = {
         .attackTime = 0,
         .decayTime = 1414784,
@@ -139,22 +140,22 @@ void audio_init(void) {
         .attackVolume = 127,
         .decayVolume = 127,
     };
-    static ALKeyMap keymap = {
-        .velocityMin = 0,
-        .velocityMax = 127,
-        .keyMin = 41,
-        .keyMax = 41,
-        .keyBase = 41,
-    };
+    int frames = pak_objects[obj + 1].size / 9;
+    int samples = frames * 16;
+    int microsec = (int64_t)samples * 1000000 / 32000;
+    sndenv.decayTime = microsec;
+    ALADPCMBook *book = mem_alloc(pak_objects[obj].size);
+    pak_load_asset_sync(book, obj);
+
     static ALWaveTable wtable = {
-        .type = AL_RAW16_WAVE,
+        .type = AL_ADPCM_WAVE,
         .flags = 1,
     };
-    wtable.base = (u8 *)pak_objects[SFX_FANFARE].offset;
-    wtable.len = pak_objects[SFX_FANFARE].size;
+    wtable.base = (u8 *)pak_objects[obj + 1].offset;
+    wtable.len = pak_objects[obj + 1].size;
+    wtable.waveInfo.adpcmWave.book = book;
     static ALSound snd = {
         .envelope = &sndenv,
-        .keyMap = &keymap,
         .wavetable = &wtable,
         .samplePan = AL_PAN_CENTER,
         .sampleVolume = AL_VOL_FULL,
