@@ -112,10 +112,6 @@ constraint_value(
 
 toolchain(
     name = "cc-toolchain-n64",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
     target_compatible_with = [
         ":os",
         ":mips3_o32",

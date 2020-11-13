@@ -561,6 +561,7 @@ def _impl(ctx):
         cxx_builtin_include_directories = [
             "%s/lib/gcc/%s/%s/include" % (path, system, version),
             "%s/lib/gcc/%s/%s/include-fixed" % (path, system, version),
+            "%s/%s/sysroot/usr/include" % (path, system),
         ],
         toolchain_identifier = ctx.attr.toolchain_identifier,
         host_system_name = "local",
