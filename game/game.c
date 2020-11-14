@@ -172,6 +172,7 @@ static const Vtx cube_vertex[4 * 6] = {
 #undef SZ
 
 static const Gfx cube_dl[] = {
+    gsDPPipeSync(),
     gsDPSetCycleType(G_CYC_1CYCLE),
     gsSPTexture(0, 0, 0, 0, G_OFF),
     gsSPSetGeometryMode(G_SHADE | G_CULL_BACK),
