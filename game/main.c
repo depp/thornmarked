@@ -80,7 +80,8 @@ static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
 // Info for the pak objects, to be loaded from cartridge.
 struct pak_object pak_objects[PAK_SIZE] __attribute__((aligned(16)));
 
-static Gfx display_lists[2][1024];
+static Gfx display_lists[2][1024] __attribute__((section("uninit")));
+static struct graphics graphics[2] __attribute__((section("uninit")));
 static struct scheduler scheduler;
 
 // Event types for events on the main thread.
@@ -217,7 +218,11 @@ static void main(void *arg) {
         Gfx *dl_start = display_lists[current_task];
         Gfx *dl_end = display_lists[current_task] +
                       ARRAY_COUNT(display_lists[current_task]);
-        Gfx *dl = game_render(dl_start, dl_end, framebuffers[current_task]);
+        struct graphics *restrict gr = &graphics[current_task];
+        gr->dl_start = dl_start;
+        gr->dl_end = dl_end;
+        gr->framebuffer = framebuffers[current_task];
+        Gfx *dl = game_render(gr);
 
         struct scheduler_task *task = &st->tasks[current_task];
         *task = (struct scheduler_task){

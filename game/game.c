@@ -95,6 +95,10 @@ struct game_state {
     // Random number generator state.
     struct rand rand;
 
+    float rotate_y;
+    float rotate_x;
+    float time_x;
+
     // Balls on screen.
     struct ball balls[NUM_BALLS];
 };
@@ -105,6 +109,9 @@ void game_init(void) {
     struct game_state *restrict gs = &game_state;
     OSTime time = osGetTime();
     rand_init(&gs->rand, time, 0x243F6A88); // Pi fractional digits.
+    gs->rotate_y = 0.0f;
+    gs->rotate_x = 0.0f;
+    gs->time_x = 0.0f;
     for (int i = 0; i < NUM_BALLS; i++) {
         gs->balls[i] = (struct ball){
             .x = rand_frange(&gs->rand, MIN_X, MAX_X),
@@ -129,6 +136,57 @@ void game_input(OSContPad *restrict pad) {
     gs->controller = *pad;
 }
 
+#define SZ 100
+static const Vtx cube_vertex[4 * 6] = {
+    // -X face, bright red.
+    {{{-SZ, -SZ, -SZ}, 0, {0, 0}, {255, 128, 128, 255}}},
+    {{{-SZ, -SZ, +SZ}, 0, {0, 0}, {255, 128, 128, 255}}},
+    {{{-SZ, +SZ, -SZ}, 0, {0, 0}, {255, 128, 128, 255}}},
+    {{{-SZ, +SZ, +SZ}, 0, {0, 0}, {255, 128, 128, 255}}},
+    // +X face, dark red.
+    {{{+SZ, -SZ, -SZ}, 0, {0, 0}, {128, 0, 0, 255}}},
+    {{{+SZ, -SZ, +SZ}, 0, {0, 0}, {128, 0, 0, 255}}},
+    {{{+SZ, +SZ, -SZ}, 0, {0, 0}, {128, 0, 0, 255}}},
+    {{{+SZ, +SZ, +SZ}, 0, {0, 0}, {128, 0, 0, 255}}},
+    // -Y face, bright green.
+    {{{-SZ, -SZ, -SZ}, 0, {0, 0}, {128, 255, 128, 255}}},
+    {{{+SZ, -SZ, -SZ}, 0, {0, 0}, {128, 255, 128, 255}}},
+    {{{-SZ, -SZ, +SZ}, 0, {0, 0}, {128, 255, 128, 255}}},
+    {{{+SZ, -SZ, +SZ}, 0, {0, 0}, {128, 255, 128, 255}}},
+    // +Y face, dark green.
+    {{{-SZ, +SZ, -SZ}, 0, {0, 0}, {0, 128, 0, 255}}},
+    {{{+SZ, +SZ, -SZ}, 0, {0, 0}, {0, 128, 0, 255}}},
+    {{{-SZ, +SZ, +SZ}, 0, {0, 0}, {0, 128, 0, 255}}},
+    {{{+SZ, +SZ, +SZ}, 0, {0, 0}, {0, 128, 0, 255}}},
+    // -Z face, bright blue.
+    {{{-SZ, -SZ, -SZ}, 0, {0, 0}, {128, 128, 255, 255}}},
+    {{{-SZ, +SZ, -SZ}, 0, {0, 0}, {128, 128, 255, 255}}},
+    {{{+SZ, -SZ, -SZ}, 0, {0, 0}, {128, 128, 255, 255}}},
+    {{{+SZ, +SZ, -SZ}, 0, {0, 0}, {128, 128, 255, 255}}},
+    // +Z face, dark blue.
+    {{{-SZ, -SZ, +SZ}, 0, {0, 0}, {0, 0, 128, 255}}},
+    {{{-SZ, +SZ, +SZ}, 0, {0, 0}, {0, 0, 128, 255}}},
+    {{{+SZ, -SZ, +SZ}, 0, {0, 0}, {0, 0, 128, 255}}},
+    {{{+SZ, +SZ, +SZ}, 0, {0, 0}, {0, 0, 128, 255}}},
+};
+#undef SZ
+
+static const Gfx cube_dl[] = {
+    gsDPSetCycleType(G_CYC_1CYCLE),
+    gsSPTexture(0, 0, 0, 0, G_OFF),
+    gsSPSetGeometryMode(G_SHADE | G_CULL_BACK),
+    // gsDPSetCombineMode(G_CC_PRIMITIVE, G_CC_PRIMITIVE),
+    gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
+    gsSPVertex(cube_vertex, 4 * 6, 0),
+    gsSP2Triangles(0, 1, 2, 0, 2, 1, 3, 0),
+    gsSP2Triangles(4, 6, 5, 0, 5, 6, 7, 0),
+    gsSP2Triangles(8, 9, 10, 0, 10, 9, 11, 0),
+    gsSP2Triangles(12, 14, 13, 0, 13, 14, 15, 0),
+    gsSP2Triangles(16, 17, 18, 0, 18, 17, 19, 0),
+    gsSP2Triangles(20, 22, 21, 0, 21, 22, 23, 0),
+    gsSPEndDisplayList(),
+};
+
 void game_update(void) {
     struct game_state *restrict gs = &game_state;
     bool was_pressed = gs->is_pressed;
@@ -151,6 +209,20 @@ void game_update(void) {
     }
     float dt = (float)((int)delta_time) * (1.0f / (float)OS_CPU_COUNTER);
 
+    const float yspeed = 120.0f;
+    const float circle = 360.0f; // ick
+    gs->rotate_y += dt * yspeed;
+    if (gs->rotate_y > circle) {
+        gs->rotate_y -= circle;
+    }
+    const float xspeed = 400.0f;
+    const float xperiod = 4.0f;
+    gs->time_x += dt * xspeed;
+    if (gs->time_x >= xspeed * xperiod) {
+        gs->time_x -= xspeed * xperiod;
+    }
+    gs->rotate_x = gs->time_x >= circle ? 0.0f : gs->time_x;
+
     for (int i = 0; i < NUM_BALLS; i++) {
         struct ball *restrict b = &gs->balls[i];
         b->x += b->vx * dt;
@@ -172,7 +244,9 @@ void game_update(void) {
     }
 }
 
-Gfx *game_render(Gfx *dl, Gfx *dl_end, uint16_t *framebuffer) {
+Gfx *game_render(struct graphics *restrict gr) {
+    Gfx *dl = gr->dl_start;
+
     gSPSegment(dl++, 0, 0);
     gSPDisplayList(dl++, rdpinit_dl);
     gSPDisplayList(dl++, rspinit_dl);
@@ -180,7 +254,7 @@ Gfx *game_render(Gfx *dl, Gfx *dl_end, uint16_t *framebuffer) {
     // Clear the color framebuffer.
     gDPSetCycleType(dl++, G_CYC_FILL);
     gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
-                     framebuffer);
+                     gr->framebuffer);
     gDPPipeSync(dl++);
     gDPSetFillColor(dl++, game_state.color | (game_state.color << 16));
     gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
@@ -199,16 +273,40 @@ Gfx *game_render(Gfx *dl, Gfx *dl_end, uint16_t *framebuffer) {
                             1 << 10);
     }
 
-    dl = text_render(dl, dl_end, 20, SCREEN_HEIGHT - 18,
-                     "Scheduler in operation");
+    u16 perspNorm;
+    guPerspective(&gr->projection, &perspNorm, 33, 320.0f / 240.0f, 16, 1024,
+                  1.0);
+    guLookAt(&gr->camera,            //
+             200.0f, 200.0f, 700.0f, // eye
+             0.0f, 0.0f, 0.0f,       // look at
+             0.0f, 1.0f, 0.0f);      // up
+    gSPMatrix(dl++, K0_TO_PHYS(&gr->projection),
+              G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(dl++, K0_TO_PHYS(&gr->camera),
+              G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
+    guMtxIdent(&gr->model);
+    gSPMatrix(dl++, K0_TO_PHYS(&gr->model),
+              G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    guRotate(&gr->rotate_x, gs->rotate_x, 1.0f, 0.0f, 0.0f);
+    gSPMatrix(dl++, K0_TO_PHYS(&gr->rotate_x),
+              G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    guRotate(&gr->rotate_y, gs->rotate_y, 0.0f, 1.0f, 0.0f);
+    gSPMatrix(dl++, K0_TO_PHYS(&gr->rotate_y),
+              G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+
+    gSPDisplayList(dl++, cube_dl);
+
+    dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18,
+                     "Love me a spinning cube");
 
     // Render debugging text overlay.
-    dl = console_draw_displaylist(&console, dl, dl_end);
-    if (2 > dl_end - dl) {
+    dl = console_draw_displaylist(&console, dl, gr->dl_end);
+    if (2 > gr->dl_end - dl) {
         fatal_dloverflow();
     }
 
     gDPFullSync(dl++);
     gSPEndDisplayList(dl++);
+    osWritebackDCache(gr, sizeof(*gr));
     return dl;
 }

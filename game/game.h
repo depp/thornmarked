@@ -5,4 +5,17 @@
 void game_init(void);
 void game_input(OSContPad *restrict pad);
 void game_update(void);
-Gfx *game_render(Gfx *dl, Gfx *dl_end, uint16_t *framebuffer);
+
+struct graphics {
+    Gfx *dl_start;
+    Gfx *dl_end;
+    uint16_t *framebuffer;
+
+    Mtx projection;
+    Mtx camera;
+    Mtx model;
+    Mtx rotate_y;
+    Mtx rotate_x;
+};
+
+Gfx *game_render(struct graphics *restrict gr);
