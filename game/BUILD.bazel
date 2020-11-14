@@ -12,6 +12,8 @@ cc_binary(
     name = "Thornmarked.elf",
     srcs = [
         "defs.h",
+        "game.c",
+        "game.h",
         "main.c",
         "stack.s",
         "text.c",
