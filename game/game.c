@@ -271,8 +271,15 @@ Gfx *game_render(struct graphics *restrict gr) {
     gSPDisplayList(dl++, rdpinit_dl);
     gSPDisplayList(dl++, rspinit_dl);
 
-    // Clear the color framebuffer.
+    // Clear the zbuffer.
     gDPSetCycleType(dl++, G_CYC_FILL);
+    gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+                     gr->zbuffer);
+    gDPSetFillColor(dl++,
+                    (GPACK_ZDZ(G_MAXFBZ, 0) << 16) | GPACK_ZDZ(G_MAXFBZ, 0));
+    gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+
+    // Clear the color framebuffer.
     gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
                      gr->framebuffer);
     gDPPipeSync(dl++);
@@ -293,6 +300,10 @@ Gfx *game_render(struct graphics *restrict gr) {
                             1 << 10);
     }
 
+    gDPPipeSync(dl++);
+    gDPSetDepthImage(dl++, gr->zbuffer);
+    gSPSetGeometryMode(dl++, G_ZBUFFER);
+    gDPSetRenderMode(dl++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
     u16 perspNorm;
     guPerspective(&gr->projection, &perspNorm, 33, 320.0f / 240.0f, 64, 2048,
                   1.0);

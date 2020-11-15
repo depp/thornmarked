@@ -10,6 +10,7 @@ struct graphics {
     Gfx *dl_start;
     Gfx *dl_end;
     uint16_t *framebuffer;
+    uint16_t *zbuffer;
 
     Mtx projection;
     Mtx camera;

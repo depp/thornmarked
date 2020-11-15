@@ -45,11 +45,18 @@ SECTIONS {
 
     _heap1_start = ALIGN(16);
 
-    cfb 0x80300000 (NOLOAD) : {
+    cfb 0x80200000 (NOLOAD) : {
         _heap1_end = .;
         *(uninit.cfb)
         . = ALIGN(16);
         _heap2_start = .;
+    }
+
+    zb 0x80300000 (NOLOAD) : {
+        _heap2_end = .;
+        *(uninit.zb)
+        . = ALIGN(16);
+        _heap3_start = .;
     }
 
     /DISCARD/ : {

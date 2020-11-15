@@ -31,6 +31,8 @@ static OSMesgQueue pi_message_queue;
 
 static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((section("uninit.cfb"), aligned(16)));
+static u16 zbuffer[SCREEN_WIDTH * SCREEN_HEIGHT]
+    __attribute__((section("uninit.zb"), aligned(16)));
 
 // Idle thread. Creates other threads then drops to lowest priority.
 static void idle(void *arg);
@@ -222,6 +224,7 @@ static void main(void *arg) {
         gr->dl_start = dl_start;
         gr->dl_end = dl_end;
         gr->framebuffer = framebuffers[current_task];
+        gr->zbuffer = zbuffer;
         Gfx *dl = game_render(gr);
 
         struct scheduler_task *task = &st->tasks[current_task];
