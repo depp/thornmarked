@@ -17,8 +17,10 @@ struct mem_zone {
 extern uint8_t _heap1_start[];
 extern uint8_t _heap1_end[];
 extern uint8_t _heap2_start[];
+extern uint8_t _heap2_end[];
+extern uint8_t _heap3_start[];
 
-static struct mem_zone mem_zones[2] = {
+static struct mem_zone mem_zones[3] = {
     {
         .pos = (uintptr_t)_heap1_start,
         .start = (uintptr_t)_heap1_start,
@@ -27,6 +29,11 @@ static struct mem_zone mem_zones[2] = {
     {
         .pos = (uintptr_t)_heap2_start,
         .start = (uintptr_t)_heap2_start,
+        .end = (uintptr_t)_heap2_end,
+    },
+    {
+        .pos = (uintptr_t)_heap3_start,
+        .start = (uintptr_t)_heap3_start,
     },
 };
 
@@ -34,7 +41,7 @@ void mem_init(void) {
     // This will return either 4M or 8M on real systems. It checks 1M at a time,
     // starting with 4M.
     uint32_t mem_size = osGetMemSize();
-    mem_zones[1].end = 0x80000000 + mem_size;
+    mem_zones[2].end = 0x80000000 + mem_size;
     for (unsigned i = 0; i < ARRAY_COUNT(mem_zones); i++) {
         if (mem_zones[i].start >= mem_zones[i].end) {
             fatal_error("Bad memory layout");
