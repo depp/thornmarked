@@ -95,6 +95,9 @@ struct game_state {
     // Random number generator state.
     struct rand rand;
 
+    float pos_t;
+    float pos_x;
+    float pos_y;
     float rotate_y;
     float rotate_x;
     float time_x;
@@ -109,6 +112,9 @@ void game_init(void) {
     struct game_state *restrict gs = &game_state;
     OSTime time = osGetTime();
     rand_init(&gs->rand, time, 0x243F6A88); // Pi fractional digits.
+    gs->pos_t = 0.0f;
+    gs->pos_x = 0.0f;
+    gs->pos_y = 0.0f;
     gs->rotate_y = 0.0f;
     gs->rotate_x = 0.0f;
     gs->time_x = 0.0f;
@@ -171,13 +177,16 @@ static const Vtx cube_vertex[4 * 6] = {
 };
 #undef SZ
 
-static const Gfx cube_dl[] = {
+static const Gfx cube_setup_dl[] = {
     gsDPPipeSync(),
     gsDPSetCycleType(G_CYC_1CYCLE),
     gsSPTexture(0, 0, 0, 0, G_OFF),
     gsSPSetGeometryMode(G_SHADE | G_CULL_BACK),
-    // gsDPSetCombineMode(G_CC_PRIMITIVE, G_CC_PRIMITIVE),
     gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
+    gsSPEndDisplayList(),
+};
+
+static const Gfx cube_dl[] = {
     gsSPVertex(cube_vertex, 4 * 6, 0),
     gsSP2Triangles(0, 1, 2, 0, 2, 1, 3, 0),
     gsSP2Triangles(4, 6, 5, 0, 5, 6, 7, 0),
@@ -209,6 +218,16 @@ void game_update(void) {
         delta_time = MAX_DELTA;
     }
     float dt = (float)((int)delta_time) * (1.0f / (float)OS_CPU_COUNTER);
+
+    const float pspeed = 1.0f;
+    const float halftwopi = 3.141592653589793f;
+    const float pos_scale = 300.0f;
+    gs->pos_t += dt * pspeed;
+    if (gs->pos_t > halftwopi) {
+        gs->pos_t -= 2.0f * halftwopi;
+    }
+    gs->pos_x = pos_scale * cosf(gs->pos_t);
+    gs->pos_y = pos_scale * sinf(gs->pos_t);
 
     const float yspeed = 120.0f;
     const float circle = 360.0f; // ick
@@ -275,7 +294,7 @@ Gfx *game_render(struct graphics *restrict gr) {
     }
 
     u16 perspNorm;
-    guPerspective(&gr->projection, &perspNorm, 33, 320.0f / 240.0f, 16, 1024,
+    guPerspective(&gr->projection, &perspNorm, 33, 320.0f / 240.0f, 64, 2048,
                   1.0);
     guLookAt(&gr->camera,            //
              200.0f, 200.0f, 700.0f, // eye
@@ -285,17 +304,21 @@ Gfx *game_render(struct graphics *restrict gr) {
               G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPMatrix(dl++, K0_TO_PHYS(&gr->camera),
               G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
-    guMtxIdent(&gr->model);
-    gSPMatrix(dl++, K0_TO_PHYS(&gr->model),
-              G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPDisplayList(dl++, cube_setup_dl);
+    guTranslate(&gr->translate[0], gs->pos_x, 0.0f, gs->pos_y);
+    guTranslate(&gr->translate[1], -gs->pos_x, 0.0f, -gs->pos_y);
     guRotate(&gr->rotate_x, gs->rotate_x, 1.0f, 0.0f, 0.0f);
-    gSPMatrix(dl++, K0_TO_PHYS(&gr->rotate_x),
-              G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
     guRotate(&gr->rotate_y, gs->rotate_y, 0.0f, 1.0f, 0.0f);
-    gSPMatrix(dl++, K0_TO_PHYS(&gr->rotate_y),
-              G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
 
-    gSPDisplayList(dl++, cube_dl);
+    for (int i = 0; i < 2; i++) {
+        gSPMatrix(dl++, K0_TO_PHYS(&gr->translate[i]),
+                  G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+        gSPMatrix(dl++, K0_TO_PHYS(&gr->rotate_x),
+                  G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+        gSPMatrix(dl++, K0_TO_PHYS(&gr->rotate_y),
+                  G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+        gSPDisplayList(dl++, cube_dl);
+    }
 
     dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18,
                      "Love me a spinning cube");

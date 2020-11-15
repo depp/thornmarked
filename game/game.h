@@ -13,7 +13,7 @@ struct graphics {
 
     Mtx projection;
     Mtx camera;
-    Mtx model;
+    Mtx translate[2];
     Mtx rotate_y;
     Mtx rotate_x;
 };
