@@ -1,3 +1,4 @@
 data IMG_CAT test/Ariella_32x32.dat
 data IMG_BALL test/Ball.dat
 data FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
+data MESH_LOGO models/logo.dat

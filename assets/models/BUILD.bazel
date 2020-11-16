@@ -1,0 +1,9 @@
+package(default_visibility=["//assets:__pkg__"])
+
+genrule(
+    name = "logo",
+    srcs = ["logo.fbx"],
+    outs = ["logo.dat"],
+    tools = ["//tools/modelconvert"],
+    cmd = "$(location //tools/modelconvert) -model $< -output $@",
+)

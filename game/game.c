@@ -108,6 +108,8 @@ struct game_state {
 
 struct game_state game_state;
 
+static u8 logo_model[4 * 1024] __attribute__((aligned(16)));
+
 void game_init(void) {
     struct game_state *restrict gs = &game_state;
     OSTime time = osGetTime();
@@ -135,6 +137,7 @@ void game_init(void) {
     }
     pak_load_asset_sync(img_cat, IMG_CAT);
     pak_load_asset_sync(img_ball, IMG_BALL);
+    pak_load_asset_sync(logo_model, MESH_LOGO);
 }
 
 void game_input(OSContPad *restrict pad) {
@@ -142,58 +145,12 @@ void game_input(OSContPad *restrict pad) {
     gs->controller = *pad;
 }
 
-#define SZ 100
-static const Vtx cube_vertex[4 * 6] = {
-    // -X face, bright red.
-    {{{-SZ, -SZ, -SZ}, 0, {0, 0}, {255, 128, 128, 255}}},
-    {{{-SZ, -SZ, +SZ}, 0, {0, 0}, {255, 128, 128, 255}}},
-    {{{-SZ, +SZ, -SZ}, 0, {0, 0}, {255, 128, 128, 255}}},
-    {{{-SZ, +SZ, +SZ}, 0, {0, 0}, {255, 128, 128, 255}}},
-    // +X face, dark red.
-    {{{+SZ, -SZ, -SZ}, 0, {0, 0}, {128, 0, 0, 255}}},
-    {{{+SZ, -SZ, +SZ}, 0, {0, 0}, {128, 0, 0, 255}}},
-    {{{+SZ, +SZ, -SZ}, 0, {0, 0}, {128, 0, 0, 255}}},
-    {{{+SZ, +SZ, +SZ}, 0, {0, 0}, {128, 0, 0, 255}}},
-    // -Y face, bright green.
-    {{{-SZ, -SZ, -SZ}, 0, {0, 0}, {128, 255, 128, 255}}},
-    {{{+SZ, -SZ, -SZ}, 0, {0, 0}, {128, 255, 128, 255}}},
-    {{{-SZ, -SZ, +SZ}, 0, {0, 0}, {128, 255, 128, 255}}},
-    {{{+SZ, -SZ, +SZ}, 0, {0, 0}, {128, 255, 128, 255}}},
-    // +Y face, dark green.
-    {{{-SZ, +SZ, -SZ}, 0, {0, 0}, {0, 128, 0, 255}}},
-    {{{+SZ, +SZ, -SZ}, 0, {0, 0}, {0, 128, 0, 255}}},
-    {{{-SZ, +SZ, +SZ}, 0, {0, 0}, {0, 128, 0, 255}}},
-    {{{+SZ, +SZ, +SZ}, 0, {0, 0}, {0, 128, 0, 255}}},
-    // -Z face, bright blue.
-    {{{-SZ, -SZ, -SZ}, 0, {0, 0}, {128, 128, 255, 255}}},
-    {{{-SZ, +SZ, -SZ}, 0, {0, 0}, {128, 128, 255, 255}}},
-    {{{+SZ, -SZ, -SZ}, 0, {0, 0}, {128, 128, 255, 255}}},
-    {{{+SZ, +SZ, -SZ}, 0, {0, 0}, {128, 128, 255, 255}}},
-    // +Z face, dark blue.
-    {{{-SZ, -SZ, +SZ}, 0, {0, 0}, {0, 0, 128, 255}}},
-    {{{-SZ, +SZ, +SZ}, 0, {0, 0}, {0, 0, 128, 255}}},
-    {{{+SZ, -SZ, +SZ}, 0, {0, 0}, {0, 0, 128, 255}}},
-    {{{+SZ, +SZ, +SZ}, 0, {0, 0}, {0, 0, 128, 255}}},
-};
-#undef SZ
-
 static const Gfx cube_setup_dl[] = {
     gsDPPipeSync(),
     gsDPSetCycleType(G_CYC_1CYCLE),
     gsSPTexture(0, 0, 0, 0, G_OFF),
-    gsSPSetGeometryMode(G_SHADE | G_CULL_BACK),
-    gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
-    gsSPEndDisplayList(),
-};
-
-static const Gfx cube_dl[] = {
-    gsSPVertex(cube_vertex, 4 * 6, 0),
-    gsSP2Triangles(0, 1, 2, 0, 2, 1, 3, 0),
-    gsSP2Triangles(4, 6, 5, 0, 5, 6, 7, 0),
-    gsSP2Triangles(8, 9, 10, 0, 10, 9, 11, 0),
-    gsSP2Triangles(12, 14, 13, 0, 13, 14, 15, 0),
-    gsSP2Triangles(16, 17, 18, 0, 18, 17, 19, 0),
-    gsSP2Triangles(20, 22, 21, 0, 21, 22, 23, 0),
+    gsSPSetGeometryMode(G_CULL_BACK),
+    gsDPSetCombineMode(G_CC_PRIMITIVE, G_CC_PRIMITIVE),
     gsSPEndDisplayList(),
 };
 
@@ -321,6 +278,7 @@ Gfx *game_render(struct graphics *restrict gr) {
     guRotate(&gr->rotate_x, gs->rotate_x, 1.0f, 0.0f, 0.0f);
     guRotate(&gr->rotate_y, gs->rotate_y, 0.0f, 1.0f, 0.0f);
 
+    gSPSegment(dl++, 1, K0_TO_PHYS(logo_model));
     for (int i = 0; i < 2; i++) {
         gSPMatrix(dl++, K0_TO_PHYS(&gr->translate[i]),
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
@@ -328,7 +286,7 @@ Gfx *game_render(struct graphics *restrict gr) {
                   G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
         gSPMatrix(dl++, K0_TO_PHYS(&gr->rotate_y),
                   G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-        gSPDisplayList(dl++, cube_dl);
+        gSPDisplayList(dl++, SEGMENT_ADDR(1, 0));
     }
 
     dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18,
