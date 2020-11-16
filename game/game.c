@@ -178,7 +178,7 @@ void game_update(void) {
 
     const float pspeed = 1.0f;
     const float halftwopi = 3.141592653589793f;
-    const float pos_scale = 300.0f;
+    const float pos_scale = 200.0f;
     gs->pos_t += dt * pspeed;
     if (gs->pos_t > halftwopi) {
         gs->pos_t -= 2.0f * halftwopi;
@@ -248,13 +248,15 @@ Gfx *game_render(struct graphics *restrict gr) {
     gDPPipeSync(dl++);
 
     struct game_state *restrict gs = &game_state;
-    for (int i = 0; i < NUM_BALLS; i++) {
-        struct ball *restrict b = &gs->balls[i];
-        int x = b->x - BALL_SIZE / 2;
-        int y = b->y - BALL_SIZE / 2;
-        gSPTextureRectangle(dl++, x << 2, y << 2, (x + BALL_SIZE - 1) << 2,
-                            (y + BALL_SIZE - 1) << 2, 0, 0, 0, 4 << 10,
-                            1 << 10);
+    if (false) {
+        for (int i = 0; i < NUM_BALLS; i++) {
+            struct ball *restrict b = &gs->balls[i];
+            int x = b->x - BALL_SIZE / 2;
+            int y = b->y - BALL_SIZE / 2;
+            gSPTextureRectangle(dl++, x << 2, y << 2, (x + BALL_SIZE - 1) << 2,
+                                (y + BALL_SIZE - 1) << 2, 0, 0, 0, 4 << 10,
+                                1 << 10);
+        }
     }
 
     gDPPipeSync(dl++);
@@ -264,19 +266,19 @@ Gfx *game_render(struct graphics *restrict gr) {
     u16 perspNorm;
     guPerspective(&gr->projection, &perspNorm, 33, 320.0f / 240.0f, 64, 2048,
                   1.0);
-    guLookAt(&gr->camera,            //
-             200.0f, 200.0f, 700.0f, // eye
-             0.0f, 0.0f, 0.0f,       // look at
-             0.0f, 1.0f, 0.0f);      // up
+    guLookAt(&gr->camera,             //
+             200.0f, -700.0f, 200.0f, // eye
+             0.0f, 0.0f, 0.0f,        // look at
+             0.0f, 0.0f, 1.0f);       // up
     gSPMatrix(dl++, K0_TO_PHYS(&gr->projection),
               G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPMatrix(dl++, K0_TO_PHYS(&gr->camera),
               G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
     gSPDisplayList(dl++, cube_setup_dl);
-    guTranslate(&gr->translate[0], gs->pos_x, 0.0f, gs->pos_y);
-    guTranslate(&gr->translate[1], -gs->pos_x, 0.0f, -gs->pos_y);
+    guTranslate(&gr->translate[0], gs->pos_x, gs->pos_y, 0.0f);
+    guTranslate(&gr->translate[1], -gs->pos_x, -gs->pos_y, 0.0f);
     guRotate(&gr->rotate_x, gs->rotate_x, 1.0f, 0.0f, 0.0f);
-    guRotate(&gr->rotate_y, gs->rotate_y, 0.0f, 1.0f, 0.0f);
+    guRotate(&gr->rotate_y, gs->rotate_y, 0.0f, 0.0f, -1.0f);
 
     gSPSegment(dl++, 1, K0_TO_PHYS(logo_model));
     for (int i = 0; i < 2; i++) {
@@ -289,8 +291,7 @@ Gfx *game_render(struct graphics *restrict gr) {
         gSPDisplayList(dl++, SEGMENT_ADDR(1, 0));
     }
 
-    dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18,
-                     "Love me a spinning cube");
+    dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18, "Mintemblo 63");
 
     // Render debugging text overlay.
     dl = console_draw_displaylist(&console, dl, gr->dl_end);
