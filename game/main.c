@@ -80,7 +80,7 @@ enum {
 static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
 
 // Info for the pak objects, to be loaded from cartridge.
-struct pak_object pak_objects[PAK_SIZE] __attribute__((aligned(16)));
+struct pak_object pak_objects[(PAK_SIZE + 1) & ~1] __attribute__((aligned(16)));
 
 static Gfx display_lists[2][1024] __attribute__((section("uninit")));
 static struct graphics graphics[2] __attribute__((section("uninit")));
