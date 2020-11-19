@@ -12,8 +12,12 @@ NAMES = [
     name = name + "_pcm",
     srcs = [name + ".flac"],
     outs = [name + ".aifc"],
-    cmd = ("flac --silent --decode $< --output-name $(RULEDIR)/temp.wav; " +
-           "sox $(RULEDIR)/temp.wav --bits 16 --rate %d --channels 1 $@" % RATE),
+    cmd = ("$(execpath @tools//:flac) --silent --decode $< --output-name $(RULEDIR)/temp.wav; " +
+           "$(execpath @tools//:sox) $(RULEDIR)/temp.wav --bits 16 --rate %d --channels 1 $@" % RATE),
+    tools = [
+        "@tools//:flac",
+        "@tools//:sox",
+    ],
 ) for name in NAMES]
 
 [genrule(
@@ -35,8 +39,9 @@ NAMES = [
     srcs = [name + "_adpcm.aifc"],
     outs = [name + "_dec.wav"],
     cmd = ("$(execpath //tools/audio/encode:vadpcm_dec) $< >$(RULEDIR)/temp.pcm; " +
-           "sox --type raw --bits 16 --rate %d --encoding signed -B $(RULEDIR)/temp.pcm $@" % RATE),
+           "$(execpath @tools//:sox) --type raw --bits 16 --rate %d --encoding signed -B $(RULEDIR)/temp.pcm $@" % RATE),
     tools = [
         "//tools/audio/encode:vadpcm_dec",
+        "@tools//:sox",
     ],
 ) for name in NAMES]
