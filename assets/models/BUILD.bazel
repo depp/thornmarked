@@ -1,9 +1,9 @@
+load(":defs.bzl", "models")
+
 package(default_visibility = ["//assets:__pkg__"])
 
-genrule(
+models(
     name = "logo",
     srcs = ["logo.fbx"],
-    outs = ["logo.dat"],
-    cmd = "$(location //tools/modelconvert) -model $< -output $@ -scale 100",
-    tools = ["//tools/modelconvert"],
+    scale = "100",
 )
