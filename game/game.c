@@ -108,7 +108,7 @@ struct game_state {
 
 struct game_state game_state;
 
-static u8 logo_model[4 * 1024] __attribute__((aligned(16)));
+static u8 logo_model[8 * 1024] __attribute__((aligned(16)));
 
 void game_init(void) {
     struct game_state *restrict gs = &game_state;
@@ -137,7 +137,7 @@ void game_init(void) {
     }
     pak_load_asset_sync(img_cat, IMG_CAT);
     pak_load_asset_sync(img_ball, IMG_BALL);
-    pak_load_asset_sync(logo_model, MESH_LOGO);
+    pak_load_asset_sync(logo_model, MESH_FAIRY);
 }
 
 void game_input(OSContPad *restrict pad) {
@@ -150,7 +150,7 @@ static const Gfx cube_setup_dl[] = {
     gsDPSetCycleType(G_CYC_1CYCLE),
     gsSPTexture(0, 0, 0, 0, G_OFF),
     gsSPSetGeometryMode(G_CULL_BACK),
-    gsDPSetCombineMode(G_CC_PRIMITIVE, G_CC_PRIMITIVE),
+    gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
     gsSPEndDisplayList(),
 };
 
@@ -221,6 +221,10 @@ void game_update(void) {
     }
 }
 
+static const Lights1 lights =
+    gdSPDefLights1(16, 16, 64,                               // Ambient
+                   255 - 16, 255 - 16, 255 - 64, 0, 0, 100); // Sun
+
 Gfx *game_render(struct graphics *restrict gr) {
     Gfx *dl = gr->dl_start;
 
@@ -280,6 +284,9 @@ Gfx *game_render(struct graphics *restrict gr) {
     guRotate(&gr->rotate_x, gs->rotate_x, 1.0f, 0.0f, 0.0f);
     guRotate(&gr->rotate_y, gs->rotate_y, 0.0f, 0.0f, -1.0f);
 
+    gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
+    gSPSetLights1(dl++, lights);
+    gSPSetGeometryMode(dl++, G_LIGHTING);
     gSPSegment(dl++, 1, K0_TO_PHYS(logo_model));
     for (int i = 0; i < 2; i++) {
         gSPMatrix(dl++, K0_TO_PHYS(&gr->translate[i]),

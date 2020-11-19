@@ -6,4 +6,12 @@ models(
     name = "logo",
     srcs = ["logo.fbx"],
     scale = "100",
+    use_primitive_color = True,
+)
+
+models(
+    name = "fairy",
+    srcs = ["fairy.fbx"],
+    scale = "50",
+    use_normals = True,
 )

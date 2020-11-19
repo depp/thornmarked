@@ -1,6 +1,11 @@
 def _models_impl(ctx):
     scale = ctx.attr.scale
     outputs = []
+    base_args = []
+    if ctx.attr.use_normals:
+        base_args.append("-use-normals")
+    if ctx.attr.use_primitive_color:
+        base_args.append("-use-primitive-color")
     for src in ctx.files.srcs:
         name = src.basename
         idx = name.find(".")
@@ -8,12 +13,14 @@ def _models_impl(ctx):
             name = name[:idx]
         out = ctx.actions.declare_file(name + ".dat")
         outputs.append(out)
+        args = [
+        ]
         ctx.actions.run(
             outputs = [out],
             inputs = [src],
             progress_message = "Converting model %s" % src.short_path,
             executable = ctx.executable._converter,
-            arguments = [
+            arguments = base_args + [
                 "-model=" + src.path,
                 "-output=" + out.path,
                 "-scale=" + scale,
@@ -30,6 +37,12 @@ models = rule(
         ),
         "scale": attr.string(
             mandatory = True,
+        ),
+        "use_normals": attr.bool(
+            default = False,
+        ),
+        "use_primitive_color": attr.bool(
+            default = False,
         ),
         "_converter": attr.label(
             default = Label("//tools/modelconvert"),
