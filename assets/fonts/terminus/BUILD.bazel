@@ -8,7 +8,6 @@ genrule(
     outs = ["ter-u12n.h"],
     cmd = (
         "$(location //tools/font) " +
-        "-tool-raster=$(location //tools/font/raster) " +
         "-font=$(location ter-u12n.bdf) " +
         "-size=12 " +
         "-out-fallback=$@"
