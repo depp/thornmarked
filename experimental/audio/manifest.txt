@@ -1,6 +1,6 @@
 data SFX_FANFARE sfx/fanfare.dat
 
-track TRACK1_SURRENDER_OF_INNOCENCE music/01_Surrender_of_Innocence_adpcm.aifc
+track TRACK1_SURRENDER_OF_INNOCENCE music/01_Surrender_of_Innocence.adpcm.aifc
 # track TRACK2_UNDERGROUND_TENSION music/02_Underground_Tension_adpcm.aifc
 # track TRACK3_PROGRESSION music/03_Progression_adpcm.aifc
 # track TRACK4_UNDER_THE_MOON music/04_Under_the_Moon_adpcm.aifc
