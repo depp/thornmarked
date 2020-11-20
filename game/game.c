@@ -192,7 +192,7 @@ void game_update(void) {
     if (gs->rotate_y > circle) {
         gs->rotate_y -= circle;
     }
-    const float xspeed = 400.0f;
+    const float xspeed = 200.0f;
     const float xperiod = 4.0f;
     gs->time_x += dt * xspeed;
     if (gs->time_x >= xspeed * xperiod) {
