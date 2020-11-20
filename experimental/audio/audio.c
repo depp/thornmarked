@@ -144,8 +144,9 @@ void audio_init(void) {
     int samples = frames * 16;
     int microsec = (int64_t)samples * 1000000 / 32000;
     sndenv.decayTime = microsec;
-    ALADPCMBook *book = mem_alloc(pak_objects[obj].size);
-    pak_load_asset_sync(book, obj);
+    size_t book_size = pak_objects[obj].size;
+    ALADPCMBook *book = mem_alloc(book_size);
+    pak_load_asset_sync(book, book_size, obj);
 
     static ALWaveTable wtable = {
         .type = AL_ADPCM_WAVE,

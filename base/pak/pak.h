@@ -21,5 +21,7 @@ extern struct pak_object pak_objects[];
 // Initialize the asset loader.
 void pak_init(int asset_count);
 
-// Synchronously load the asset with the given ID.
-void pak_load_asset_sync(void *dest, int asset_id);
+// Synchronously load the asset with the given ID. The destsize argument is just
+// the size of the buffer pointed by dest, and it is used for checking that the
+// transfer is valid. If the asset is larger than destsize, this will abort.
+void pak_load_asset_sync(void *dest, size_t destsize, int asset_id);

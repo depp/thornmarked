@@ -135,9 +135,9 @@ void game_init(void) {
             gs->balls[i].vy = -gs->balls[i].vy;
         }
     }
-    pak_load_asset_sync(img_cat, IMG_CAT);
-    pak_load_asset_sync(img_ball, IMG_BALL);
-    pak_load_asset_sync(logo_model, MESH_FAIRY);
+    pak_load_asset_sync(img_cat, sizeof(img_cat), IMG_CAT);
+    pak_load_asset_sync(img_ball, sizeof(img_ball), IMG_BALL);
+    pak_load_asset_sync(logo_model, sizeof(logo_model), MESH_FAIRY);
 }
 
 void game_input(OSContPad *restrict pad) {
