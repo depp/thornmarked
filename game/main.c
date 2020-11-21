@@ -1,5 +1,3 @@
-#include "game/defs.h"
-
 #include "assets/assets.h"
 #include "base/base.h"
 #include "base/console.h"
@@ -7,7 +5,9 @@
 #include "base/pak/pak.h"
 #include "base/random.h"
 #include "base/scheduler.h"
+#include "game/defs.h"
 #include "game/game.h"
+#include "game/graphics.h"
 
 #include <ultra64.h>
 
@@ -17,6 +17,9 @@
 enum {
     // Maximum number of simultaneous PI requests.
     PI_MSG_COUNT = 8,
+
+    // Maximum time to advance during a frame.
+    MAX_DELTA_TIME = OS_CPU_COUNTER / 10,
 };
 
 // Stacks (defined in linker script).
@@ -83,7 +86,7 @@ static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
 struct pak_object pak_objects[(PAK_SIZE + 1) & ~1] __attribute__((aligned(16)));
 
 static Gfx display_lists[2][1024] __attribute__((section("uninit")));
-static struct graphics graphics[2] __attribute__((section("uninit")));
+static Mtx matrixes[2][64] __attribute__((section("uninit")));
 static struct scheduler scheduler;
 
 // Event types for events on the main thread.
@@ -133,7 +136,8 @@ struct main_state {
 };
 
 // Read the next event sent to the main thread and process it.
-static int process_event(struct main_state *restrict st, int flags) {
+static int process_event(struct main_state *restrict st, struct game_state *gs,
+                         int flags) {
     OSMesg evt;
     int ret = osRecvMesg(&st->evt_queue, &evt, flags);
     if (ret != 0)
@@ -146,7 +150,7 @@ static int process_event(struct main_state *restrict st, int flags) {
         osContGetReadData(controller_state);
         st->controler_read_active = false;
         if (st->has_controller) {
-            game_input(&controller_state[st->controller_index]);
+            game_input(gs, &controller_state[st->controller_index]);
         }
         break;
     case EVT_TASKDONE:
@@ -163,6 +167,7 @@ static int process_event(struct main_state *restrict st, int flags) {
 }
 
 static struct main_state main_state;
+static struct game_state game_state;
 
 static void main(void *arg) {
     (void)arg;
@@ -193,7 +198,8 @@ static void main(void *arg) {
         }
     }
 
-    game_init();
+    OSTime cur_time = osGetTime();
+    game_init(&game_state);
 
     scheduler_start(&scheduler, PRIORITY_SCHEDULER, 1);
     int frame_num = 0;
@@ -205,28 +211,57 @@ static void main(void *arg) {
         frame_num++;
         // Wait until the task and framebuffer are both free to use.
         while (st->task_running[current_task])
-            process_event(st, true);
+            process_event(st, &game_state, true);
         while (st->framebuffer_in_use[current_task])
-            process_event(st, true);
-        while (process_event(st, false) == 0) {}
+            process_event(st, &game_state, true);
+        while (process_event(st, &game_state, false) == 0) {}
 
         if (!st->controler_read_active) {
             osContStartReadData(&st->evt_queue);
             st->controler_read_active = true;
         }
-        game_update();
 
-        // Set up display lists.
-        Gfx *dl_start = display_lists[current_task];
-        Gfx *dl_end = display_lists[current_task] +
-                      ARRAY_COUNT(display_lists[current_task]);
-        struct graphics *restrict gr = &graphics[current_task];
-        gr->dl_start = dl_start;
-        gr->dl_end = dl_end;
-        gr->framebuffer = framebuffers[current_task];
-        gr->zbuffer = zbuffer;
-        Gfx *dl = game_render(gr);
+        {
+            OSTime last_time = cur_time;
+            cur_time = osGetTime();
+            uint32_t delta_time = cur_time - last_time;
+            // Clamp delta time, in case something gets out of hand.
+            if (delta_time > MAX_DELTA_TIME) {
+                delta_time = MAX_DELTA_TIME;
+            }
+            float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
+            game_update(&game_state, dt);
+        }
 
+        // Create up display lists.
+        u64 *data_ptr;
+        size_t data_size;
+        {
+            Gfx *dl_start = display_lists[current_task];
+            Gfx *dl_end = display_lists[current_task] +
+                          ARRAY_COUNT(display_lists[current_task]);
+            Mtx *mtx_start = matrixes[current_task];
+            Mtx *mtx_end =
+                matrixes[current_task] + ARRAY_COUNT(matrixes[current_task]);
+            struct graphics gr = {
+                .dl_ptr = dl_start,
+                .dl_start = dl_start,
+                .dl_end = dl_end,
+                .mtx_ptr = mtx_start,
+                .mtx_start = mtx_start,
+                .mtx_end = mtx_end,
+                .framebuffer = framebuffers[current_task],
+                .zbuffer = zbuffer,
+            };
+            game_render(&game_state, &gr);
+            data_ptr = (u64 *)dl_start;
+            data_size = sizeof(*dl_start) * (gr.dl_ptr - dl_start);
+            osWritebackDCache(data_ptr, data_size);
+            osWritebackDCache(mtx_start,
+                              sizeof(*mtx_start) * (gr.mtx_ptr - mtx_start));
+        }
+
+        // Submit RCP task.
         struct scheduler_task *task = &st->tasks[current_task];
         *task = (struct scheduler_task){
             .flags = SCHEDULER_TASK_VIDEO | SCHEDULER_TASK_FRAMEBUFFER,
@@ -243,8 +278,8 @@ static void main(void *arg) {
                 .dram_stack = sp_dram_stack,
                 .dram_stack_size = sizeof(sp_dram_stack),
                 // No output_buff.
-                .data_ptr = (u64 *)dl_start,
-                .data_size = sizeof(*dl_start) * (dl - dl_start),
+                .data_ptr = data_ptr,
+                .data_size = data_size,
             }},
             .done_queue = &st->evt_queue,
             .done_mesg = make_event(EVT_TASKDONE, current_task),
@@ -258,7 +293,6 @@ static void main(void *arg) {
                         },
                 },
         };
-        osWritebackDCache(dl_start, sizeof(*dl_start) * (dl - dl_start));
         scheduler_submit(&scheduler, task);
         st->task_running[current_task] = true;
         st->framebuffer_in_use[current_task] = true;

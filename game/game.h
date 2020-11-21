@@ -2,21 +2,17 @@
 
 #include <ultra64.h>
 
-void game_init(void);
-void game_input(OSContPad *restrict pad);
-void game_update(void);
+#include "base/random.h"
+#include "game/physics.h"
 
-struct graphics {
-    Gfx *dl_start;
-    Gfx *dl_end;
-    uint16_t *framebuffer;
-    uint16_t *zbuffer;
+struct graphics;
 
-    Mtx projection;
-    Mtx camera;
-    Mtx translate[2];
-    Mtx rotate_y;
-    Mtx rotate_x;
+struct game_state {
+    struct rand rand;
+    struct sys_phys physics;
 };
 
-Gfx *game_render(struct graphics *restrict gr);
+void game_init(struct game_state *restrict gs);
+void game_input(struct game_state *restrict gs, OSContPad *restrict pad);
+void game_update(struct game_state *restrict gs, float dt);
+void game_render(struct game_state *restrict gs, struct graphics *restrict gr);
