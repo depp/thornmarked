@@ -1,5 +1,7 @@
 #include "base/pak/pak.h"
 
+#include "base/base.h"
+
 #include <ultra64.h>
 
 OSPiHandle *rom_handle;
