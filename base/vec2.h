@@ -117,6 +117,6 @@ inline vec2 vec2_mix(vec2 x, vec2 y, float a) {
 inline vec2 vec2_madd(vec2 x, vec2 y, float a) {
     return (vec2){{
         x.v[0] + a * y.v[0],
-        x.v[1] + a * y.v[2],
+        x.v[1] + a * y.v[1],
     }};
 }
