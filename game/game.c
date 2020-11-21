@@ -60,7 +60,7 @@ void game_init(struct game_state *restrict gs) {
     pak_load_asset_sync(&model, sizeof(model), MODEL_FAIRY);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 1; i++) {
         struct cp_phys *restrict phys = physics_new(&gs->physics);
         *phys = (struct cp_phys){
             .pos = {{
