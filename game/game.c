@@ -69,7 +69,7 @@ static const Gfx model_setup_dl[] = {
     gsDPPipeSync(),
     gsDPSetCycleType(G_CYC_1CYCLE),
     gsSPTexture(0, 0, 0, 0, G_OFF),
-    gsSPSetGeometryMode(G_CULL_BACK),
+    gsSPSetGeometryMode(G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
     gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
     gsSPEndDisplayList(),
 };
