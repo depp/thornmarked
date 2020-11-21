@@ -11,6 +11,17 @@
 
 #include <stdbool.h>
 
+// Header for a model loaded from disk. The rest of the data follows directly
+// afterwards.
+struct model_data {
+    float scale;
+};
+
+enum {
+    // Offset of display list in model data.
+    MODEL_DL_OFFSET = 8,
+};
+
 // Viewport scaling parameters.
 static const Vp viewport = {{
     .vscale = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
@@ -39,11 +50,14 @@ static const Gfx rdpinit_dl[] = {
     gsSPEndDisplayList(),
 };
 
-static u8 model[8 * 1024] __attribute__((aligned(16)));
+static union {
+    struct model_data header;
+    uint8_t data[8 * 1024];
+} model __attribute__((aligned(16)));
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
-    pak_load_asset_sync(model, sizeof(model), MESH_FAIRY);
+    pak_load_asset_sync(&model, sizeof(model), MODEL_FAIRY);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
     for (int i = 0; i < 3; i++) {
@@ -123,10 +137,11 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     Mtx *projection = gr->mtx_ptr++;
     guPerspective(projection, &perspNorm, 33, 320.0f / 240.0f, 64, 2048, 1.0);
     Mtx *camera = gr->mtx_ptr++;
-    guLookAt(camera,                  //
-             200.0f, -700.0f, 200.0f, // eye
-             0.0f, 0.0f, 0.0f,        // look at
-             0.0f, 0.0f, 1.0f);       // up
+    const float meter = 64.0f;
+    guLookAt(camera,                            //
+             0.0f, -5.0f * meter, 4.0f * meter, // eye
+             0.0f, 0.0f, 1.0f * meter,          // look at
+             0.0f, 0.0f, 1.0f);                 // up
     gSPMatrix(dl++, K0_TO_PHYS(projection),
               G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPMatrix(dl++, K0_TO_PHYS(camera),
@@ -136,15 +151,20 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
     gSPSetLights1(dl++, lights);
     gSPSetGeometryMode(dl++, G_LIGHTING);
-    gSPSegment(dl++, 1, K0_TO_PHYS(model));
+    gSPSegment(dl++, 1, K0_TO_PHYS(&model));
     for (struct cp_phys *cp = gs->physics.entities,
                         *ce = cp + gs->physics.count;
          cp != ce; cp++) {
-        Mtx *mtx = gr->mtx_ptr++;
-        guTranslate(mtx, cp->pos.v[0] * 100.0f, cp->pos.v[1] * 100.0f, 0.0f);
-        gSPMatrix(dl++, K0_TO_PHYS(mtx),
+        Mtx *mtx_tr = gr->mtx_ptr++;
+        Mtx *mtx_sc = gr->mtx_ptr++;
+        guTranslate(mtx_tr, cp->pos.v[0] * meter, cp->pos.v[1] * meter, 0.0f);
+        const float scale = model.header.scale * meter;
+        guScale(mtx_sc, scale, scale, scale);
+        gSPMatrix(dl++, K0_TO_PHYS(mtx_tr),
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-        gSPDisplayList(dl++, SEGMENT_ADDR(1, 0));
+        gSPMatrix(dl++, K0_TO_PHYS(mtx_sc),
+                  G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+        gSPDisplayList(dl++, SEGMENT_ADDR(1, MODEL_DL_OFFSET));
     }
 
     dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18, "Mintemblo 63");

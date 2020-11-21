@@ -11,7 +11,7 @@ def _models_impl(ctx):
         idx = name.find(".")
         if idx >= 0:
             name = name[:idx]
-        out = ctx.actions.declare_file(name + ".dat")
+        out = ctx.actions.declare_file(name + ".model")
         out_stats = ctx.actions.declare_file(name + ".txt")
         outputs.append(out)
         ctx.actions.run(
