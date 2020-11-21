@@ -4,12 +4,14 @@
 
 #include "base/random.h"
 #include "game/physics.h"
+#include "game/walk.h"
 
 struct graphics;
 
 struct game_state {
     struct rand rand;
     struct sys_phys physics;
+    struct sys_walk walk;
 };
 
 void game_init(struct game_state *restrict gs);

@@ -20,6 +20,8 @@ cc_binary(
         "physics.h",
         "stack.s",
         "text.c",
+        "walk.c",
+        "walk.h",
     ],
     copts = COPTS,
     deps = [

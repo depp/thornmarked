@@ -45,7 +45,8 @@ void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
     pak_load_asset_sync(model, sizeof(model), MESH_FAIRY);
     physics_init(&gs->physics);
-    for (int i = 0; i < 10; i++) {
+    walk_init(&gs->walk);
+    for (int i = 0; i < 3; i++) {
         struct cp_phys *restrict phys = physics_new(&gs->physics);
         *phys = (struct cp_phys){
             .pos = {{
@@ -58,11 +59,19 @@ void game_init(struct game_state *restrict gs) {
             }},
         };
     }
+    struct cp_walk *restrict wp = walk_new(&gs->walk);
+    wp->drive = (vec2){{0, 0}};
 }
 
 void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
-    (void)gs;
-    (void)pad;
+    const float scale = 1.0f / 80.0f;
+    const vec2 drive = {{
+        scale * (float)pad->stick_x,
+        scale * (float)pad->stick_y,
+    }};
+    for (unsigned i = 0; i < gs->walk.count; i++) {
+        gs->walk.entities[i].drive = drive;
+    }
 }
 
 static const Gfx model_setup_dl[] = {
@@ -75,6 +84,7 @@ static const Gfx model_setup_dl[] = {
 };
 
 void game_update(struct game_state *restrict gs, float dt) {
+    walk_update(&gs->walk, &gs->physics, dt);
     physics_update(&gs->physics, dt);
 }
 
