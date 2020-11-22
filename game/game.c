@@ -60,7 +60,7 @@ void game_init(struct game_state *restrict gs) {
     pak_load_asset_sync(&model, sizeof(model), MODEL_FAIRY);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 3; i++) {
         struct cp_phys *restrict phys = physics_new(&gs->physics);
         *phys = (struct cp_phys){
             .pos = {{
@@ -152,19 +152,20 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     gSPSetLights1(dl++, lights);
     gSPSetGeometryMode(dl++, G_LIGHTING);
     gSPSegment(dl++, 1, K0_TO_PHYS(&model));
+    float scale = model.header.scale * meter;
     for (struct cp_phys *cp = gs->physics.entities,
                         *ce = cp + gs->physics.count;
          cp != ce; cp++) {
         Mtx *mtx_tr = gr->mtx_ptr++;
         Mtx *mtx_sc = gr->mtx_ptr++;
         guTranslate(mtx_tr, cp->pos.v[0] * meter, cp->pos.v[1] * meter, 0.0f);
-        const float scale = model.header.scale * meter;
         guScale(mtx_sc, scale, scale, scale);
         gSPMatrix(dl++, K0_TO_PHYS(mtx_tr),
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         gSPMatrix(dl++, K0_TO_PHYS(mtx_sc),
                   G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
         gSPDisplayList(dl++, SEGMENT_ADDR(1, MODEL_DL_OFFSET));
+        scale *= 0.5f;
     }
 
     dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18, "Mintemblo 63");
