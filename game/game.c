@@ -19,7 +19,7 @@ struct model_data {
 
 enum {
     // Offset of display list in model data.
-    MODEL_DL_OFFSET = 8,
+    MODEL_DL_OFFSET = 0,
 };
 
 // Viewport scaling parameters.
@@ -50,10 +50,7 @@ static const Gfx rdpinit_dl[] = {
     gsSPEndDisplayList(),
 };
 
-static union {
-    struct model_data header;
-    uint8_t data[8 * 1024];
-} model __attribute__((aligned(16)));
+static uint8_t model[8 * 1024] __attribute__((aligned(16)));
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
@@ -152,7 +149,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     gSPSetLights1(dl++, lights);
     gSPSetGeometryMode(dl++, G_LIGHTING);
     gSPSegment(dl++, 1, K0_TO_PHYS(&model));
-    float scale = model.header.scale * meter;
+    float scale = 1.0;
     for (struct cp_phys *cp = gs->physics.entities,
                         *ce = cp + gs->physics.count;
          cp != ce; cp++) {
