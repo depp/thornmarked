@@ -4,10 +4,9 @@ genrule(
     name = "assets_files",
     srcs = [
         "manifest.txt",
+        "//assets/images",
         "//assets/models:fairy",
         "//assets/models:logo",
-        "//assets/test:Ariella_32x32",
-        "//assets/test:Ball",
         "//assets/fonts/grenze_gotisch",
     ],
     outs = [

@@ -50,11 +50,15 @@ static const Gfx rdpinit_dl[] = {
     gsSPEndDisplayList(),
 };
 
-static uint8_t model[8 * 1024] __attribute__((aligned(16)));
+#define ASSET __attribute__((section("uninit"), aligned(16)))
+
+static uint8_t model[8 * 1024] ASSET;
+static uint8_t texture[2 * 256 * 256] ASSET;
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
     pak_load_asset_sync(&model, sizeof(model), MODEL_FAIRY);
+    pak_load_asset_sync(&texture, sizeof(texture), IMG_GROUND);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
     for (int i = 0; i < 3; i++) {
@@ -102,6 +106,21 @@ void game_update(struct game_state *restrict gs, float dt) {
 static const Lights1 lights =
     gdSPDefLights1(16, 16, 64,                               // Ambient
                    255 - 16, 255 - 16, 255 - 64, 0, 0, 100); // Sun
+
+static Gfx texture_dl[] = {
+    gsDPPipeSync(),
+    gsDPSetTexturePersp(G_TP_NONE),
+    gsDPSetCycleType(G_CYC_1CYCLE),
+    gsDPSetRenderMode(G_RM_OPA_SURF, G_RM_OPA_SURF),
+    gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH),
+    gsSPTexture(0x8000, 0x8000, 0, 0, G_ON),
+    gsDPSetCombineMode(G_CC_DECALRGB, G_CC_DECALRGB),
+    gsDPSetTextureFilter(G_TF_POINT),
+    gsDPLoadTextureBlock(texture, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0,
+                         G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0, G_TX_NOLOD,
+                         G_TX_NOLOD),
+    gsSPEndDisplayList(),
+};
 
 void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     Gfx *dl = gr->dl_start;
@@ -164,6 +183,10 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
         gSPDisplayList(dl++, SEGMENT_ADDR(1, MODEL_DL_OFFSET));
         scale *= 0.5f;
     }
+
+    gSPDisplayList(dl++, texture_dl);
+    gSPTextureRectangle(dl++, 20 << 2, 100 << 2, (20 + 32) << 2,
+                        (100 + 32) << 2, 0, 0, 0, 1 << 10, 1 << 10);
 
     dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18, "Mintemblo 63");
 

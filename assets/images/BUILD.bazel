@@ -1,0 +1,13 @@
+package(default_visibility = ["//assets:__pkg__"])
+
+genrule(
+    name = "images",
+    srcs = [
+        "Ground023.png",
+    ],
+    outs = [
+        "Ground023.texture",
+    ],
+    tools = ["//tools/textureconvert"],
+    cmd = "$(execpath //tools/textureconvert) -format rgba.16 -output=$@ $<",
+)
