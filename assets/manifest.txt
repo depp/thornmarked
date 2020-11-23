@@ -1,4 +1,4 @@
-data IMG_GROUND images/Ground023.texture
+texture IMG_GROUND images/Ground023.texture
 data FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
 model MODEL_LOGO models/logo.model
 model MODEL_FAIRY models/fairy.model
