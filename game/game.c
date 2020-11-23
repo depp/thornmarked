@@ -132,12 +132,24 @@ static const Mtx identity = {{
 }};
 
 // Vertex data for the ground.
+#define X0 (-7)
+#define Y0 (-2)
+#define X1 7
+#define Y1 12
+#define V (1 << 6)
+#define T (1 << 11)
 static const Vtx ground_vtx[] = {
-    {{.ob = {-64, -64, 0}, .tc = {-(1 << 12), -(1 << 12)}}},
-    {{.ob = {64, -64, 0}, .tc = {(1 << 12), -(1 << 12)}}},
-    {{.ob = {-64, 64, 0}, .tc = {-(1 << 12), (1 << 12)}}},
-    {{.ob = {64, 64, 0}, .tc = {(1 << 12), (1 << 12)}}},
+    {{.ob = {X0 * V, Y0 *V, 0}, .tc = {X0 * T, Y0 *T}}},
+    {{.ob = {X1 * V, Y0 *V, 0}, .tc = {X1 * T, Y0 *T}}},
+    {{.ob = {X0 * V, Y1 *V, 0}, .tc = {X0 * T, Y1 *T}}},
+    {{.ob = {X1 * V, Y1 *V, 0}, .tc = {X1 * T, Y1 *T}}},
 };
+#undef X0
+#undef Y0
+#undef X1
+#undef Y1
+#undef V
+#undef T
 
 // Display list to draw the ground, once the texture is loaded.
 static const Gfx ground_dl[] = {
