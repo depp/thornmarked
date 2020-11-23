@@ -107,18 +107,43 @@ static const Lights1 lights =
     gdSPDefLights1(16, 16, 64,                               // Ambient
                    255 - 16, 255 - 16, 255 - 64, 0, 0, 100); // Sun
 
+// Display list to load the ground texture.
 static Gfx texture_dl[] = {
     gsDPPipeSync(),
-    gsDPSetTexturePersp(G_TP_NONE),
+    gsDPSetTexturePersp(G_TP_PERSP),
     gsDPSetCycleType(G_CYC_1CYCLE),
-    gsDPSetRenderMode(G_RM_OPA_SURF, G_RM_OPA_SURF),
+    gsDPSetRenderMode(G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF),
     gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH),
     gsSPTexture(0x8000, 0x8000, 0, 0, G_ON),
     gsDPSetCombineMode(G_CC_DECALRGB, G_CC_DECALRGB),
     gsDPSetTextureFilter(G_TF_POINT),
     gsDPLoadTextureBlock(texture, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0,
-                         G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0, G_TX_NOLOD,
+                         G_TX_NOMIRROR, G_TX_NOMIRROR, 5, 5, G_TX_NOLOD,
                          G_TX_NOLOD),
+    gsSPEndDisplayList(),
+};
+
+// The identity matrix.
+static const Mtx identity = {{
+    {1 << 16, 0, 1, 0},
+    {0, 1 << 16, 0, 1},
+    {0, 0, 0, 0},
+    {0, 0, 0, 0},
+}};
+
+// Vertex data for the ground.
+static const Vtx ground_vtx[] = {
+    {{.ob = {-64, -64, 0}, .tc = {-(1 << 12), -(1 << 12)}}},
+    {{.ob = {64, -64, 0}, .tc = {(1 << 12), -(1 << 12)}}},
+    {{.ob = {-64, 64, 0}, .tc = {-(1 << 12), (1 << 12)}}},
+    {{.ob = {64, 64, 0}, .tc = {(1 << 12), (1 << 12)}}},
+};
+
+// Display list to draw the ground, once the texture is loaded.
+static const Gfx ground_dl[] = {
+    gsSPMatrix(&identity, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH),
+    gsSPVertex(ground_vtx, 4, 0),
+    gsSP2Triangles(0, 1, 2, 0, 2, 1, 3, 0),
     gsSPEndDisplayList(),
 };
 
@@ -185,8 +210,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     }
 
     gSPDisplayList(dl++, texture_dl);
-    gSPTextureRectangle(dl++, 20 << 2, 100 << 2, (20 + 32) << 2,
-                        (100 + 32) << 2, 0, 0, 0, 1 << 10, 1 << 10);
+    gSPDisplayList(dl++, ground_dl);
 
     dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18, "Mintemblo 63");
 
