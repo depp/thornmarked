@@ -53,7 +53,7 @@ static const Gfx rdpinit_dl[] = {
 #define ASSET __attribute__((section("uninit"), aligned(16)))
 
 static uint8_t model[8 * 1024] ASSET;
-static uint8_t texture[2 * 256 * 256] ASSET;
+static uint8_t texture[4 * 1024] ASSET;
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
