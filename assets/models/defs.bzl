@@ -1,7 +1,7 @@
 def _models_impl(ctx):
     scale = ctx.attr.scale
     outputs = []
-    base_args = []
+    base_args = ["-meter=64"]
     if ctx.attr.use_normals:
         base_args.append("-use-normals")
     if ctx.attr.use_primitive_color:
@@ -36,7 +36,7 @@ models = rule(
             mandatory = True,
         ),
         "scale": attr.string(
-            mandatory = True,
+            default = "meter",
         ),
         "use_normals": attr.bool(
             default = False,

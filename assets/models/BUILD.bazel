@@ -2,8 +2,6 @@ load(":defs.bzl", "models")
 
 package(default_visibility = ["//assets:__pkg__"])
 
-METER = "64"
-
 models(
     name = "logo",
     srcs = ["logo.fbx"],
@@ -14,6 +12,6 @@ models(
 models(
     name = "fairy",
     srcs = ["fairy.fbx"],
-    scale = METER + "*2/11",  # Model is ~11 units tall.
+    scale = "meter*2/11",  # Model is ~11 units tall.
     use_normals = True,
 )
