@@ -22,9 +22,16 @@ enum {
     MODEL_DL_OFFSET = 0,
 };
 
+enum {
+    // Margin (black border) at edge of screen.
+    MARGIN_X = 16,
+    MARGIN_Y = 16,
+};
+
 // Viewport scaling parameters.
 static const Vp viewport = {{
-    .vscale = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
+    .vscale = {(SCREEN_WIDTH - MARGIN_X * 2) * 2,
+               (SCREEN_HEIGHT - MARGIN_Y * 2) * 2, G_MAXZ / 2, 0},
     .vtrans = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
 }};
 
@@ -41,7 +48,8 @@ static const Gfx rspinit_dl[] = {
 // Initialize the RDP.
 static const Gfx rdpinit_dl[] = {
     gsDPSetCycleType(G_CYC_1CYCLE),
-    gsDPSetScissor(G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT),
+    gsDPSetScissor(G_SC_NON_INTERLACE, MARGIN_X, MARGIN_Y,
+                   SCREEN_WIDTH - MARGIN_X, SCREEN_HEIGHT - MARGIN_Y),
     gsDPSetCombineKey(G_CK_NONE),
     gsDPSetAlphaCompare(G_AC_NONE),
     gsDPSetRenderMode(G_RM_NOOP, G_RM_NOOP2),
