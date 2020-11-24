@@ -204,10 +204,10 @@ func mainE() error {
 				fmt.Fprintf(&cmds, "set scale %q|", scale)
 			}
 			if primitiveColor {
-				fmt.Fprint(&cmds, "set use_primitive_color True")
+				fmt.Fprint(&cmds, "set primitive_color True")
 			}
 			if normals {
-				fmt.Fprint(&cmds, "set use_normals True")
+				fmt.Fprint(&cmds, "set normals True")
 			}
 		}
 		cmds.WriteString("add srcs")

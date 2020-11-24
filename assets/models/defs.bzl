@@ -2,9 +2,9 @@ def _models_impl(ctx):
     scale = ctx.attr.scale
     outputs = []
     base_args = ["-meter=64"]
-    if ctx.attr.use_normals:
+    if ctx.attr.normals:
         base_args.append("-use-normals")
-    if ctx.attr.use_primitive_color:
+    if ctx.attr.primitive_color:
         base_args.append("-use-primitive-color")
     for src in ctx.files.srcs:
         name = src.basename
@@ -38,10 +38,10 @@ models = rule(
         "scale": attr.string(
             default = "meter",
         ),
-        "use_normals": attr.bool(
+        "normals": attr.bool(
             default = False,
         ),
-        "use_primitive_color": attr.bool(
+        "primitive_color": attr.bool(
             default = False,
         ),
         "_converter": attr.label(
