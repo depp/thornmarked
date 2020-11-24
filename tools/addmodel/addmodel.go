@@ -181,7 +181,7 @@ func mainE() error {
 	defer fp.Close()
 	for _, model := range models {
 		name := strings.TrimSuffix(model, ".fbx")
-		if _, err := fmt.Fprintf(fp, "model %s%s models/%s.model",
+		if _, err := fmt.Fprintf(fp, "model %s%s models/%s.model\n",
 			identPrefix, strings.ToUpper(name), name); err != nil {
 			return fmt.Errorf("could not write to manifest: %v", err)
 		}
