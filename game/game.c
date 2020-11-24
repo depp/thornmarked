@@ -60,12 +60,12 @@ static const Gfx rdpinit_dl[] = {
 
 #define ASSET __attribute__((section("uninit"), aligned(16)))
 
-static uint8_t model[8 * 1024] ASSET;
+static uint8_t model[2][8 * 1024] ASSET;
 static uint8_t texture[4 * 1024] ASSET;
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
-    pak_load_asset_sync(&model, sizeof(model), MODEL_FAIRY);
+    pak_load_asset_sync(model[0], sizeof(model), MODEL_SPIKE);
     pak_load_asset_sync(&texture, sizeof(texture), IMG_GROUND);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
@@ -219,7 +219,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
          cp != ce; cp++) {
         Mtx *mtx_tr = gr->mtx_ptr++;
         Mtx *mtx_sc = gr->mtx_ptr++;
-        guTranslate(mtx_tr, cp->pos.v[0] * meter, cp->pos.v[1] * meter, 0.0f);
+        guTranslate(mtx_tr, cp->pos.v[0] * meter, cp->pos.v[1] * meter, meter);
         guScale(mtx_sc, scale, scale, scale);
         gSPMatrix(dl++, K0_TO_PHYS(mtx_tr),
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);

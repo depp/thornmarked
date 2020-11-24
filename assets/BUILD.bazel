@@ -8,6 +8,7 @@ genrule(
         "//assets/models:fairy",
         "//assets/models:logo",
         "//assets/fonts/grenze_gotisch",
+        "//assets/models:spike",
     ],
     outs = [
         "assets.dat",

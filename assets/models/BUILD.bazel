@@ -15,3 +15,9 @@ models(
     normals = True,
     scale = "meter*2/11",  # Model is ~11 units tall.
 )
+
+models(
+    name = "spike",
+    srcs = ["spike.fbx"],
+    normals = True,
+)
