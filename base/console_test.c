@@ -69,7 +69,7 @@ void test_main(void) {
     test_printf("i = [ 123]", "i = [% d]", 123);
     test_printf("i = [-123]", "i = [% d]", -123);
     test_printf("p = $8000ff00", "p = %p", (void *)(uintptr_t)0x8000ff00);
-    test_printf("hi = 1000", "hi = %hi", (0xff << 16) + 1000);
+    test_printf("hi = 1000", "hi = %hi", (short)((0xff << 16) + 1000));
     test_printf("x = 000000", "x = %#06x", 0);
     test_printf("x = 0x0001", "x = %#06x", 1);
     test_printf("lli = 1234567890123456789", "lli = %lli",
