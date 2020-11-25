@@ -13,7 +13,7 @@ static OSIoMesg dma_io_message_buffer;
 // Offset in cartridge where data is stored.
 extern uint8_t _pakdata_offset[];
 
-static void load_pak_data(void *dest, uint32_t offset, uint32_t size) {
+void pak_load_data_sync(void *dest, uint32_t offset, uint32_t size) {
     osWritebackDCache(dest, size);
     osInvalDCache(dest, size);
     dma_io_message_buffer = (OSIoMesg){
@@ -31,14 +31,16 @@ static void load_pak_data(void *dest, uint32_t offset, uint32_t size) {
     osInvalDCache(dest, size);
 }
 
-void pak_init(int asset_count) {
+void pak_init(unsigned asset_count) {
     rom_handle = osCartRomInit();
     osCreateMesgQueue(&dma_message_queue, &dma_message_buffer, 1);
-    uint32_t offset = (uintptr_t)_pakdata_offset;
-    load_pak_data(pak_objects + 1, offset,
-                  (asset_count - 1) * sizeof(*pak_objects));
-    for (int i = 1; i < asset_count; i++) {
-        pak_objects[i].offset += offset;
+    if (asset_count > 0) {
+        uint32_t offset = (uintptr_t)_pakdata_offset;
+        pak_load_data_sync(pak_objects + 1, offset,
+                           (asset_count - 1) * sizeof(*pak_objects));
+        for (unsigned i = 1; i < asset_count; i++) {
+            pak_objects[i].offset += offset;
+        }
     }
 }
 
@@ -49,5 +51,12 @@ void pak_load_asset_sync(void *dest, size_t destsize, int asset_id) {
             "Buffer too small to load asset\ndest = %p\nsize = %zu\nid=%d",
             dest, destsize, asset_id);
     }
-    load_pak_data(dest, obj.offset, obj.size);
+    pak_load_data_sync(dest, obj.offset, obj.size);
+}
+
+int pak_get_region(void) {
+    uint8_t header[32];
+    uint8_t *ptr = header + ((~(uintptr_t)header + 1) & 15);
+    pak_load_data_sync(ptr, 0x30, 16);
+    return ptr[0xe];
 }

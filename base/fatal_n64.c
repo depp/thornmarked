@@ -55,7 +55,20 @@ static void fatal_thread_func(void *arg) {
     };
 
     uint16_t *fb = (uint16_t *)(uintptr_t)0x80300000;
-    osViSetMode(&osViModeNtscLpn1);
+    OSViMode *mode;
+    switch (osTvType) {
+    case OS_TV_PAL:
+        mode = &osViModeFpalLpn1;
+        break;
+    default:
+    case OS_TV_NTSC:
+        mode = &osViModeNtscLpn1;
+        break;
+    case OS_TV_MPAL:
+        mode = &osViModeMpalLpn1;
+        break;
+    }
+    osViSetMode(mode);
     osViSetSpecialFeatures(OS_VI_GAMMA_OFF);
     osViBlack(false);
     osViSwapBuffer(fb);

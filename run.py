@@ -10,7 +10,8 @@ import subprocess
 import sys
 import urllib.parse
 
-DEFAULT_TARGET = '//game'
+NTSC_TARGET = '//game:Thornmarked_NTSC'
+PAL_TARGET = '//game:Thornmarked_PAL'
 EXTRA_PATHS = [
     '/usr/games',
 ]
@@ -82,7 +83,13 @@ def hardware(rom, args):
 
 def cen64(rom, args):
     exe = find_program('cen64', extra_paths=EXTRA_PATHS)
-    run([exe, SRCDIR / 'sdk/pifdata.bin', rom, *args.emulator_opts], exec=True)
+    if args.region == 'ntsc':
+        pifdata = SRCDIR / 'sdk/pifdata.bin'
+    elif args.region == 'pal':
+        pifdata = SRCDIR / 'sdk/pifdatapal.bin'
+    else:
+        die('unknown region')
+    run([exe, pifdata, rom, *args.emulator_opts], exec=True)
 
 def mame(rom, args):
     exe = find_program('mame', extra_paths=EXTRA_PATHS)
@@ -181,7 +188,12 @@ def get_image(args):
     # From -target:
     target = args.target
     if target is None:
-        target = DEFAULT_TARGET
+        if args.region == 'ntsc':
+            target = NTSC_TARGET
+        elif args.region == 'pal':
+            target = PAL_TARGET
+        else:
+            die('unknown region')
     temp = get_temp_dir()
     args = [
         'bazel', 'build',
@@ -255,6 +267,11 @@ def main(argv):
     g.add_argument('-image', '-i', help='run a specific ROM image')
     g.add_argument('-binary', '-b', help='run a specific ELF binary')
     g.add_argument('-target', '-t', help='Bazel target to run')
+    g = p.add_mutually_exclusive_group()
+    g.add_argument('-ntsc', action='store_const',
+        dest='region', default='ntsc', const='ntsc', help='run NSTC version')
+    g.add_argument('-pal', action='store_const',
+        dest='region', const='pal', help='run PAL version')
     args = p.parse_args(argv)
     global VERBOSE
     VERBOSE = args.verbose

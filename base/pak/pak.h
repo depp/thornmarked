@@ -18,10 +18,16 @@ struct pak_object {
 // the correct size.
 extern struct pak_object pak_objects[];
 
+// Load PAK data by offset and size.
+void pak_load_data_sync(void *dest, uint32_t offset, uint32_t size);
+
 // Initialize the asset loader.
-void pak_init(int asset_count);
+void pak_init(unsigned asset_count);
 
 // Synchronously load the asset with the given ID. The destsize argument is just
 // the size of the buffer pointed by dest, and it is used for checking that the
 // transfer is valid. If the asset is larger than destsize, this will abort.
 void pak_load_asset_sync(void *dest, size_t destsize, int asset_id);
+
+// Get the region code from the ROM header. Synchronous.
+int pak_get_region(void);

@@ -1,0 +1,33 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("//base:copts.bzl", "COPTS")
+load("//n64:defs.bzl", "n64_rom")
+
+cc_binary(
+    name = "tvtype.elf",
+    srcs = [
+        "main.c",
+        "stack.s",
+    ],
+    copts = COPTS,
+    deps = [
+        "//base",
+        "//base/pak",
+        "//n64:libultra",
+        "//sdk:gspF3DEX2.xbus",
+        "//sdk:rspboot",
+    ],
+)
+
+n64_rom(
+    name = "tvtype_ntsc",
+    program = ":tvtype.elf",
+    region = "E",
+    visibility = ["//:__pkg__"],
+)
+
+n64_rom(
+    name = "tvtype_pal",
+    program = ":tvtype.elf",
+    region = "P",
+    visibility = ["//:__pkg__"],
+)
