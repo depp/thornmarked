@@ -3,17 +3,27 @@ def _n64_rom_impl(ctx):
     data = ctx.file.data
     bootcode = ctx.file.bootcode
     out = ctx.actions.declare_file(ctx.label.name + ".n64")
+    arguments = [
+        "-program=" + program.path,
+        "-pak=" + data.path,
+        "-bootcode=" + bootcode.path,
+        "-output=" + out.path,
+    ]
+    name = ctx.attr.title
+    if name:
+        arguments.append("-name=" + name)
+    region = ctx.attr.region
+    if region:
+        arguments.append("-region=" + region)
+    save_type = ctx.attr.save_type
+    if save_type:
+        arguments.append("-save-type=" + save_type)
     ctx.actions.run(
         outputs = [out],
         inputs = [program, data, bootcode],
         progress_message = "Creating ROM %s" % out.short_path,
         executable = ctx.executable._makemask,
-        arguments = [
-            "-program=" + program.path,
-            "-pak=" + data.path,
-            "-bootcode=" + bootcode.path,
-            "-output=" + out.path,
-        ],
+        arguments = arguments,
     )
     return [DefaultInfo(files = depset([out]))]
 
@@ -31,6 +41,9 @@ n64_rom = rule(
             default = Label("//sdk:boot6102.bin"),
             allow_single_file = True,
         ),
+        "title": attr.string(),
+        "save_type": attr.string(),
+        "region": attr.string(),
         "_makemask": attr.label(
             default = Label("//tools/makemask"),
             allow_single_file = True,
