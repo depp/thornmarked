@@ -199,7 +199,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
 
         // Clear the borders of the color framebuffer.
         if (clear_border) {
-            const uint32_t border_color = RGB16_32(0, 31, 0);
+            const uint32_t border_color = RGB16_32(0, 0, 0);
             gDPSetScissor(dl++, G_SC_NON_INTERLACE, 0, 0, xsize, ysize);
             gDPSetFillColor(dl++, border_color);
             gDPFillRectangle(dl++, 0, 0, xsize - 1, MARGIN_Y - 1);
