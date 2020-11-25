@@ -49,19 +49,6 @@ static const Gfx init_dl[] = {
     gsSPEndDisplayList(),
 };
 
-// Viewport scaling parameters (clipped viewport, full viewport).
-static const Vp viewport[2] = {
-    {{
-        .vscale = {(SCREEN_WIDTH - MARGIN_X * 2) * 2,
-                   (SCREEN_HEIGHT - MARGIN_Y * 2) * 2, G_MAXZ / 2, 0},
-        .vtrans = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
-    }},
-    {{
-        .vscale = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
-        .vtrans = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
-    }},
-};
-
 #define ASSET __attribute__((section("uninit"), aligned(16)))
 
 static uint8_t model[2][8 * 1024] ASSET;
@@ -178,22 +165,27 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     const bool clear_cfb = true;
     const bool clear_border = true;
 
-    gSPSegment(dl++, 0, 0);
-    gSPViewport(dl++, &viewport[full]);
-    gSPDisplayList(dl++, init_dl);
-
+    const int xsize = SCREEN_WIDTH, ysize = gr->is_pal ? 288 : 240;
     {
-        int x0 = 0, y0 = 0, x1 = SCREEN_WIDTH, y1 = SCREEN_HEIGHT;
+        int x0 = 0, y0 = 0, x1 = xsize, y1 = ysize;
         if (!full) {
             x0 += MARGIN_X;
             y0 += MARGIN_Y;
             x1 -= MARGIN_X;
             y1 -= MARGIN_Y;
         }
+        gSPSegment(dl++, 0, 0);
+        gr->viewport = (Vp){{
+            .vscale = {(x1 - x0) * 2, (y1 - y0) * 2, G_MAXZ / 2, 0},
+            .vtrans = {(x1 + x0) * 2, (y1 + y0) * 2, G_MAXZ / 2, 0},
+        }};
+        osWritebackDCache(&gr->viewport, sizeof(gr->viewport));
+        gSPViewport(dl++, &gr->viewport);
+        gSPDisplayList(dl++, init_dl);
 
         // Clear the zbuffer.
         if (clear_z) {
-            gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+            gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, xsize,
                              gr->zbuffer);
             gDPSetFillColor(
                 dl++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16) | GPACK_ZDZ(G_MAXFBZ, 0));
@@ -202,22 +194,20 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
             gDPPipeSync(dl++);
         }
 
-        gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+        gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, xsize,
                          gr->framebuffer);
 
         // Clear the borders of the color framebuffer.
         if (clear_border) {
             const uint32_t border_color = RGB16_32(0, 31, 0);
-            gDPSetScissor(dl++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH,
-                          SCREEN_HEIGHT);
+            gDPSetScissor(dl++, G_SC_NON_INTERLACE, 0, 0, xsize, ysize);
             gDPSetFillColor(dl++, border_color);
-            gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, MARGIN_Y - 1);
+            gDPFillRectangle(dl++, 0, 0, xsize - 1, MARGIN_Y - 1);
             gDPFillRectangle(dl++, 0, MARGIN_Y, MARGIN_X - 1,
-                             SCREEN_HEIGHT - MARGIN_Y - 1);
-            gDPFillRectangle(dl++, SCREEN_WIDTH - MARGIN_X, MARGIN_Y,
-                             SCREEN_WIDTH - 1, SCREEN_HEIGHT - MARGIN_Y - 1);
-            gDPFillRectangle(dl++, 0, SCREEN_HEIGHT - MARGIN_Y,
-                             SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+                             ysize - MARGIN_Y - 1);
+            gDPFillRectangle(dl++, xsize - MARGIN_X, MARGIN_Y, xsize - 1,
+                             ysize - MARGIN_Y - 1);
+            gDPFillRectangle(dl++, 0, ysize - MARGIN_Y, xsize - 1, ysize - 1);
             gDPPipeSync(dl++);
         }
 
@@ -241,6 +231,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     const float meter = 64.0f;
     const float far = 16.0f * meter;
     const float near = far * (1.0f / 16.0f);
+    // FIXME: correct aspect ratio here.
     guPerspective(projection, &perspNorm, 33, 320.0f / 240.0f, near, far, 1.0);
     Mtx *camera = gr->mtx_ptr++;
     guLookAt(camera,                            //
@@ -276,7 +267,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     gSPDisplayList(dl++, texture_dl);
     gSPDisplayList(dl++, ground_dl);
 
-    dl = text_render(dl, gr->dl_end, 20, SCREEN_HEIGHT - 18, "Mintemblo 63");
+    dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Mintemblo 63");
 
     // Render debugging text overlay.
     dl = console_draw_displaylist(&console, dl, gr->dl_end);

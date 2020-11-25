@@ -2,9 +2,12 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//base:copts.bzl", "COPTS")
 load("//n64:defs.bzl", "n64_rom")
 
-alias(
+filegroup(
     name = "game",
-    actual = ":Thornmarked",
+    srcs = [
+        ":Thornmarked_NTSC",
+        ":Thornmarked_PAL",
+    ],
     visibility = ["//:__pkg__"],
 )
 
@@ -37,8 +40,17 @@ cc_binary(
 )
 
 n64_rom(
-    name = "Thornmarked",
+    name = "Thornmarked_NTSC",
     data = "//assets:assets_files",
     program = ":Thornmarked.elf",
-    title = "Thornmarked",
+    region = "E",
+    title = "Thornmarked (NTSC)",
+)
+
+n64_rom(
+    name = "Thornmarked_PAL",
+    data = "//assets:assets_files",
+    program = ":Thornmarked.elf",
+    region = "P",
+    title = "Thornmarked (PAL)",
 )

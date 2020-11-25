@@ -13,7 +13,7 @@ Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text);
 enum {
     // Size of the framebuffer, in pixels.
     SCREEN_WIDTH = 320,
-    SCREEN_HEIGHT = 240,
+    SCREEN_HEIGHT = 288,
 };
 
 enum {

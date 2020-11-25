@@ -58,7 +58,20 @@ static void idle(void *arg) {
 
     // Initialize video.
     osCreateViManager(OS_PRIORITY_VIMGR);
-    osViSetMode(&osViModeNtscLpn1);
+    OSViMode *mode;
+    switch (osTvType) {
+    case OS_TV_PAL:
+        mode = &osViModeFpalLpn1;
+        break;
+    default:
+    case OS_TV_NTSC:
+        mode = &osViModeNtscLpn1;
+        break;
+    case OS_TV_MPAL:
+        mode = &osViModeMpalLpn1;
+        break;
+    }
+    osViSetMode(mode);
     osViBlack(1);
 
     // Initialize peripheral manager.
@@ -203,6 +216,7 @@ static void main(void *arg) {
 
     scheduler_start(&scheduler, PRIORITY_SCHEDULER, 1);
     int frame_num = 0;
+    const bool is_pal = osTvType == OS_TV_PAL;
     for (int current_task = 0;; current_task ^= 1) {
         console_init(&console, CONSOLE_TRUNCATE);
         console_printf(&console, "Frame %d\n", frame_num);
@@ -252,6 +266,7 @@ static void main(void *arg) {
                 .mtx_end = mtx_end,
                 .framebuffer = framebuffers[current_task],
                 .zbuffer = zbuffer,
+                .is_pal = is_pal,
             };
             game_render(&game_state, &gr);
             data_ptr = (u64 *)dl_start;

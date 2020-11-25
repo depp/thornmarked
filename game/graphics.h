@@ -2,6 +2,8 @@
 
 #include <ultra64.h>
 
+#include <stdbool.h>
+
 struct graphics {
     Gfx *dl_ptr;
     Gfx *dl_start;
@@ -13,4 +15,7 @@ struct graphics {
 
     uint16_t *framebuffer;
     uint16_t *zbuffer;
+
+    bool is_pal;
+    Vp viewport;
 };
