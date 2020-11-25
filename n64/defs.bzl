@@ -1,16 +1,41 @@
-def n64_rom(name, program, data, visibility=None):
-    """Create a Nintendo 64 ROM image with the given program and data."""
-    native.genrule(
-        name = name,
-        srcs = [
-            program,
-            data,
-            "//sdk:boot6102.bin",
+def _n64_rom_impl(ctx):
+    program = ctx.file.program
+    data = ctx.file.data
+    bootcode = ctx.file.bootcode
+    out = ctx.actions.declare_file(ctx.label.name + ".n64")
+    ctx.actions.run(
+        outputs = [out],
+        inputs = [program, data, bootcode],
+        progress_message = "Creatign ROM %s" % out.short_path,
+        executable = ctx.executable._makemask,
+        arguments = [
+            "-program=" + program.path,
+            "-pak=" + data.path,
+            "-bootcode=" + bootcode.path,
+            "-output=" + out.path,
         ],
-        tools = [
-            "//tools/makemask",
-        ],
-        outs = [name + ".n64"],
-        cmd = ("$(execpath //tools/makemask) -output $@ -bootcode $(execpath //sdk:boot6102.bin) -program $(location %s) -pak $(location %s)" % (program, data)),
-        visibility = visibility,
     )
+    return [DefaultInfo(files = depset([out]))]
+
+n64_rom = rule(
+    implementation = _n64_rom_impl,
+    attrs = {
+        "program": attr.label(
+            mandatory = True,
+            allow_single_file = True,
+        ),
+        "data": attr.label(
+            allow_single_file = True,
+        ),
+        "bootcode": attr.label(
+            default = Label("//sdk:boot6102.bin"),
+            allow_single_file = True,
+        ),
+        "_makemask": attr.label(
+            default = Label("//tools/makemask"),
+            allow_single_file = True,
+            executable = True,
+            cfg = "exec",
+        ),
+    },
+)
