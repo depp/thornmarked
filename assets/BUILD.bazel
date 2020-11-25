@@ -1,29 +1,21 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load(":defs.bzl", "asset_data", "asset_header")
 
-genrule(
+asset_header(
+    name = "assets",
+    header = "assets.h",
+    manifest = "manifest.txt",
+    visibility = ["//game:__subpackages__"],
+)
+
+asset_data(
     name = "assets_files",
     srcs = [
-        "manifest.txt",
+        "//assets/fonts/grenze_gotisch",
         "//assets/images",
         "//assets/models:fairy",
         "//assets/models:logo",
-        "//assets/fonts/grenze_gotisch",
         "//assets/models:spike",
     ],
-    outs = [
-        "assets.dat",
-        "assets.h",
-    ],
-    cmd = ("$(execpath //tools/makepak) " +
-           "-dir $(GENDIR)/assets " +
-           "-manifest $(location manifest.txt) " +
-           "-data-out $(location assets.dat) -header-out $(location assets.h)"),
-    tools = ["//tools/makepak"],
+    manifest = "manifest.txt",
     visibility = ["//game:__pkg__"],
-)
-
-cc_library(
-    name = "assets",
-    hdrs = ["assets.h"],
-    visibility = ["//game:__subpackages__"],
 )

@@ -38,6 +38,6 @@ cc_binary(
 
 n64_rom(
     name = "Thornmarked",
-    data = "//assets:assets.dat",
+    data = "//assets:assets_files",
     program = ":Thornmarked.elf",
 )
