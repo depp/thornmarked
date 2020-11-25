@@ -6,7 +6,7 @@ def _n64_rom_impl(ctx):
     ctx.actions.run(
         outputs = [out],
         inputs = [program, data, bootcode],
-        progress_message = "Creatign ROM %s" % out.short_path,
+        progress_message = "Creating ROM %s" % out.short_path,
         executable = ctx.executable._makemask,
         arguments = [
             "-program=" + program.path,
