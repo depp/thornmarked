@@ -5,10 +5,13 @@ def _n64_rom_impl(ctx):
     out = ctx.actions.declare_file(ctx.label.name + ".n64")
     arguments = [
         "-program=" + program.path,
-        "-pak=" + data.path,
         "-bootcode=" + bootcode.path,
         "-output=" + out.path,
     ]
+    inputs = [program, bootcode]
+    if data:
+        arguments.append("-pak=" + data.path)
+        inputs.append(data)
     name = ctx.attr.title
     if name:
         arguments.append("-name=" + name)
@@ -20,7 +23,7 @@ def _n64_rom_impl(ctx):
         arguments.append("-save-type=" + save_type)
     ctx.actions.run(
         outputs = [out],
-        inputs = [program, data, bootcode],
+        inputs = inputs,
         progress_message = "Creating ROM %s" % out.short_path,
         executable = ctx.executable._makemask,
         arguments = arguments,
