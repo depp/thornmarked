@@ -11,8 +11,6 @@ def n64_rom(name, program, data, visibility=None):
             "//tools/makemask",
         ],
         outs = [name + ".n64"],
-        cmd = ("mips32-elf-objcopy -O binary $(location %s) $@; " % program +
-               "cat $(location %s) >>$@; " % data +
-               "$(execpath //tools/makemask) -rom $@ -bootcode $(execpath //sdk:boot6102.bin)"),
+        cmd = ("$(execpath //tools/makemask) -output $@ -bootcode $(execpath //sdk:boot6102.bin) -program $(location %s) -pak $(location %s)" % (program, data)),
         visibility = visibility,
     )
