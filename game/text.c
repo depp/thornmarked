@@ -86,6 +86,8 @@ Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text) {
     }
     gDPPipeSync(dl++);
     gDPSetCycleType(dl++, G_CYC_1CYCLE);
+    gDPSetTextureFilter(dl++, G_TF_POINT);
+    gDPSetTexturePersp(dl++, G_TP_NONE);
     gDPSetPrimColor(dl++, 0, 0, 255, 128, 0, 255);
     gDPSetRenderMode(dl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
     gDPSetCombineMode(dl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);

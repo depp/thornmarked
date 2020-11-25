@@ -54,6 +54,9 @@ static const Gfx init_dl[] = {
 static uint8_t model[2][8 * 1024] ASSET;
 static uint8_t texture[4 * 1024] ASSET;
 
+static uint16_t test_texture[2 * 1024]
+    __attribute__((section("uninit"), aligned(16)));
+
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
     pak_load_asset_sync(model[0], sizeof(model), MODEL_SPIKE);
@@ -75,6 +78,33 @@ void game_init(struct game_state *restrict gs) {
     }
     struct cp_walk *restrict wp = walk_new(&gs->walk);
     wp->drive = (vec2){{0, 0}};
+
+    {
+        uint16_t *ptr = test_texture;
+        static const uint16_t COLORS[4][2] = {
+            {RGB16(31, 0, 0), RGB16(31, 31, 0)},
+            {RGB16(0, 0, 31), RGB16(31, 0, 31)},
+            {RGB16(0, 31, 0), RGB16(0, 31, 31)},
+            {RGB16(31, 0, 0), RGB16(31, 31, 0)},
+        };
+        for (int level = 0; level < 4; level++) {
+            int sz = 1 << (5 - level);
+            uint16_t ca = COLORS[level][0];
+            uint16_t cb = COLORS[level][1];
+            for (int y = 0; y < sz; y++) {
+                uint16_t *row = ptr + y * sz;
+                for (int x = 0; x < sz; x += 2) {
+                    row[x] = ca;
+                    row[x + 1] = cb;
+                }
+                uint16_t temp = ca;
+                ca = cb;
+                cb = temp;
+            }
+            ptr += sz * sz;
+        }
+        osWritebackDCache(test_texture, sizeof(*ptr) * (ptr - test_texture));
+    }
 }
 
 void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
@@ -115,10 +145,49 @@ static Gfx texture_dl[] = {
     gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH),
     gsSPTexture(0x8000, 0x8000, 0, 0, G_ON),
     gsDPSetCombineMode(G_CC_DECALRGB, G_CC_DECALRGB),
-    gsDPSetTextureFilter(G_TF_POINT),
-    gsDPLoadTextureBlock(texture, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0,
-                         G_TX_NOMIRROR, G_TX_NOMIRROR, 5, 5, G_TX_NOLOD,
-                         G_TX_NOLOD),
+    gsDPSetTextureFilter(G_TF_BILERP),
+
+    // Load data into TMEM (using G_TX_LOADTILE).
+
+    gsDPSetTextureImage( //
+        G_IM_FMT_RGBA,   // format
+        G_IM_SIZ_16b,    // size
+        1,               // width
+        test_texture),   // texture
+
+    gsDPSetTile(       //
+        G_IM_FMT_RGBA, // format
+        G_IM_SIZ_16b,  // size
+        0,             // size of one row
+        0,             // tmem
+        G_TX_LOADTILE, // tile
+        0,             // palette
+        G_TX_NOMIRROR, // cmt
+        5,             // maskt
+        G_TX_NOLOD,    // shiftt
+        G_TX_NOMIRROR, // cms
+        5,             // masks
+        G_TX_NOLOD),   // shifts
+
+    gsDPLoadSync(),
+
+    gsDPLoadBlock(     //
+        G_TX_LOADTILE, // tile
+        0,             // uls
+        0,             // ult
+        1360,          // lrs
+        0),            // dxt
+
+    gsDPPipeSync(),
+
+    // Tile: format, size, length of row in 8-byte units, TMEM address, tile,
+    // palette, cmt, maskt, shiftt, cms, masks, shifts.
+    //
+    // TileSize: tile, uls, ult, lrs, lrt
+    gsDPSetTile(G_IM_FMT_RGBA, G_IM_SIZ_16b, 8, 0, 0, 0, 0, 5, 0, 0, 5, 0),
+    gsDPSetTileSize(0, 0, 0, 31 << G_TEXTURE_IMAGE_FRAC,
+                    31 << G_TEXTURE_IMAGE_FRAC),
+
     gsSPEndDisplayList(),
 };
 
