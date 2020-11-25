@@ -16,8 +16,8 @@ genrule(
     ],
     cmd = ("$(execpath //tools/makepak) " +
            "-dir $(GENDIR)/assets " +
-           "$(location manifest.txt) " +
-           "$(location assets.dat) $(location assets.h)"),
+           "-manifest $(location manifest.txt) " +
+           "-data-out $(location assets.dat) -header-out $(location assets.h)"),
     tools = ["//tools/makepak"],
     visibility = ["//game:__pkg__"],
 )
