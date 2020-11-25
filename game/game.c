@@ -28,34 +28,38 @@ enum {
     MARGIN_Y = 16,
 };
 
-// Viewport scaling parameters.
-static const Vp viewport = {{
-    .vscale = {(SCREEN_WIDTH - MARGIN_X * 2) * 2,
-               (SCREEN_HEIGHT - MARGIN_Y * 2) * 2, G_MAXZ / 2, 0},
-    .vtrans = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
-}};
+#define RGB16(r, g, b) \
+    ((((r)&31u) << 11) | (((g)&31u) << 6) | (((b)&31u) << 1) | 1)
+#define RGB16_32(r, g, b) ((RGB16(r, g, b) << 16) | RGB16(r, g, b))
 
-// Initialize the RSP.
-static const Gfx rspinit_dl[] = {
-    gsSPViewport(&viewport),
-    gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH | G_CULL_BOTH | G_FOG |
-                          G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR |
-                          G_LOD),
+// Initialization display list, invoked at the beginning of each frame.
+static const Gfx init_dl[] = {
+    // Initialize the RSP.
+    gsSPGeometryMode(~(u32)0, 0),
     gsSPTexture(0, 0, 0, 0, G_OFF),
-    gsSPEndDisplayList(),
-};
 
-// Initialize the RDP.
-static const Gfx rdpinit_dl[] = {
-    gsDPSetCycleType(G_CYC_1CYCLE),
-    gsDPSetScissor(G_SC_NON_INTERLACE, MARGIN_X, MARGIN_Y,
-                   SCREEN_WIDTH - MARGIN_X, SCREEN_HEIGHT - MARGIN_Y),
+    // Initialize the RDP.
+    gsDPPipeSync(),
     gsDPSetCombineKey(G_CK_NONE),
     gsDPSetAlphaCompare(G_AC_NONE),
     gsDPSetRenderMode(G_RM_NOOP, G_RM_NOOP2),
     gsDPSetColorDither(G_CD_DISABLE),
-    gsDPPipeSync(),
+    gsDPSetCycleType(G_CYC_FILL),
+
     gsSPEndDisplayList(),
+};
+
+// Viewport scaling parameters (clipped viewport, full viewport).
+static const Vp viewport[2] = {
+    {{
+        .vscale = {(SCREEN_WIDTH - MARGIN_X * 2) * 2,
+                   (SCREEN_HEIGHT - MARGIN_Y * 2) * 2, G_MAXZ / 2, 0},
+        .vtrans = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
+    }},
+    {{
+        .vscale = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
+        .vtrans = {SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, G_MAXZ / 2, 0},
+    }},
 };
 
 #define ASSET __attribute__((section("uninit"), aligned(16)))
@@ -169,28 +173,66 @@ static const Gfx ground_dl[] = {
 
 void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     Gfx *dl = gr->dl_start;
+    const bool full = false;
+    const bool clear_z = true;
+    const bool clear_cfb = true;
+    const bool clear_border = true;
 
     gSPSegment(dl++, 0, 0);
-    gSPDisplayList(dl++, rdpinit_dl);
-    gSPDisplayList(dl++, rspinit_dl);
+    gSPViewport(dl++, &viewport[full]);
+    gSPDisplayList(dl++, init_dl);
 
-    // Clear the zbuffer.
-    gDPSetCycleType(dl++, G_CYC_FILL);
-    gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
-                     gr->zbuffer);
-    gDPSetFillColor(dl++,
-                    (GPACK_ZDZ(G_MAXFBZ, 0) << 16) | GPACK_ZDZ(G_MAXFBZ, 0));
-    gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+    {
+        int x0 = 0, y0 = 0, x1 = SCREEN_WIDTH, y1 = SCREEN_HEIGHT;
+        if (!full) {
+            x0 += MARGIN_X;
+            y0 += MARGIN_Y;
+            x1 -= MARGIN_X;
+            y1 -= MARGIN_Y;
+        }
 
-    // Clear the color framebuffer.
-    gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
-                     gr->framebuffer);
-    gDPPipeSync(dl++);
-    gDPSetFillColor(dl++, 0);
-    gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+        // Clear the zbuffer.
+        if (clear_z) {
+            gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+                             gr->zbuffer);
+            gDPSetFillColor(
+                dl++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16) | GPACK_ZDZ(G_MAXFBZ, 0));
+            gDPSetScissor(dl++, G_SC_NON_INTERLACE, x0, y0, x1, y1);
+            gDPFillRectangle(dl++, x0, y0, x1 - 1, y1 - 1);
+            gDPPipeSync(dl++);
+        }
+
+        gDPSetColorImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH,
+                         gr->framebuffer);
+
+        // Clear the borders of the color framebuffer.
+        if (clear_border) {
+            const uint32_t border_color = RGB16_32(0, 31, 0);
+            gDPSetScissor(dl++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH,
+                          SCREEN_HEIGHT);
+            gDPSetFillColor(dl++, border_color);
+            gDPFillRectangle(dl++, 0, 0, SCREEN_WIDTH - 1, MARGIN_Y - 1);
+            gDPFillRectangle(dl++, 0, MARGIN_Y, MARGIN_X - 1,
+                             SCREEN_HEIGHT - MARGIN_Y - 1);
+            gDPFillRectangle(dl++, SCREEN_WIDTH - MARGIN_X, MARGIN_Y,
+                             SCREEN_WIDTH - 1, SCREEN_HEIGHT - MARGIN_Y - 1);
+            gDPFillRectangle(dl++, 0, SCREEN_HEIGHT - MARGIN_Y,
+                             SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+            gDPPipeSync(dl++);
+        }
+
+        gDPSetScissor(dl++, G_SC_NON_INTERLACE, x0, y0, x1, y1);
+
+        // Clear the color framebuffer.
+        if (clear_cfb) {
+            const uint32_t clear_color = RGB16_32(31, 0, 31);
+            gDPSetFillColor(dl++, clear_color);
+            gDPFillRectangle(dl++, x0, y0, x1 - 1, y1 - 1);
+            gDPPipeSync(dl++);
+        }
+    }
 
     // Render game.
-    gDPPipeSync(dl++);
     gDPSetDepthImage(dl++, gr->zbuffer);
     gSPSetGeometryMode(dl++, G_ZBUFFER);
     gDPSetRenderMode(dl++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
