@@ -311,7 +311,7 @@ func mainE() error {
 		if err := buildArtifact("-c", "opt", "--platforms=//n64", "//game"); err != nil {
 			return err
 		}
-		fileList := []string{"Thornmarked.elf", "Thornmarked.n64"}
+		fileList := []string{"Thornmarked.elf", "Thornmarked_NTSC.n64", "Thornmarked_PAL.n64"}
 		for _, file := range fileList {
 			if err := pk.addFile(file, filepath.Join(wsdir, "bazel-bin/game", file)); err != nil {
 				return err
