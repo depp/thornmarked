@@ -80,28 +80,35 @@ void game_init(struct game_state *restrict gs) {
     wp->drive = (vec2){{0, 0}};
 
     {
+        for (int i = 0; i < 2048; i++) {
+            test_texture[i] = RGB16(31, 0, 0);
+        }
         uint16_t *ptr = test_texture;
-        static const uint16_t COLORS[4][2] = {
+        static const uint16_t COLORS[6][2] = {
             {RGB16(31, 0, 0), RGB16(31, 31, 0)},
             {RGB16(0, 0, 31), RGB16(31, 0, 31)},
-            {RGB16(0, 31, 0), RGB16(0, 31, 31)},
-            {RGB16(31, 0, 0), RGB16(31, 31, 0)},
+            {RGB16(0, 31, 0), RGB16(0, 0, 0)},
+            {RGB16(31, 0, 0), RGB16(15, 0, 31)},
+            {RGB16(31, 31, 31), RGB16(0, 0, 0)},
+            {RGB16(15, 31, 15), RGB16(15, 31, 15)},
         };
-        for (int level = 0; level < 4; level++) {
+        for (int level = 0; level < 6; level++) {
             int sz = 1 << (5 - level);
+            int stride = (sz + 3) & ~3u;
             uint16_t ca = COLORS[level][0];
             uint16_t cb = COLORS[level][1];
             for (int y = 0; y < sz; y++) {
-                uint16_t *row = ptr + y * sz;
-                for (int x = 0; x < sz; x += 2) {
-                    row[x] = ca;
-                    row[x + 1] = cb;
+                uint16_t *row = ptr + y * stride;
+                int z = (y & 1) << 1;
+                for (int x = 0; x < stride; x += 2) {
+                    row[x ^ z] = ca;
+                    row[(x + 1) ^ z] = cb;
                 }
                 uint16_t temp = ca;
                 ca = cb;
                 cb = temp;
             }
-            ptr += sz * sz;
+            ptr += sz * stride;
         }
         osWritebackDCache(test_texture, sizeof(*ptr) * (ptr - test_texture));
     }
@@ -140,11 +147,14 @@ static const Lights1 lights =
 static Gfx texture_dl[] = {
     gsDPPipeSync(),
     gsDPSetTexturePersp(G_TP_PERSP),
-    gsDPSetCycleType(G_CYC_1CYCLE),
-    gsDPSetRenderMode(G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF),
+    gsDPSetCycleType(G_CYC_2CYCLE),
+    gsDPSetRenderMode(G_RM_PASS, G_RM_ZB_OPA_SURF2),
     gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH),
-    gsSPTexture(0x8000, 0x8000, 0, 0, G_ON),
-    gsDPSetCombineMode(G_CC_DECALRGB, G_CC_DECALRGB),
+    gsSPTexture(0x8000, 0x8000, 5, 0, G_ON),
+    gsDPSetTextureDetail(G_TD_CLAMP),
+    gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
+    gsDPSetCombineMode(G_CC_TRILERP, G_CC_DECALRGB2),
+    gsDPSetTextureLOD(G_TL_LOD),
     gsDPSetTextureFilter(G_TF_BILERP),
 
     // Load data into TMEM (using G_TX_LOADTILE).
@@ -163,10 +173,10 @@ static Gfx texture_dl[] = {
         G_TX_LOADTILE, // tile
         0,             // palette
         G_TX_NOMIRROR, // cmt
-        5,             // maskt
+        0,             // maskt
         G_TX_NOLOD,    // shiftt
         G_TX_NOMIRROR, // cms
-        5,             // masks
+        0,             // masks
         G_TX_NOLOD),   // shifts
 
     gsDPLoadSync(),
@@ -175,7 +185,7 @@ static Gfx texture_dl[] = {
         G_TX_LOADTILE, // tile
         0,             // uls
         0,             // ult
-        1360,          // lrs
+        1371,          // lrs
         0),            // dxt
 
     gsDPPipeSync(),
@@ -187,6 +197,21 @@ static Gfx texture_dl[] = {
     gsDPSetTile(G_IM_FMT_RGBA, G_IM_SIZ_16b, 8, 0, 0, 0, 0, 5, 0, 0, 5, 0),
     gsDPSetTileSize(0, 0, 0, 31 << G_TEXTURE_IMAGE_FRAC,
                     31 << G_TEXTURE_IMAGE_FRAC),
+    gsDPSetTile(G_IM_FMT_RGBA, G_IM_SIZ_16b, 4, 256, 1, 0, 0, 4, 1, 0, 4, 1),
+    gsDPSetTileSize(1, 0, 0, 15 << G_TEXTURE_IMAGE_FRAC,
+                    15 << G_TEXTURE_IMAGE_FRAC),
+    gsDPSetTile(G_IM_FMT_RGBA, G_IM_SIZ_16b, 2, 320, 2, 0, 0, 3, 2, 0, 3, 2),
+    gsDPSetTileSize(2, 0, 0, 7 << G_TEXTURE_IMAGE_FRAC,
+                    7 << G_TEXTURE_IMAGE_FRAC),
+    gsDPSetTile(G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, 336, 3, 0, 0, 2, 3, 0, 2, 3),
+    gsDPSetTileSize(3, 0, 0, 3 << G_TEXTURE_IMAGE_FRAC,
+                    3 << G_TEXTURE_IMAGE_FRAC),
+    gsDPSetTile(G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, 340, 4, 0, 0, 1, 4, 0, 1, 4),
+    gsDPSetTileSize(4, 0, 0, 1 << G_TEXTURE_IMAGE_FRAC,
+                    1 << G_TEXTURE_IMAGE_FRAC),
+    gsDPSetTile(G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, 342, 5, 0, 0, 0, 5, 0, 0, 5),
+    gsDPSetTileSize(5, 0, 0, 0 << G_TEXTURE_IMAGE_FRAC,
+                    0 << G_TEXTURE_IMAGE_FRAC),
 
     gsSPEndDisplayList(),
 };
@@ -335,6 +360,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
 
     gSPDisplayList(dl++, texture_dl);
     gSPDisplayList(dl++, ground_dl);
+    gDPSetTextureLOD(dl++, G_TL_TILE);
 
     dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Mintemblo 63");
 
