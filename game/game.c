@@ -54,9 +54,6 @@ static const Gfx init_dl[] = {
 static uint8_t model[2][8 * 1024] ASSET;
 static uint8_t texture[4 * 1024] ASSET;
 
-static uint16_t test_texture[2 * 1024]
-    __attribute__((section("uninit"), aligned(16)));
-
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
     pak_load_asset_sync(model[0], sizeof(model), MODEL_SPIKE);
@@ -78,40 +75,6 @@ void game_init(struct game_state *restrict gs) {
     }
     struct cp_walk *restrict wp = walk_new(&gs->walk);
     wp->drive = (vec2){{0, 0}};
-
-    {
-        for (int i = 0; i < 2048; i++) {
-            test_texture[i] = RGB16(31, 0, 0);
-        }
-        uint16_t *ptr = test_texture;
-        static const uint16_t COLORS[6][2] = {
-            {RGB16(31, 0, 0), RGB16(31, 31, 0)},
-            {RGB16(0, 0, 31), RGB16(31, 0, 31)},
-            {RGB16(0, 31, 0), RGB16(0, 0, 0)},
-            {RGB16(31, 0, 0), RGB16(15, 0, 31)},
-            {RGB16(31, 31, 31), RGB16(0, 0, 0)},
-            {RGB16(15, 31, 15), RGB16(15, 31, 15)},
-        };
-        for (int level = 0; level < 6; level++) {
-            int sz = 1 << (5 - level);
-            int stride = (sz + 3) & ~3u;
-            uint16_t ca = COLORS[level][0];
-            uint16_t cb = COLORS[level][1];
-            for (int y = 0; y < sz; y++) {
-                uint16_t *row = ptr + y * stride;
-                int z = (y & 1) << 1;
-                for (int x = 0; x < stride; x += 2) {
-                    row[x ^ z] = ca;
-                    row[(x + 1) ^ z] = cb;
-                }
-                uint16_t temp = ca;
-                ca = cb;
-                cb = temp;
-            }
-            ptr += sz * stride;
-        }
-        osWritebackDCache(test_texture, sizeof(*ptr) * (ptr - test_texture));
-    }
 }
 
 void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
@@ -163,7 +126,7 @@ static Gfx texture_dl[] = {
         G_IM_FMT_RGBA,   // format
         G_IM_SIZ_16b,    // size
         1,               // width
-        test_texture),   // texture
+        texture),        // texture
 
     gsDPSetTile(       //
         G_IM_FMT_RGBA, // format
@@ -362,7 +325,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     gSPDisplayList(dl++, ground_dl);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 
-    dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Mintemblo 63");
+    dl = text_render(dl, gr->dl_end, 20, ysize - 18, "MipMaps");
 
     // Render debugging text overlay.
     dl = console_draw_displaylist(&console, dl, gr->dl_end);

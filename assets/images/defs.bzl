@@ -1,6 +1,10 @@
 def _textures_impl(ctx):
     outputs = []
     base_args = ["-format=" + ctx.attr.format]
+    if ctx.attr.mipmap:
+        base_args.append("-mipmap")
+    if ctx.attr.native:
+        base_args.append("-native")
     for src in ctx.files.srcs:
         name = src.basename
         idx = name.find(".")
@@ -15,7 +19,7 @@ def _textures_impl(ctx):
             executable = ctx.executable._converter,
             arguments = base_args + [
                 "-output=" + out.path,
-                src.path,
+                "-input=" + src.path,
             ],
         )
     return [DefaultInfo(files = depset(outputs))]
@@ -29,6 +33,12 @@ textures = rule(
         ),
         "format": attr.string(
             mandatory = True,
+        ),
+        "mipmap": attr.bool(
+            default = False,
+        ),
+        "native": attr.bool(
+            default = False,
         ),
         "_converter": attr.label(
             default = Label("//tools/textureconvert"),

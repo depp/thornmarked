@@ -8,4 +8,6 @@ textures(
         "Ground023.png",
     ],
     format = "rgba.16",
+    mipmap = True,
+    native = True,
 )
