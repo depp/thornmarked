@@ -224,10 +224,10 @@ static const Mtx identity = {{
 #define V (1 << 6)
 #define T (1 << 11)
 static const Vtx ground_vtx[] = {
-    {{.ob = {X0 * V, Y0 *V, 0}, .tc = {X0 * T, Y0 *T}}},
-    {{.ob = {X1 * V, Y0 *V, 0}, .tc = {X1 * T, Y0 *T}}},
-    {{.ob = {X0 * V, Y1 *V, 0}, .tc = {X0 * T, Y1 *T}}},
-    {{.ob = {X1 * V, Y1 *V, 0}, .tc = {X1 * T, Y1 *T}}},
+    {{.ob = {X0 * V, Y0 *V, 0}, .tc = {X0 * T, -Y0 *T}}},
+    {{.ob = {X1 * V, Y0 *V, 0}, .tc = {X1 * T, -Y0 *T}}},
+    {{.ob = {X0 * V, Y1 *V, 0}, .tc = {X0 * T, -Y1 *T}}},
+    {{.ob = {X1 * V, Y1 *V, 0}, .tc = {X1 * T, -Y1 *T}}},
 };
 #undef X0
 #undef Y0
@@ -246,7 +246,7 @@ static const Gfx ground_dl[] = {
 
 void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     {
-        int texture_asset = IMG_GROUND + gs->dither;
+        int texture_asset = IMG_ARIELLA + gs->dither;
         if (texture_asset != gs->loaded_texture) {
             pak_load_asset_sync(&texture, sizeof(texture), texture_asset);
             gs->loaded_texture = texture_asset;

@@ -5,6 +5,7 @@ package(default_visibility = ["//assets:__pkg__"])
 [textures(
     name = "images" + suffix,
     srcs = [
+        "Ariella.png",
         "Ground023.png",
     ],
     dither = dither,

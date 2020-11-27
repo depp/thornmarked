@@ -1,12 +1,1 @@
 package(default_visibility = ["//assets:__pkg__"])
-
-[genrule(
-    name = name,
-    srcs = [name + ".png"],
-    outs = [name + ".dat"],
-    cmd = "$(execpath //tools/textureconvert) -format rgba.16 -output=$@ $<",
-    tools = ["//tools/textureconvert"],
-) for name in [
-    "Ariella_32x32",
-    "Ball",
-]]
