@@ -5,6 +5,8 @@ def _textures_impl(ctx):
         base_args.append("-mipmap")
     if ctx.attr.native:
         base_args.append("-native")
+    if ctx.attr.dither != "":
+        base_args.append("-dither=" + ctx.attr.dither)
     for src in ctx.files.srcs:
         name = src.basename
         idx = name.find(".")
@@ -40,6 +42,7 @@ textures = rule(
         "native": attr.bool(
             default = False,
         ),
+        "dither": attr.string(),
         "_converter": attr.label(
             default = Label("//tools/textureconvert"),
             allow_single_file = True,
