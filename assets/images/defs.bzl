@@ -7,12 +7,13 @@ def _textures_impl(ctx):
         base_args.append("-native")
     if ctx.attr.dither != "":
         base_args.append("-dither=" + ctx.attr.dither)
+    suffix = ctx.attr.suffix + ".texture"
     for src in ctx.files.srcs:
         name = src.basename
         idx = name.find(".")
         if idx >= 0:
             name = name[:idx]
-        out = ctx.actions.declare_file(name + ".texture")
+        out = ctx.actions.declare_file(name + suffix)
         outputs.append(out)
         ctx.actions.run(
             outputs = [out],
@@ -43,6 +44,7 @@ textures = rule(
             default = False,
         ),
         "dither": attr.string(),
+        "suffix": attr.string(),
         "_converter": attr.label(
             default = Label("//tools/textureconvert"),
             allow_single_file = True,

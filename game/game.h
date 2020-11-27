@@ -1,10 +1,12 @@
 #pragma once
 
-#include <ultra64.h>
-
 #include "base/random.h"
 #include "game/physics.h"
 #include "game/walk.h"
+
+#include <ultra64.h>
+
+#include <stdbool.h>
 
 struct graphics;
 
@@ -12,6 +14,11 @@ struct game_state {
     struct rand rand;
     struct sys_phys physics;
     struct sys_walk walk;
+    unsigned button_state;
+    unsigned prev_button_state;
+    int dither;
+    bool show_objects;
+    int loaded_texture;
 };
 
 void game_init(struct game_state *restrict gs);
