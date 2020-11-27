@@ -333,6 +333,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
              0.0f, 0.0f, 1.0f);                 // up
     gSPMatrix(dl++, K0_TO_PHYS(projection),
               G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPPerspNormalize(dl++, perspNorm);
     gSPMatrix(dl++, K0_TO_PHYS(camera),
               G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 
