@@ -14,9 +14,12 @@ filegroup(
 cc_binary(
     name = "Thornmarked.elf",
     srcs = [
+        "camera.c",
+        "camera.h",
         "defs.h",
         "game.c",
         "game.h",
+        "graphics.c",
         "graphics.h",
         "main.c",
         "physics.c",

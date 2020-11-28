@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/random.h"
+#include "game/camera.h"
 #include "game/physics.h"
 #include "game/walk.h"
 
@@ -14,6 +15,8 @@ struct game_state {
     struct rand rand;
     struct sys_phys physics;
     struct sys_walk walk;
+    struct sys_camera camera;
+
     unsigned button_state;
     unsigned prev_button_state;
     int dither;

@@ -4,6 +4,9 @@
 
 #include <stdbool.h>
 
+// How long a "meter" is in game units.
+extern const float meter;
+
 struct graphics {
     Gfx *dl_ptr;
     Gfx *dl_start;
