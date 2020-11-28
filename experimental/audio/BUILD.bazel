@@ -1,29 +1,29 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("//assets:defs.bzl", "asset_data", "asset_header")
 load("//base:copts.bzl", "COPTS")
 load("//n64:defs.bzl", "n64_rom")
 
-genrule(
+asset_header(
+    name = "assets",
+    header = "assets.h",
+    manifest = "manifest.txt",
+)
+
+asset_data(
     name = "assets_files",
     srcs = [
-        "manifest.txt",
         "//assets/music",
         "//assets/sfx:fanfare",
     ],
-    outs = [
-        "assets.dat",
-        "assets.h",
+    dirs = [
+        "../../assets",
     ],
-    cmd = ("$(execpath //tools/makepak) " +
-           "-dir $(GENDIR)/assets " +
-           "$(execpath manifest.txt)  " +
-           "$(execpath assets.dat) $(execpath assets.h)"),
-    tools = ["//tools/makepak"],
+    manifest = "manifest.txt",
 )
 
 cc_binary(
     name = "audio.elf",
     srcs = [
-        "assets.h",
         "audio.c",
         "defs.h",
         "main.c",
@@ -31,6 +31,7 @@ cc_binary(
     ],
     copts = COPTS,
     deps = [
+        ":assets",
         "//base",
         "//base:scheduler",
         "//base/pak",
@@ -43,7 +44,7 @@ cc_binary(
 
 n64_rom(
     name = "audio",
-    data = ":assets.dat",
+    data = ":assets_files",
     program = ":audio.elf",
     visibility = ["//:__pkg__"],
 )
