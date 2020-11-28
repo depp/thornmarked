@@ -22,16 +22,19 @@ SECTIONS {
         *(.text .text.*)
         *(.rodata .rodata.*)
         *(.data .data.*)
+        _gp = ALIGN(16) + 0x8000;
+        *(.sdata .sdata.*)
         _text_end = .;
     } >ram AT>rom
 
-    pakdata : ALIGN(16) {
+    pakdata : {
         . = .;
     } >rom
     _pakdata_offset = LOADADDR(pakdata);
 
     .bss (NOLOAD) : ALIGN(16) {
         _bss_start = .;
+        *(.sbss .sbss.*)
         *(.bss .bss.*)
         /* COMMON and .scommon are used by libgultra.a */
         *(COMMON)

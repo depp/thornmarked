@@ -1,12 +1,17 @@
+#include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
 #include "base/defs.h"
+#include "base/os.h"
 #include "base/pak/pak.h"
 
 #include <ultra64.h>
 
 #include <stdbool.h>
 #include <stdint.h>
+
+// Avoid gprel access by declaring a different section.
+extern s32 osTvType __attribute__((section(".data")));
 
 struct pak_object pak_objects[2];
 
@@ -53,8 +58,8 @@ enum {
 void boot(void) {
     osInitialize();
     rom_handle = osCartRomInit();
-    osCreateThread(&idle_thread, 1, idle, NULL, _idle_thread_stack,
-                   PRIORITY_IDLE_INIT);
+    thread_create(&idle_thread, idle, NULL, _idle_thread_stack,
+                  PRIORITY_IDLE_INIT);
     osStartThread(&idle_thread);
 }
 
@@ -84,8 +89,7 @@ static void idle(void *arg) {
                       PI_MSG_COUNT);
 
     // Start main thread.
-    osCreateThread(&main_thread, 3, main, NULL, _main_thread_stack,
-                   PRIORITY_MAIN);
+    thread_create(&main_thread, main, NULL, _main_thread_stack, PRIORITY_MAIN);
     osStartThread(&main_thread);
 
     // Idle loop.

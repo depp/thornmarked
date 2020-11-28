@@ -2,6 +2,7 @@
 
 #include "base/base.h"
 #include "base/console.h"
+#include "base/os.h"
 
 #include <limits.h>
 #include <stdint.h>
@@ -286,8 +287,8 @@ void scheduler_start(struct scheduler *sc, int priority, int video_divisor) {
     osSetEventMesg(OS_EVENT_SP, &sc->evt_queue, (OSMesg)EVT_RSP);
     osSetEventMesg(OS_EVENT_DP, &sc->evt_queue, (OSMesg)EVT_RDP);
     osViSetEvent(&sc->evt_queue, (OSMesg)EVT_VSYNC, video_divisor);
-    osCreateThread(&sc->thread, 4, scheduler_main, sc, _scheduler_thread_stack,
-                   priority);
+    thread_create(&sc->thread, scheduler_main, sc, _scheduler_thread_stack,
+                  priority);
     osStartThread(&sc->thread);
 }
 

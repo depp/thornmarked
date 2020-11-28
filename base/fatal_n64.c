@@ -2,10 +2,14 @@
 
 #include "base/console.h"
 #include "base/console_n64.h"
+#include "base/os.h"
 
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+// Avoid gprel access by declaring a different section.
+extern s32 osTvType __attribute__((section(".data")));
 
 static const char *FATAL_MESSAGE = "The game has crashed :-(\n";
 
@@ -25,9 +29,9 @@ static noreturn void fatal_error_impl(struct console *cs, const char *fmt,
     }
     console_puts(cs, FATAL_MESSAGE);
     console_vprintf(cs, fmt, ap);
-    osCreateThread(&fatal_thread, 1, fatal_thread_func, cs,
-                   fatal_thread_stack + ARRAY_COUNT(fatal_thread_stack),
-                   OS_PRIORITY_APPMAX);
+    thread_create(&fatal_thread, fatal_thread_func, cs,
+                  fatal_thread_stack + ARRAY_COUNT(fatal_thread_stack),
+                  OS_PRIORITY_APPMAX);
     osStartThread(&fatal_thread);
     osStopThread(NULL);
     __builtin_unreachable();

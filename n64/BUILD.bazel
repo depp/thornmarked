@@ -70,6 +70,8 @@ cc_toolchain_config(
         "-nostdlib",  # new
         "-T",
         "n64/link.lds",
+        "-G",
+        "4",
     ],
     link_libs = [
         "-lgcc",

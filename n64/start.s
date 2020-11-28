@@ -6,6 +6,9 @@ _start:
 	# Set up the stack
 	la	$sp, _boot_stack
 
+	# Set up global pointer
+	la	$gp, _gp
+
 	# Zero BSS.
 	la	$a0, _bss_start
 	la	$a1, _bss_end
