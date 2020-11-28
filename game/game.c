@@ -72,6 +72,7 @@ void game_init(struct game_state *restrict gs) {
     pak_load_asset_sync(model[0], sizeof(model), MODEL_SPIKE);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
+    camera_init(&gs->camera);
     for (int i = 0; i < 3; i++) {
         struct cp_phys *restrict phys = physics_new(&gs->physics);
         *phys = (struct cp_phys){
@@ -118,6 +119,7 @@ static const Gfx model_setup_dl[] = {
 void game_update(struct game_state *restrict gs, float dt) {
     walk_update(&gs->walk, &gs->physics, dt);
     physics_update(&gs->physics, dt);
+    camera_update(&gs->camera);
     unsigned button = gs->button_state & ~gs->prev_button_state;
     gs->prev_button_state = gs->button_state;
     if ((button & A_BUTTON) != 0) {
@@ -217,10 +219,10 @@ static const Mtx identity = {{
 }};
 
 // Vertex data for the ground.
-#define X0 (-7)
-#define Y0 (-2)
-#define X1 7
-#define Y1 12
+#define X0 (-6)
+#define Y0 (-4)
+#define X1 6
+#define Y1 6
 #define V (1 << 6)
 #define T (1 << 11)
 static const Vtx ground_vtx[] = {
