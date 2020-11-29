@@ -30,11 +30,11 @@ void physics_update(struct sys_phys *restrict psys, float dt) {
         for (int i = 0; i < 2; i++) {
             const float wall = 2.0f;
             if (cp->pos.v[i] > wall) {
-                cp->pos.v[i] = 2.0f * wall - cp->pos.v[i];
-                cp->vel.v[i] = -cp->vel.v[i];
+                cp->pos.v[i] = wall;
+                cp->vel.v[i] = 0.0f;
             } else if (cp->pos.v[i] < -wall) {
-                cp->pos.v[i] = -2.0f * wall - cp->pos.v[i];
-                cp->vel.v[i] = -cp->vel.v[i];
+                cp->pos.v[i] = -wall;
+                cp->vel.v[i] = 0.0f;
             }
         }
     }
