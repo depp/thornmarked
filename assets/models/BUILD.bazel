@@ -27,4 +27,5 @@ models(
     srcs = ["fairy2.fbx"],
     normals = True,
     scale = "meter*2/5",
+    axes = "-y,x,z",
 )

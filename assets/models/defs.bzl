@@ -6,6 +6,8 @@ def _models_impl(ctx):
         base_args.append("-use-normals")
     if ctx.attr.primitive_color:
         base_args.append("-use-primitive-color")
+    if ctx.attr.axes:
+        base_args.append("-axes=" + ctx.attr.axes)
     for src in ctx.files.srcs:
         name = src.basename
         idx = name.find(".")
@@ -44,6 +46,7 @@ models = rule(
         "primitive_color": attr.bool(
             default = False,
         ),
+        "axes": attr.string(),
         "_converter": attr.label(
             default = Label("//tools/modelconvert"),
             allow_single_file = True,
