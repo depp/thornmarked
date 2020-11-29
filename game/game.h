@@ -2,6 +2,7 @@
 
 #include "base/random.h"
 #include "game/camera.h"
+#include "game/model.h"
 #include "game/physics.h"
 #include "game/walk.h"
 
@@ -16,6 +17,7 @@ struct game_state {
     struct sys_phys physics;
     struct sys_walk walk;
     struct sys_camera camera;
+    struct sys_model model;
 
     unsigned button_state;
     unsigned prev_button_state;

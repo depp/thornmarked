@@ -22,6 +22,8 @@ cc_binary(
         "graphics.c",
         "graphics.h",
         "main.c",
+        "model.c",
+        "model.h",
         "physics.c",
         "physics.h",
         "stack.s",

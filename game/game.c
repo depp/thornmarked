@@ -12,6 +12,7 @@
 #include "base/vec3.h"
 #include "game/defs.h"
 #include "game/graphics.h"
+#include "game/model.h"
 
 #include <stdbool.h>
 
@@ -68,15 +69,17 @@ static const Gfx init_dl[] = {
 
 #define ASSET __attribute__((section("uninit"), aligned(16)))
 
-static uint8_t model[2][8 * 1024] ASSET;
+static uint8_t model_data[2][8 * 1024] ASSET;
 static uint8_t texture[4 * 1024] ASSET;
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
-    pak_load_asset_sync(model[0], sizeof(model), MODEL_SPIKE);
+    pak_load_asset_sync(model_data[0], sizeof(model_data[0]), MODEL_FAIRY);
+    pak_load_asset_sync(model_data[1], sizeof(model_data[1]), MODEL_SPIKE);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
     camera_init(&gs->camera);
+    model_init(&gs->model);
     for (int i = 0; i < 3; i++) {
         struct cp_phys *restrict phys = physics_new(&gs->physics);
         *phys = (struct cp_phys){
@@ -97,6 +100,12 @@ void game_init(struct game_state *restrict gs) {
     gs->dither = 0;
     gs->show_objects = true;
     gs->loaded_texture = -1;
+    struct cp_model *restrict mp = model_new(&gs->model);
+    mp->model = MODEL_FAIRY;
+    mp = model_new(&gs->model);
+    mp->model = MODEL_SPIKE;
+    mp = model_new(&gs->model);
+    mp->model = MODEL_SPIKE;
 }
 
 void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
@@ -334,11 +343,35 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
         gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
         gSPSetLights1(dl++, lights);
         gSPSetGeometryMode(dl++, G_LIGHTING);
-        gSPSegment(dl++, 1, K0_TO_PHYS(&model));
+        int current_model = 0;
         float scale = 0.5f;
-        for (struct cp_phys *cp = gs->physics.entities,
-                            *ce = cp + gs->physics.count;
-             cp != ce; cp++) {
+        for (unsigned i = 0; i < gs->physics.count; i++) {
+            struct cp_phys *restrict cp = &gs->physics.entities[i];
+            if (i >= gs->model.count) {
+                continue;
+            }
+            struct cp_model *restrict mp = &gs->model.entities[i];
+            if (mp->model == 0) {
+                continue;
+            }
+            int model = mp->model;
+            if (model != current_model) {
+                int index;
+                switch (model) {
+                case MODEL_FAIRY:
+                    index = 0;
+                    break;
+                case MODEL_SPIKE:
+                    index = 1;
+                    break;
+                default:
+                    index = -1;
+                }
+                if (index < 0) {
+                    continue;
+                }
+                gSPSegment(dl++, 1, K0_TO_PHYS(&model_data[index]));
+            }
             Mtx *mtx = gr->mtx_ptr++;
             {
                 mat4 mat;
