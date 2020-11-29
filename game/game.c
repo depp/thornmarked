@@ -229,7 +229,7 @@ static const Mtx identity = {{
 #define X0 (-7)
 #define Y0 (-4)
 #define X1 7
-#define Y1 8
+#define Y1 12
 #define V (1 << 6)
 #define T (1 << 11)
 static const Vtx ground_vtx[] = {
@@ -270,12 +270,16 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     const int xsize = SCREEN_WIDTH, ysize = gr->is_pal ? 288 : 240;
     {
         int x0 = 0, y0 = 0, x1 = xsize, y1 = ysize;
+        float xaspect = 4.0f, yaspect = 3.0f;
         if (!full) {
+            xaspect *= (xsize - 2 * MARGIN_X) * ysize;
+            yaspect *= (ysize - 2 * MARGIN_Y) * xsize;
             x0 += MARGIN_X;
             y0 += MARGIN_Y;
             x1 -= MARGIN_X;
             y1 -= MARGIN_Y;
         }
+        gr->aspect = xaspect / yaspect;
         gSPSegment(dl++, 0, 0);
         gr->viewport = (Vp){{
             .vscale = {(x1 - x0) * 2, (y1 - y0) * 2, G_MAXZ / 2, 0},

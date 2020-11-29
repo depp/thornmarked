@@ -21,4 +21,5 @@ struct graphics {
 
     bool is_pal;
     Vp viewport;
+    float aspect;
 };

@@ -51,3 +51,14 @@ void mat4_translate_rotate_scale(mat4 *restrict out, vec3 translation,
     out->v[14] = translation.v[2];
     out->v[15] = 1.0f;
 }
+
+void mat4_perspective(mat4 *restrict out, float focalx, float focaly,
+                      float near, float far, float scale) {
+    *out = (mat4){{
+        [0] = scale * focalx,
+        [5] = scale * focaly,
+        [10] = scale * (near + far) / (near - far),
+        [11] = -scale,
+        [14] = scale * 2.0f * near * far / (near - far),
+    }};
+}
