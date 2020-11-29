@@ -56,9 +56,9 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
             pp->vel = target_vel;
         }
 
+        const float half_circle = 4.0f * atanf(1.0f);
         // Update facing angle.
         if (drive2 > 0.05f) {
-            const float half_circle = 4.0f * atanf(1.0f);
             const float turn_speed = 3.0f * (2.0f * half_circle);
             const float target_face = atan2f(wp->drive.v[1], wp->drive.v[0]);
             float delta_face = target_face - wp->face_angle;
@@ -78,6 +78,6 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
         }
 
         // Update orientation.
-        pp->orientation = quat_rotate_z(wp->face_angle);
+        pp->orientation = quat_rotate_z(wp->face_angle - 0.5f * half_circle);
     }
 }
