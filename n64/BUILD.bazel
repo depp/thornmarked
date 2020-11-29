@@ -66,7 +66,6 @@ cc_toolchain_config(
         # "-B/usr/bin",
         "-pass-exit-codes",
         # "-lstdc++",
-        # "-lm",
         "-nostdlib",  # new
         "-T",
         "n64/link.lds",
@@ -74,6 +73,8 @@ cc_toolchain_config(
         "4",
     ],
     link_libs = [
+        "-lm",
+        "-lc",
         "-lgcc",
     ],
     opt_compile_flags = [

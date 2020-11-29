@@ -1,6 +1,7 @@
 #include "game/walk.h"
 
 #include "base/base.h"
+#include "base/quat.h"
 #include "base/vec2.h"
 #include "game/physics.h"
 
@@ -36,6 +37,8 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
             continue;
         }
         struct cp_phys *pp = &psys->entities[i];
+
+        // Update velocity.
         float speed = 5.0f;
         float drive2 = vec2_length2(wp->drive);
         if (drive2 > 1.0f) {
@@ -52,5 +55,29 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
         } else {
             pp->vel = target_vel;
         }
+
+        // Update facing angle.
+        if (drive2 > 0.05f) {
+            const float half_circle = 4.0f * atanf(1.0f);
+            const float turn_speed = 3.0f * (2.0f * half_circle);
+            const float target_face = atan2f(wp->drive.v[1], wp->drive.v[0]);
+            float delta_face = target_face - wp->face_angle;
+            if (delta_face > half_circle) {
+                delta_face -= 2.0f * half_circle;
+            } else if (delta_face < -half_circle) {
+                delta_face += 2.0f * half_circle;
+            }
+            const float max_dangle = turn_speed * dt;
+            if (delta_face < -max_dangle) {
+                wp->face_angle -= max_dangle;
+            } else if (delta_face > max_dangle) {
+                wp->face_angle += max_dangle;
+            } else {
+                wp->face_angle = target_face;
+            }
+        }
+
+        // Update orientation.
+        pp->orientation = quat_rotate_z(wp->face_angle);
     }
 }

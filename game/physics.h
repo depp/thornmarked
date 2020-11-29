@@ -5,8 +5,9 @@
 // Physical object component. Used for entities with a physical presence in the
 // game world.
 struct cp_phys {
-    vec2 pos;
-    vec2 vel;
+    vec2 pos;         // Position: updated by physics.
+    vec2 vel;         // Velocity: must be set as an input.
+    quat orientation; // Orientation: must be set as an input.
 };
 
 // Physics system.

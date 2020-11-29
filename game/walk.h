@@ -7,6 +7,7 @@ struct sys_phys;
 // Walker component. Used for entities that can walk around.
 struct cp_walk {
     vec2 drive;
+    float face_angle;
 };
 
 struct sys_walk {

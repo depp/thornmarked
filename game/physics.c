@@ -1,6 +1,7 @@
 #include "game/physics.h"
 
 #include "base/base.h"
+#include "base/quat.h"
 #include "base/vec2.h"
 
 enum {
@@ -19,7 +20,11 @@ struct cp_phys *physics_new(struct sys_phys *restrict psys) {
     }
     unsigned index = psys->count;
     psys->count++;
-    return &psys->entities[index];
+    struct cp_phys *pp = &psys->entities[index];
+    pp->pos = (vec2){{0.0f, 0.0f}};
+    pp->vel = (vec2){{0.0f, 0.0f}};
+    pp->orientation = quat_identity();
+    return pp;
 }
 
 void physics_update(struct sys_phys *restrict psys, float dt) {

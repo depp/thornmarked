@@ -4,8 +4,12 @@
 #include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
+#include "base/mat4.h"
+#include "base/mat4_n64.h"
 #include "base/pak/pak.h"
 #include "base/random.h"
+#include "base/vec2.h"
+#include "base/vec3.h"
 #include "game/defs.h"
 #include "game/graphics.h"
 
@@ -335,15 +339,16 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
         for (struct cp_phys *cp = gs->physics.entities,
                             *ce = cp + gs->physics.count;
              cp != ce; cp++) {
-            Mtx *mtx_tr = gr->mtx_ptr++;
-            Mtx *mtx_sc = gr->mtx_ptr++;
-            guTranslate(mtx_tr, cp->pos.v[0] * meter, cp->pos.v[1] * meter,
-                        meter);
-            guScale(mtx_sc, scale, scale, scale);
-            gSPMatrix(dl++, K0_TO_PHYS(mtx_tr),
+            Mtx *mtx = gr->mtx_ptr++;
+            {
+                mat4 mat;
+                mat4_translate_rotate_scale(
+                    &mat, vec3_vec2(vec2_scale(cp->pos, meter), meter),
+                    cp->orientation, scale);
+                mat4_tofixed(mtx, &mat);
+            }
+            gSPMatrix(dl++, K0_TO_PHYS(mtx),
                       G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-            gSPMatrix(dl++, K0_TO_PHYS(mtx_sc),
-                      G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
             gSPDisplayList(dl++, SEGMENT_ADDR(1, MODEL_DL_OFFSET));
             scale *= 0.5f;
         }

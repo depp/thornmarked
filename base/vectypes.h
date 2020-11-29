@@ -10,3 +10,13 @@ typedef struct vec2 {
 typedef struct vec3 {
     float v[3];
 } vec3;
+
+// Quaternion. Components are stored as (w, x, y, z). W is the real component.
+typedef struct quat {
+    float v[4];
+} quat;
+
+// 4x4 matrix.
+typedef struct mat4 {
+    float v[16];
+} mat4;
