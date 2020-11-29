@@ -219,10 +219,10 @@ static const Mtx identity = {{
 }};
 
 // Vertex data for the ground.
-#define X0 (-6)
+#define X0 (-7)
 #define Y0 (-4)
-#define X1 6
-#define Y1 6
+#define X1 7
+#define Y1 8
 #define V (1 << 6)
 #define T (1 << 11)
 static const Vtx ground_vtx[] = {
@@ -331,7 +331,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
         gSPSetLights1(dl++, lights);
         gSPSetGeometryMode(dl++, G_LIGHTING);
         gSPSegment(dl++, 1, K0_TO_PHYS(&model));
-        float scale = 1.0;
+        float scale = 0.5f;
         for (struct cp_phys *cp = gs->physics.entities,
                             *ce = cp + gs->physics.count;
              cp != ce; cp++) {

@@ -36,7 +36,7 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
             continue;
         }
         struct cp_phys *pp = &psys->entities[i];
-        float speed = 2.0f;
+        float speed = 5.0f;
         float drive2 = vec2_length2(wp->drive);
         if (drive2 > 1.0f) {
             speed /= sqrtf(drive2);
@@ -44,7 +44,8 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
         vec2 target_vel = vec2_scale(wp->drive, speed);
         vec2 delta_vel = vec2_sub(target_vel, pp->vel);
         float dv2 = vec2_length2(delta_vel);
-        float accel = 10.0f;
+        const float accel_time = 0.05f;
+        float accel = speed / accel_time;
         float max_dv = dt * accel;
         if (dv2 > max_dv * max_dv) {
             pp->vel = vec2_madd(pp->vel, delta_vel, max_dv / sqrtf(dv2));
