@@ -39,11 +39,17 @@ void camera_update(struct sys_camera *restrict csys) {
 
 Gfx *camera_render(struct sys_camera *restrict csys,
                    struct graphics *restrict gr, Gfx *dl) {
-    u16 perspNorm;
+    int persp_norm;
     Mtx *projection = gr->mtx_ptr++;
     {
         const float far = 16.0f * meter;
         const float near = far * (1.0f / 16.0f);
+        if (near + far < 2.0f) {
+            persp_norm = 0xffff;
+        } else {
+            int value = (2.0f * 65536.0f) / (near + far);
+            persp_norm = value > 0 ? value : 1;
+        }
         const float xfocal = focal / (0.5f * gr->aspect + 0.5f);
         const float yfocal = xfocal * gr->aspect;
         mat4 mat;
@@ -59,7 +65,7 @@ Gfx *camera_render(struct sys_camera *restrict csys,
              0.0f, 0.0f, 1.0f);
     gSPMatrix(dl++, K0_TO_PHYS(projection),
               G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPPerspNormalize(dl++, perspNorm);
+    gSPPerspNormalize(dl++, persp_norm);
     gSPMatrix(dl++, K0_TO_PHYS(camera),
               G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
     return dl;
