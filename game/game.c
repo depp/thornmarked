@@ -29,12 +29,6 @@ const char *const dither_names[3] = {
     "Bayer",
 };
 
-// Header for a model loaded from disk. The rest of the data follows directly
-// afterwards.
-struct model_data {
-    float scale;
-};
-
 enum {
     // Offset of display list in model data.
     MODEL_DL_OFFSET = 0,
@@ -69,12 +63,12 @@ static const Gfx init_dl[] = {
 
 #define ASSET __attribute__((section("uninit"), aligned(16)))
 
-static uint8_t model_data[2][8 * 1024] ASSET;
+static uint8_t model_data[2][16 * 1024] ASSET;
 static uint8_t texture[4 * 1024] ASSET;
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
-    pak_load_asset_sync(model_data[0], sizeof(model_data[0]), MODEL_FAIRY);
+    pak_load_asset_sync(model_data[0], sizeof(model_data[0]), MODEL_FAIRY2);
     pak_load_asset_sync(model_data[1], sizeof(model_data[1]), MODEL_SPIKE);
     physics_init(&gs->physics);
     walk_init(&gs->walk);

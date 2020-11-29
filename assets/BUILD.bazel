@@ -13,6 +13,7 @@ asset_data(
         "//assets/fonts/grenze_gotisch",
         "//assets/images",
         "//assets/models:fairy",
+        "//assets/models:fairy2",
         "//assets/models:logo",
         "//assets/models:spike",
     ],

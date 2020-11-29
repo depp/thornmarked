@@ -21,3 +21,10 @@ models(
     srcs = ["spike.fbx"],
     normals = True,
 )
+
+models(
+    name = "fairy2",
+    srcs = ["fairy2.fbx"],
+    normals = True,
+    scale = "meter*2/5",
+)

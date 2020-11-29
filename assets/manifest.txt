@@ -8,3 +8,4 @@ data FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
 model MODEL_LOGO models/logo.model
 model MODEL_FAIRY models/fairy.model
 model MODEL_SPIKE models/spike.model
+model MODEL_FAIRY2 models/fairy2.model
