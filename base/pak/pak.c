@@ -48,8 +48,9 @@ void pak_load_asset_sync(void *dest, size_t destsize, int asset_id) {
     struct pak_object obj = pak_objects[asset_id];
     if (obj.size > destsize) {
         fatal_error(
-            "Buffer too small to load asset\ndest = %p\nsize = %zu\nid=%d",
-            dest, destsize, asset_id);
+            "Buffer too small to load asset\n\n"
+            "Asset ID: %d\nAsset size: %lu\nDest size = %zu\nDest = %p\n",
+            asset_id, obj.size, destsize, dest);
     }
     pak_load_data_sync(dest, obj.offset, obj.size);
 }
