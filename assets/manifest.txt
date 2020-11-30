@@ -1,4 +1,5 @@
 texture IMG_GROUND images/Ground023.texture
+texture IMG_FAIRY models/fairy.texture
 data FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
 model MODEL_LOGO models/logo.model
 model MODEL_SPIKE models/spike.model

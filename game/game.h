@@ -21,9 +21,7 @@ struct game_state {
 
     unsigned button_state;
     unsigned prev_button_state;
-    int dither;
     bool show_objects;
-    int loaded_texture;
 };
 
 void game_init(struct game_state *restrict gs);

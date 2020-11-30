@@ -34,7 +34,7 @@ models(
 textures(
     name = "textures",
     srcs = [
-        "fairy2.png",
+        "fairy.png",
     ],
     format = "rgba.16",
     mipmap = True,

@@ -15,6 +15,7 @@ asset_data(
         "//assets/models:fairy2",
         "//assets/models:logo",
         "//assets/models:spike",
+        "//assets/models:textures",
     ],
     manifest = "manifest.txt",
     visibility = ["//game:__pkg__"],
