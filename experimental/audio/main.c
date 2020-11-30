@@ -66,7 +66,6 @@ void boot(void) {
 
 static void idle(void *arg) {
     (void)arg;
-    thread_init();
 
     // Initialize video.
     osCreateViManager(OS_PRIORITY_VIMGR);
@@ -229,7 +228,6 @@ struct pak_object pak_objects[PAK_SIZE] __attribute__((aligned(16)));
 
 static void main(void *arg) {
     (void)arg;
-    thread_init();
 
     for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
         framebuffers[0][i] = 0xffff;
