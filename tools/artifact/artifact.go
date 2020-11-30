@@ -1,9 +1,8 @@
 package main
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -165,24 +164,16 @@ func buildArtifact(args ...string) error {
 type pkg struct {
 	filename string
 	ofp      *os.File
-	zfp      *gzip.Writer
-	tw       *tar.Writer
+	zfp      *zip.Writer
 	tstamp   time.Time
 }
 
 func createPackage(filename string) (*pkg, error) {
-	ofp, err := ioutil.TempFile(filepath.Dir(filename), "temp.*.gz")
+	ofp, err := ioutil.TempFile(filepath.Dir(filename), "temp.*.zip")
 	if err != nil {
 		return nil, err
 	}
-	zfp, err := gzip.NewWriterLevel(ofp, gzip.BestCompression)
-	if err != nil {
-		ofp.Close()
-		os.Remove(ofp.Name())
-		return nil, err
-	}
-	tw := tar.NewWriter(zfp)
-	return &pkg{filename, ofp, zfp, tw, time.Time{}}, nil
+	return &pkg{filename, ofp, zip.NewWriter(ofp), time.Time{}}, nil
 }
 
 func (pk *pkg) putInfo(info *buildInfo) error {
@@ -190,15 +181,14 @@ func (pk *pkg) putInfo(info *buildInfo) error {
 	if err != nil {
 		return err
 	}
-	if err := pk.tw.WriteHeader(&tar.Header{
-		Name:    "INFO.json",
-		Size:    int64(len(dinfo)),
-		Mode:    0444,
-		ModTime: info.BuildTimestamp,
-	}); err != nil {
+	w, err := pk.zfp.CreateHeader(&zip.FileHeader{
+		Name:     "INFO.json",
+		Modified: info.BuildTimestamp,
+	})
+	if err != nil {
 		return err
 	}
-	if _, err := pk.tw.Write(dinfo); err != nil {
+	if _, err := w.Write(dinfo); err != nil {
 		return err
 	}
 	pk.tstamp = info.BuildTimestamp
@@ -211,30 +201,24 @@ func (pk *pkg) addFile(dest, src string) error {
 		return err
 	}
 	defer fp.Close()
-	st, err := fp.Stat()
+	w, err := pk.zfp.CreateHeader(&zip.FileHeader{
+		Name:     dest,
+		Modified: pk.tstamp,
+	})
 	if err != nil {
 		return err
 	}
-	if err := pk.tw.WriteHeader(&tar.Header{
-		Name:    dest,
-		Size:    st.Size(),
-		Mode:    0444,
-		ModTime: pk.tstamp,
-	}); err != nil {
-		return err
-	}
-	_, err = io.Copy(pk.tw, fp)
+	_, err = io.Copy(w, fp)
 	return err
 }
 
 func (pk *pkg) close(ok bool) (err error) {
-	if pk.tw == nil {
+	if pk.ofp == nil {
 		return errors.New("already closed")
 	}
-	e1 := pk.tw.Close()
-	e2 := pk.zfp.Close()
-	e3 := pk.ofp.Chmod(0444)
-	e4 := pk.ofp.Close()
+	e1 := pk.zfp.Close()
+	e2 := pk.ofp.Chmod(0444)
+	e3 := pk.ofp.Close()
 	switch {
 	case e1 != nil:
 		err = e1
@@ -242,15 +226,12 @@ func (pk *pkg) close(ok bool) (err error) {
 		err = e2
 	case e3 != nil:
 		err = e3
-	case e4 != nil:
-		err = e4
 	case ok:
 		err = os.Rename(pk.ofp.Name(), pk.filename)
 	}
 	if err != nil {
 		os.Remove(pk.ofp.Name())
 	}
-	pk.tw = nil
 	pk.zfp = nil
 	pk.ofp = nil
 	return nil
@@ -291,7 +272,7 @@ func mainE() error {
 		return errors.New("$HOME not set")
 	}
 	outdir := filepath.Join(home, "Documents", "Artifacts")
-	suffix := fmt.Sprintf(".r%04d.%s.gz", cinfo.Revision,
+	suffix := fmt.Sprintf(".r%04d.%s.zip", cinfo.Revision,
 		now.UTC().Format("20060102150405"))
 	if err := os.MkdirAll(outdir, 0777); err != nil {
 		return err
@@ -317,6 +298,7 @@ func mainE() error {
 				return err
 			}
 		}
+		fmt.Println("Output:", outfile)
 		return pk.close(true)
 
 	case "audio":
@@ -338,6 +320,7 @@ func mainE() error {
 				return err
 			}
 		}
+		fmt.Println("Output:", outfile)
 		return pk.close(true)
 
 	default:
