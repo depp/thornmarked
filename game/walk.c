@@ -40,9 +40,10 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
 
         // Update velocity.
         float speed = 5.0f;
-        float drive2 = vec2_length2(wp->drive);
-        if (drive2 > 1.0f) {
-            speed /= sqrtf(drive2);
+        float drive_mag = vec2_length(wp->drive);
+        if (drive_mag > 1.0f) {
+            speed /= drive_mag;
+            drive_mag = 1.0f;
         }
         vec2 target_vel = vec2_scale(wp->drive, speed);
         vec2 delta_vel = vec2_sub(target_vel, pp->vel);
@@ -57,9 +58,9 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
         }
 
         // Update facing angle.
-        if (drive2 > 0.05f) {
+        if (drive_mag > 0.05f) {
             const float half_circle = 4.0f * atanf(1.0f);
-            const float turn_speed = 3.0f * (2.0f * half_circle);
+            const float turn_speed = 3.0f * (2.0f * half_circle) * drive_mag;
             const float target_face = atan2f(wp->drive.v[1], wp->drive.v[0]);
             float delta_face = target_face - wp->face_angle;
             if (delta_face > half_circle) {
