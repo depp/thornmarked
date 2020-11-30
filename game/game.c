@@ -89,11 +89,18 @@ void game_init(struct game_state *restrict gs) {
 }
 
 void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
-    const float scale = 1.0f / 80.0f;
-    const vec2 drive = {{
-        scale * (float)pad->stick_x,
-        scale * (float)pad->stick_y,
-    }};
+    vec2 drive;
+    const int dead_zone = 4;
+    if (pad->stick_x < -dead_zone || dead_zone < pad->stick_x ||
+        pad->stick_y < -dead_zone || dead_zone < pad->stick_y) {
+        const float scale = 1.0f / 64.0f;
+        drive = (vec2){{
+            scale * (float)pad->stick_x,
+            scale * (float)pad->stick_y,
+        }};
+    } else {
+        drive = (vec2){{0.0f, 0.0f}};
+    }
     for (unsigned i = 0; i < gs->walk.count; i++) {
         gs->walk.entities[i].drive = drive;
     }
