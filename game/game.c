@@ -122,7 +122,7 @@ static const Gfx fairy_setup_dl[] = {
     gsDPPipeSync(),
     gsDPSetTextureImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[1]),
     gsSPDisplayList(texture_dl),
-    gsSPGeometryMode(G_LIGHTING | G_CULL_BACK, G_SHADE | G_SHADING_SMOOTH),
+    gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
     gsDPSetCombineMode(G_CC_TRILERP, G_CC_MODULATERGB2),
     gsSPEndDisplayList(),
 };

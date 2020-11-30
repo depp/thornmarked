@@ -104,7 +104,6 @@ static struct scheduler scheduler;
 
 // Event types for events on the main thread.
 enum {
-    EVT_CONTROL,  // Controller update.
     EVT_TASKDONE, // RCP task complete.
     EVT_FBDONE,   // Framebuffer no longer in use.
 };
@@ -146,11 +145,15 @@ struct main_state {
     // Queue receiving scheduler / controller events.
     OSMesgQueue evt_queue;
     OSMesg evt_buffer[16];
+
+    // SI event queue. Must be a separate queue, because osContRead will read
+    // from it.
+    OSMesgQueue si_queue;
+    OSMesg si_buffer[1];
 };
 
 // Read the next event sent to the main thread and process it.
-static int process_event(struct main_state *restrict st, struct game_state *gs,
-                         int flags) {
+static int process_event(struct main_state *restrict st, int flags) {
     OSMesg evt;
     int ret = osRecvMesg(&st->evt_queue, &evt, flags);
     if (ret != 0)
@@ -158,14 +161,6 @@ static int process_event(struct main_state *restrict st, struct game_state *gs,
     int type = event_type(evt);
     int value = event_value(evt);
     switch (type) {
-    case EVT_CONTROL:;
-        OSContPad controller_state[MAXCONTROLLERS];
-        osContGetReadData(controller_state);
-        st->controler_read_active = false;
-        if (st->has_controller) {
-            game_input(gs, &controller_state[st->controller_index]);
-        }
-        break;
     case EVT_TASKDONE:
         st->task_running[value] = false;
         st->rcp_time = st->tasks[value].runtime;
@@ -192,7 +187,8 @@ static void main(void *arg) {
     // Set up message queues.
     osCreateMesgQueue(&st->evt_queue, st->evt_buffer,
                       ARRAY_COUNT(st->evt_buffer));
-    osSetEventMesg(OS_EVENT_SI, &st->evt_queue, NULL);
+    osCreateMesgQueue(&st->si_queue, st->si_buffer, ARRAY_COUNT(st->si_buffer));
+    osSetEventMesg(OS_EVENT_SI, &st->si_queue, NULL);
 
     font_load(FONT_GG);
 
@@ -200,7 +196,7 @@ static void main(void *arg) {
     {
         u8 cont_mask;
         OSContStatus cont_status[MAXCONTROLLERS];
-        osContInit(&st->evt_queue, &cont_mask, cont_status);
+        osContInit(&st->si_queue, &cont_mask, cont_status);
         for (int i = 0; i < MAXCONTROLLERS; i++) {
             if ((cont_mask & (1u << i)) != 0 && cont_status[i].errno == 0 &&
                 (cont_status[i].type & CONT_TYPE_MASK) == CONT_TYPE_NORMAL) {
@@ -225,13 +221,28 @@ static void main(void *arg) {
         frame_num++;
         // Wait until the task and framebuffer are both free to use.
         while (st->task_running[current_task])
-            process_event(st, &game_state, true);
+            process_event(st, OS_MESG_BLOCK);
         while (st->framebuffer_in_use[current_task])
-            process_event(st, &game_state, true);
-        while (process_event(st, &game_state, false) == 0) {}
+            process_event(st, OS_MESG_BLOCK);
+        while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
 
+        // Read the controller, if ready.
+        bool has_cont = false;
+        if (osRecvMesg(&st->si_queue, NULL, OS_MESG_NOBLOCK) == 0) {
+            has_cont = true;
+        }
+        if (has_cont) {
+            st->controler_read_active = false;
+            OSContPad controller_state[MAXCONTROLLERS];
+            osContGetReadData(controller_state);
+            st->controler_read_active = false;
+            if (st->has_controller) {
+                game_input(&game_state,
+                           &controller_state[st->controller_index]);
+            }
+        }
         if (!st->controler_read_active) {
-            osContStartReadData(&st->evt_queue);
+            osContStartReadData(&st->si_queue);
             st->controler_read_active = true;
         }
 
