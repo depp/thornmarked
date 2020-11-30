@@ -229,7 +229,7 @@ static const Gfx ground_dl[] = {
 
 void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     Gfx *dl = gr->dl_start;
-    const bool full = false;
+    const bool full = true;
     const bool clear_z = true;
     const bool clear_cfb = true;
     const bool clear_border = true;
