@@ -115,7 +115,9 @@ void game_update(struct game_state *restrict gs, float dt) {
     camera_update(&gs->camera);
     unsigned button = gs->button_state & ~gs->prev_button_state;
     gs->prev_button_state = gs->button_state;
-    (void)button;
+    if ((button & A_BUTTON) != 0) {
+        gs->show_console = !gs->show_console;
+    }
 }
 
 static const Lights1 lights =
@@ -358,7 +360,9 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Fairies");
 
     // Render debugging text overlay.
-    dl = console_draw_displaylist(&console, dl, gr->dl_end);
+    if (gs->show_console) {
+        dl = console_draw_displaylist(&console, dl, gr->dl_end);
+    }
 
     if (2 > gr->dl_end - dl) {
         fatal_dloverflow();
