@@ -1,0 +1,22 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("//base:copts.bzl", "COPTS")
+load("//n64:defs.bzl", "n64_rom")
+
+cc_binary(
+    name = "controller.elf",
+    srcs = [
+        "main.c",
+    ],
+    copts = COPTS,
+    deps = [
+        "//base",
+        "//experimental/simple",
+    ],
+)
+
+n64_rom(
+    name = "controller",
+    program = ":controller.elf",
+    region = "E",
+    visibility = ["//:__pkg__"],
+)
