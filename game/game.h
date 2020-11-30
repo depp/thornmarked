@@ -21,7 +21,6 @@ struct game_state {
 
     unsigned button_state;
     unsigned prev_button_state;
-    bool show_objects;
 };
 
 void game_init(struct game_state *restrict gs);

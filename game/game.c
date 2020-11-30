@@ -80,7 +80,6 @@ void game_init(struct game_state *restrict gs) {
     wp->drive = (vec2){{0, 0}};
     gs->button_state = 0;
     gs->prev_button_state = 0;
-    gs->show_objects = true;
     struct cp_model *restrict mp = model_new(&gs->model);
     mp->model = MODEL_FAIRY;
     mp = model_new(&gs->model);
@@ -116,9 +115,7 @@ void game_update(struct game_state *restrict gs, float dt) {
     camera_update(&gs->camera);
     unsigned button = gs->button_state & ~gs->prev_button_state;
     gs->prev_button_state = gs->button_state;
-    if ((button & B_BUTTON) != 0) {
-        gs->show_objects = !gs->show_objects;
-    }
+    (void)button;
 }
 
 static const Lights1 lights =
@@ -303,58 +300,54 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
 
     dl = camera_render(&gs->camera, gr, dl);
 
-    if (gs->show_objects) {
-        // gSPDisplayList(dl++, model_setup_dl);
-
-        gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
-        gSPSetLights1(dl++, lights);
-        gSPSetGeometryMode(dl++, G_LIGHTING);
-        int current_model = 0;
-        float scale = 0.5f;
-        for (unsigned i = 0; i < gs->physics.count; i++) {
-            struct cp_phys *restrict cp = &gs->physics.entities[i];
-            if (i >= gs->model.count) {
-                continue;
-            }
-            struct cp_model *restrict mp = &gs->model.entities[i];
-            if (mp->model == 0) {
-                continue;
-            }
-            int model = mp->model;
-            if (model != current_model) {
-                int index;
-                switch (model) {
-                case MODEL_FAIRY:
-                    index = 0;
-                    gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1,
-                                       texture[1]);
-                    gSPDisplayList(dl++, texture_dl);
-                    break;
-                case MODEL_SPIKE:
-                    index = 1;
-                    gSPDisplayList(dl++, model_setup_dl);
-                    break;
-                default:
-                    index = -1;
-                }
-                if (index < 0) {
-                    continue;
-                }
-                gSPSegment(dl++, 1, K0_TO_PHYS(&model_data[index]));
-            }
-            Mtx *mtx = gr->mtx_ptr++;
-            {
-                mat4 mat;
-                mat4_translate_rotate_scale(
-                    &mat, vec3_vec2(vec2_scale(cp->pos, meter), meter),
-                    cp->orientation, scale);
-                mat4_tofixed(mtx, &mat);
-            }
-            gSPMatrix(dl++, K0_TO_PHYS(mtx),
-                      G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-            gSPDisplayList(dl++, SEGMENT_ADDR(1, MODEL_DL_OFFSET));
-            scale *= 0.5f;
+    gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
+    gSPSetLights1(dl++, lights);
+    gSPSetGeometryMode(dl++, G_LIGHTING);
+    int current_model = 0;
+    float scale = 0.5f;
+    for (unsigned i = 0; i < gs->physics.count; i++) {
+        struct cp_phys *restrict cp = &gs->physics.entities[i];
+        if (i >= gs->model.count) {
+            continue;
         }
+        struct cp_model *restrict mp = &gs->model.entities[i];
+        if (mp->model == 0) {
+            continue;
+        }
+        int model = mp->model;
+        if (model != current_model) {
+            int index;
+            switch (model) {
+            case MODEL_FAIRY:
+                index = 0;
+                gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1,
+                                   texture[1]);
+                gSPDisplayList(dl++, texture_dl);
+                break;
+            case MODEL_SPIKE:
+                index = 1;
+                gSPDisplayList(dl++, model_setup_dl);
+                break;
+            default:
+                index = -1;
+            }
+            if (index < 0) {
+                continue;
+            }
+            gSPSegment(dl++, 1, K0_TO_PHYS(&model_data[index]));
+        }
+        Mtx *mtx = gr->mtx_ptr++;
+        {
+            mat4 mat;
+            mat4_translate_rotate_scale(
+                &mat, vec3_vec2(vec2_scale(cp->pos, meter), meter),
+                cp->orientation, scale);
+            mat4_tofixed(mtx, &mat);
+        }
+        gSPMatrix(dl++, K0_TO_PHYS(mtx),
+                  G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+        gSPDisplayList(dl++, SEGMENT_ADDR(1, MODEL_DL_OFFSET));
+        scale *= 0.5f;
     }
 
     gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[0]);
@@ -365,9 +358,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Fairies");
 
     // Render debugging text overlay.
-    if (gs->show_objects) {
-        dl = console_draw_displaylist(&console, dl, gr->dl_end);
-    }
+    dl = console_draw_displaylist(&console, dl, gr->dl_end);
 
     if (2 > gr->dl_end - dl) {
         fatal_dloverflow();
