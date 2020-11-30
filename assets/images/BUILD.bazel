@@ -7,6 +7,7 @@ textures(
     srcs = [
         "Ariella.png",
         "Ground023.png",
+        "Marble012.png",
     ],
     format = "rgba.16",
     mipmap = True,
