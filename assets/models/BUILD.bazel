@@ -1,4 +1,5 @@
 load(":defs.bzl", "models")
+load("//assets/images:defs.bzl", "textures")
 
 package(default_visibility = ["//assets:__pkg__"])
 
@@ -25,7 +26,17 @@ models(
 models(
     name = "fairy2",
     srcs = ["fairy2.fbx"],
-    normals = True,
-    scale = "meter*2/5",
     axes = "-y,x,z",
+    scale = "meter*2/5",
+    texcoords = True,
+)
+
+textures(
+    name = "textures",
+    srcs = [
+        "fairy2.png",
+    ],
+    format = "rgba.16",
+    mipmap = True,
+    native = True,
 )

@@ -114,6 +114,7 @@ void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
     gs->button_state = pad->button;
 }
 
+#if 0
 static const Gfx model_setup_dl[] = {
     gsDPPipeSync(),
     gsDPSetCycleType(G_CYC_1CYCLE),
@@ -122,6 +123,7 @@ static const Gfx model_setup_dl[] = {
     gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
     gsSPEndDisplayList(),
 };
+#endif
 
 void game_update(struct game_state *restrict gs, float dt) {
     walk_update(&gs->walk, &gs->physics, dt);
@@ -335,8 +337,10 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
 
     dl = camera_render(&gs->camera, gr, dl);
 
+    gSPDisplayList(dl++, texture_dl);
+
     if (gs->show_objects) {
-        gSPDisplayList(dl++, model_setup_dl);
+        // gSPDisplayList(dl++, model_setup_dl);
 
         gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
         gSPSetLights1(dl++, lights);
@@ -385,7 +389,6 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
         }
     }
 
-    gSPDisplayList(dl++, texture_dl);
     gSPDisplayList(dl++, ground_dl);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 

@@ -6,6 +6,8 @@ def _models_impl(ctx):
         base_args.append("-use-normals")
     if ctx.attr.primitive_color:
         base_args.append("-use-primitive-color")
+    if ctx.attr.texcoords:
+        base_args.append("-use-texcoords")
     if ctx.attr.axes:
         base_args.append("-axes=" + ctx.attr.axes)
     for src in ctx.files.srcs:
@@ -44,6 +46,9 @@ models = rule(
             default = False,
         ),
         "primitive_color": attr.bool(
+            default = False,
+        ),
+        "texcoords": attr.bool(
             default = False,
         ),
         "axes": attr.string(),
