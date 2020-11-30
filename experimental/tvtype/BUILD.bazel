@@ -6,15 +6,12 @@ cc_binary(
     name = "tvtype.elf",
     srcs = [
         "main.c",
-        "stack.s",
     ],
     copts = COPTS,
     deps = [
         "//base",
         "//base/pak",
-        "//n64:libultra",
-        "//sdk:gspF3DEX2.xbus",
-        "//sdk:rspboot",
+        "//experimental/simple",
     ],
 )
 

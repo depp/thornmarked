@@ -1,0 +1,28 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//base:copts.bzl", "COPTS")
+
+cc_library(
+    name = "simple",
+    srcs = [
+        "simple.c",
+        "stack.s",
+    ],
+    hdrs = [
+        "simple.h",
+    ],
+    copts = COPTS,
+    linkopts = [
+        # Hack: forces boot to be included. Otherwise, boot is only required by
+        # _start in //n64:libultra, but dependencies can't go "backwards" from
+        # dependencies to the libraries that depend on them, they can only go
+        # backwards from libraries to binaries.
+        "-Wl,--require-defined=boot",
+    ],
+    visibility = ["//experimental:__subpackages__"],
+    deps = [
+        "//base",
+        "//n64:libultra",
+        "//sdk:gspF3DEX2.xbus",
+        "//sdk:rspboot",
+    ],
+)
