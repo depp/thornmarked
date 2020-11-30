@@ -8,9 +8,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Avoid gprel access by declaring a different section.
-extern s32 osTvType __attribute__((section(".data")));
-
 static const char *FATAL_MESSAGE = "The game has crashed :-(\n";
 
 static OSThread fatal_thread;

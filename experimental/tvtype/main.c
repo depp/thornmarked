@@ -10,9 +10,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Avoid gprel access by declaring a different section.
-extern s32 osTvType __attribute__((section(".data")));
-
 struct pak_object pak_objects[2];
 
 enum {

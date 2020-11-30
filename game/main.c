@@ -15,9 +15,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Avoid gprel access by declaring a different section.
-extern s32 osTvType __attribute__((section(".data")));
-
 enum {
     // Maximum number of simultaneous PI requests.
     PI_MSG_COUNT = 8,
