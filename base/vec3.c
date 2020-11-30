@@ -1,6 +1,7 @@
 // Copyright 2014-2020 Dietrich Epp.
 #include "base/vec3.h"
 
+vec3 vec3_vec2(vec2 v, float z);
 bool vec3_eq(vec3 x, vec3 y);
 vec3 vec3_add(vec3 x, vec3 y);
 vec3 vec3_sub(vec3 x, vec3 y);
