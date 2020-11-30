@@ -26,6 +26,7 @@ models(
 models(
     name = "fairy2",
     srcs = ["fairy2.fbx"],
+    animate = True,
     axes = "-y,x,z",
     scale = "meter*2/5",
     texcoords = True,

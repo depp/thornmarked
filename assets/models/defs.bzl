@@ -12,6 +12,8 @@ def _models_impl(ctx):
         base_args.append("-use-vertex-colors")
     if ctx.attr.axes:
         base_args.append("-axes=" + ctx.attr.axes)
+    if ctx.attr.animate:
+        base_args.append("-animate")
     for src in ctx.files.srcs:
         name = src.basename
         idx = name.find(".")
@@ -57,6 +59,7 @@ models = rule(
             default = False,
         ),
         "axes": attr.string(),
+        "animate": attr.bool(),
         "_converter": attr.label(
             default = Label("//tools/modelconvert"),
             allow_single_file = True,
