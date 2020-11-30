@@ -8,6 +8,8 @@ def _models_impl(ctx):
         base_args.append("-use-primitive-color")
     if ctx.attr.texcoords:
         base_args.append("-use-texcoords")
+    if ctx.attr.vertex_colors:
+        base_args.append("-use-vertex-colors")
     if ctx.attr.axes:
         base_args.append("-axes=" + ctx.attr.axes)
     for src in ctx.files.srcs:
@@ -49,6 +51,9 @@ models = rule(
             default = False,
         ),
         "texcoords": attr.bool(
+            default = False,
+        ),
+        "vertex_colors": attr.bool(
             default = False,
         ),
         "axes": attr.string(),

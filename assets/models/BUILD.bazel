@@ -29,6 +29,7 @@ models(
     axes = "-y,x,z",
     scale = "meter*2/5",
     texcoords = True,
+    vertex_colors = True,
 )
 
 textures(

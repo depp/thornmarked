@@ -104,7 +104,18 @@ static const Gfx model_setup_dl[] = {
     gsDPPipeSync(),
     gsDPSetCycleType(G_CYC_1CYCLE),
     gsSPTexture(0, 0, 0, 0, G_OFF),
-    gsSPSetGeometryMode(G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
+    gsSPGeometryMode(0, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH | G_LIGHTING),
+    gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
+    gsSPEndDisplayList(),
+};
+
+static const Gfx fairy_setup_dl[] = {
+    gsDPPipeSync(),
+    // gsDPSetTextureImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[1]),
+    // gsSPDisplayList(texture_dl),
+    gsDPSetCycleType(G_CYC_1CYCLE),
+    gsSPTexture(0, 0, 0, 0, G_OFF),
+    gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
     gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
     gsSPEndDisplayList(),
 };
@@ -304,7 +315,6 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
 
     gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
     gSPSetLights1(dl++, lights);
-    gSPSetGeometryMode(dl++, G_LIGHTING);
     int current_model = 0;
     float scale = 0.5f;
     for (unsigned i = 0; i < gs->physics.count; i++) {
@@ -322,9 +332,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
             switch (model) {
             case MODEL_FAIRY:
                 index = 0;
-                gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1,
-                                   texture[1]);
-                gSPDisplayList(dl++, texture_dl);
+                gSPDisplayList(dl++, fairy_setup_dl);
                 break;
             case MODEL_SPIKE:
                 index = 1;
