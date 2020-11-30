@@ -109,14 +109,14 @@ static const Gfx model_setup_dl[] = {
     gsSPEndDisplayList(),
 };
 
+static Gfx texture_dl[];
+
 static const Gfx fairy_setup_dl[] = {
     gsDPPipeSync(),
-    // gsDPSetTextureImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[1]),
-    // gsSPDisplayList(texture_dl),
-    gsDPSetCycleType(G_CYC_1CYCLE),
-    gsSPTexture(0, 0, 0, 0, G_OFF),
+    gsDPSetTextureImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[1]),
+    gsSPDisplayList(texture_dl),
     gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
-    gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
+    gsDPSetCombineMode(G_CC_TRILERP, G_CC_MODULATERGB2),
     gsSPEndDisplayList(),
 };
 
@@ -141,11 +141,9 @@ static Gfx texture_dl[] = {
     gsDPSetTexturePersp(G_TP_PERSP),
     gsDPSetCycleType(G_CYC_2CYCLE),
     gsDPSetRenderMode(G_RM_PASS, G_RM_ZB_OPA_SURF2),
-    gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH),
     gsSPTexture(0x8000, 0x8000, 5, 0, G_ON),
     gsDPSetTextureDetail(G_TD_CLAMP),
     gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
-    gsDPSetCombineMode(G_CC_TRILERP, G_CC_DECALRGB2),
     gsDPSetTextureLOD(G_TL_LOD),
     gsDPSetTextureFilter(G_TF_BILERP),
 
@@ -362,6 +360,9 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
 
     gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[0]);
     gSPDisplayList(dl++, texture_dl);
+    gSPClearGeometryMode(dl++,
+                         G_SHADE | G_SHADING_SMOOTH | G_LIGHTING | G_CULL_BACK);
+    gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_DECALRGB2);
     gSPDisplayList(dl++, ground_dl);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 
