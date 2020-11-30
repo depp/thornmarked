@@ -68,7 +68,7 @@ static uint8_t texture[4 * 1024] ASSET;
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
-    pak_load_asset_sync(model_data[0], sizeof(model_data[0]), MODEL_FAIRY2);
+    pak_load_asset_sync(model_data[0], sizeof(model_data[0]), MODEL_FAIRY);
     pak_load_asset_sync(model_data[1], sizeof(model_data[1]), MODEL_SPIKE);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
@@ -257,7 +257,7 @@ static const Gfx ground_dl[] = {
 
 void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     {
-        int texture_asset = IMG_ARIELLA + gs->dither;
+        int texture_asset = IMG_GROUND + gs->dither;
         if (texture_asset != gs->loaded_texture) {
             pak_load_asset_sync(&texture, sizeof(texture), texture_asset);
             gs->loaded_texture = texture_asset;

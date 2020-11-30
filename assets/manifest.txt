@@ -1,11 +1,5 @@
-texture IMG_GROUND images/Ground023.none.texture
-texture IMG_GROUND_FS images/Ground023.fs.texture
-texture IMG_GROUND_BAYER images/Ground023.bayer.texture
-texture IMG_ARIELLA images/Ariella.none.texture
-texture IMG_ARIELLA_FS images/Ariella.fs.texture
-texture IMG_ARIELLA_BAYER images/Ariella.bayer.texture
+texture IMG_GROUND images/Ground023.texture
 data FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
 model MODEL_LOGO models/logo.model
-model MODEL_FAIRY models/fairy.model
 model MODEL_SPIKE models/spike.model
-model MODEL_FAIRY2 models/fairy2.model
+model MODEL_FAIRY models/fairy2.model

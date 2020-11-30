@@ -2,28 +2,13 @@ load(":defs.bzl", "textures")
 
 package(default_visibility = ["//assets:__pkg__"])
 
-[textures(
-    name = "images" + suffix,
+textures(
+    name = "images",
     srcs = [
         "Ariella.png",
         "Ground023.png",
     ],
-    dither = dither,
     format = "rgba.16",
     mipmap = True,
     native = True,
-    suffix = suffix,
-) for (dither, suffix) in [
-    ("none", ".none"),
-    ("bayer", ".bayer"),
-    ("floyd-steinberg", ".fs"),
-]]
-
-filegroup(
-    name = "images",
-    srcs = [
-        "images.bayer",
-        "images.fs",
-        "images.none",
-    ],
 )
