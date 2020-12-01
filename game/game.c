@@ -50,13 +50,43 @@ static const Gfx init_dl[] = {
 
 #define ASSET __attribute__((section("uninit"), aligned(16)))
 
-static uint8_t model_data[2][16 * 1024] ASSET;
+struct model_header {
+    void *vertex_data;
+    void *display_list;
+};
+
+static union {
+    struct model_header header;
+    uint8_t data[16 * 1024];
+} model_data[2] ASSET;
 static uint8_t texture[2][4 * 1024] ASSET;
+
+static void *pointer_fixup(void *base, void *ptr, size_t size) {
+    uintptr_t value = (uintptr_t)ptr;
+    if (value == 0) {
+        return NULL;
+    }
+    if (value > size) {
+        fatal_error("Bad pointer in asset\nPointer: %p\nBase: %p\nSize: %zu",
+                    ptr, base, size);
+    }
+    value += (uintptr_t)base;
+    return (void *)value;
+}
+
+static void load_model(int slot, int asset) {
+    pak_load_asset_sync(model_data[slot].data, sizeof(model_data[slot].data),
+                        asset);
+    struct model_header *p = &model_data[slot].header;
+    size_t sz = sizeof(model_data[slot]);
+    p->vertex_data = pointer_fixup(p, p->vertex_data, sz);
+    p->display_list = pointer_fixup(p, p->display_list, sz);
+}
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
-    pak_load_asset_sync(model_data[0], sizeof(model_data[0]), MODEL_FAIRY);
-    pak_load_asset_sync(model_data[1], sizeof(model_data[1]), MODEL_SPIKE);
+    load_model(0, MODEL_FAIRY);
+    load_model(1, MODEL_SPIKE);
     pak_load_asset_sync(texture[0], sizeof(texture[0]), IMG_GROUND);
     pak_load_asset_sync(texture[1], sizeof(texture[1]), IMG_FAIRY);
     physics_init(&gs->physics);
@@ -320,7 +350,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
 
     gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
     gSPSetLights1(dl++, lights);
-    int current_model = 0;
+    int current_model = 0, current_model_index = 0;
     float scale = 0.5f;
     for (unsigned i = 0; i < gs->physics.count; i++) {
         struct cp_phys *restrict cp = &gs->physics.entities[i];
@@ -349,7 +379,9 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
             if (index < 0) {
                 continue;
             }
-            gSPSegment(dl++, 1, K0_TO_PHYS(&model_data[index]));
+            current_model_index = index;
+            gSPSegment(dl++, 1,
+                       K0_TO_PHYS(model_data[index].header.vertex_data));
         }
         Mtx *mtx = gr->mtx_ptr++;
         {
@@ -361,7 +393,9 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
         }
         gSPMatrix(dl++, K0_TO_PHYS(mtx),
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-        gSPDisplayList(dl++, SEGMENT_ADDR(1, MODEL_DL_OFFSET));
+        gSPDisplayList(
+            dl++,
+            K0_TO_PHYS(model_data[current_model_index].header.display_list));
         scale *= 0.5f;
     }
 
