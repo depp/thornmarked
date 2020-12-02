@@ -84,12 +84,16 @@ static void load_model(int slot, int asset) {
     p->display_list = pointer_fixup(p, p->display_list, sz);
 }
 
+static void texture_init(void) {
+    pak_load_asset_sync(texture[0], sizeof(texture[0]), IMG_GROUND);
+    pak_load_asset_sync(texture[1], sizeof(texture[1]), IMG_FAIRY);
+}
+
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
     load_model(0, MODEL_FAIRY);
     load_model(1, MODEL_SPIKE);
-    pak_load_asset_sync(texture[0], sizeof(texture[0]), IMG_GROUND);
-    pak_load_asset_sync(texture[1], sizeof(texture[1]), IMG_FAIRY);
+    texture_init();
     physics_init(&gs->physics);
     walk_init(&gs->walk);
     camera_init(&gs->camera);
@@ -138,8 +142,19 @@ void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
     gs->button_state = pad->button;
 }
 
-static Gfx *texture_use(Gfx *dl, void *texture_ptr) {
-    gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture_ptr);
+static Gfx *texture_use(Gfx *dl, int asset_id) {
+    int index;
+    switch (asset_id) {
+    case IMG_GROUND:
+        index = 0;
+        break;
+    case IMG_FAIRY:
+        index = 1;
+        break;
+    default:
+        fatal_error("Texture not loaded\nAsset ID: %d", asset_id);
+    }
+    gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[index]);
     gSPDisplayList(dl++, texture_dl);
     return dl;
 }
@@ -306,7 +321,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
             case MODEL_FAIRY:
                 index = 0;
                 gSPDisplayList(dl++, fairy_setup_dl);
-                dl = texture_use(dl, texture[1]);
+                dl = texture_use(dl, IMG_FAIRY);
                 break;
             case MODEL_SPIKE:
                 index = 1;
@@ -338,7 +353,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
         scale *= 0.5f;
     }
 
-    dl = texture_use(dl, texture[0]);
+    dl = texture_use(dl, IMG_GROUND);
     gSPClearGeometryMode(dl++,
                          G_SHADE | G_SHADING_SMOOTH | G_LIGHTING | G_CULL_BACK);
     gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_DECALRGB2);
