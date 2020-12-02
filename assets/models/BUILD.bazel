@@ -21,6 +21,7 @@ models(
     name = "spike",
     srcs = ["spike.fbx"],
     normals = True,
+    scale = "meter/100",
 )
 
 models(
