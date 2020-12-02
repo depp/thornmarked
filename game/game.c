@@ -13,8 +13,7 @@
 #include "game/defs.h"
 #include "game/graphics.h"
 #include "game/model.h"
-#include "game/texture_n64.h"
-#include "game/texture_n64_dl.h"
+#include "game/n64/texture.h"
 
 #include <stdbool.h>
 

@@ -1,10 +1,10 @@
-#include "game/texture_n64.h"
+#include "game/n64/texture.h"
 
 #include "assets/assets.h"
 #include "base/base.h"
 #include "base/pak/pak.h"
 #include "game/defs.h"
-#include "game/texture_n64_dl.h"
+#include "game/n64/texture_dl.h"
 
 static uint8_t texture[2][4 * 1024] ASSET;
 

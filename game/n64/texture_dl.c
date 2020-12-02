@@ -1,4 +1,4 @@
-#include "game/texture_n64_dl.h"
+#include "game/n64/texture_dl.h"
 
 const Gfx texture_dl[] = {
     gsDPPipeSync(),
