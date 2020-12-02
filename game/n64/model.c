@@ -95,10 +95,12 @@ static const Gfx fairy_setup_dl[] = {
     gsSPEndDisplayList(),
 };
 
+static int anim_id, frame_id;
+
 Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   struct sys_model *restrict msys,
                   struct sys_phys *restrict psys) {
-    int current_model = 0, current_model_index = 0;
+    int current_model = -1, current_model_index = 0;
     float scale = 0.5f;
     for (unsigned i = 0; i < psys->count; i++) {
         struct cp_phys *restrict cp = &psys->entities[i];
@@ -117,10 +119,17 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                 index = 0;
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_FAIRY);
+                gSPSegment(dl++, 1,
+                           K0_TO_PHYS(model_data[index]
+                                          .header.animation[anim_id]
+                                          .frame[frame_id]
+                                          .vertex));
                 break;
             case MODEL_SPIKE:
                 index = 1;
                 gSPDisplayList(dl++, model_setup_dl);
+                gSPSegment(dl++, 1,
+                           K0_TO_PHYS(model_data[index].header.vertex_data));
                 break;
             default:
                 index = -1;
@@ -129,8 +138,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                 continue;
             }
             current_model_index = index;
-            gSPSegment(dl++, 1,
-                       K0_TO_PHYS(model_data[index].header.vertex_data));
+            current_model = model;
         }
         Mtx *mtx = gr->mtx_ptr++;
         {
@@ -147,5 +155,15 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
             K0_TO_PHYS(model_data[current_model_index].header.display_list));
         scale *= 0.5f;
     }
+
+    frame_id++;
+    if (frame_id >= model_data[0].header.animation[anim_id].frame_count) {
+        frame_id = 0;
+        anim_id++;
+        if (anim_id >= model_data[0].header.animation_count) {
+            anim_id = 0;
+        }
+    }
+
     return dl;
 }
