@@ -138,6 +138,12 @@ void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
     gs->button_state = pad->button;
 }
 
+static Gfx *texture_use(Gfx *dl, void *texture_ptr) {
+    gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture_ptr);
+    gSPDisplayList(dl++, texture_dl);
+    return dl;
+}
+
 static const Gfx model_setup_dl[] = {
     gsDPPipeSync(),
     gsDPSetCycleType(G_CYC_1CYCLE),
@@ -149,8 +155,6 @@ static const Gfx model_setup_dl[] = {
 
 static const Gfx fairy_setup_dl[] = {
     gsDPPipeSync(),
-    gsDPSetTextureImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[1]),
-    gsSPDisplayList(texture_dl),
     gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
     gsDPSetCombineMode(G_CC_TRILERP, G_CC_MODULATERGB2),
     gsSPEndDisplayList(),
@@ -302,6 +306,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
             case MODEL_FAIRY:
                 index = 0;
                 gSPDisplayList(dl++, fairy_setup_dl);
+                dl = texture_use(dl, texture[1]);
                 break;
             case MODEL_SPIKE:
                 index = 1;
@@ -333,8 +338,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
         scale *= 0.5f;
     }
 
-    gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[0]);
-    gSPDisplayList(dl++, texture_dl);
+    dl = texture_use(dl, texture[0]);
     gSPClearGeometryMode(dl++,
                          G_SHADE | G_SHADING_SMOOTH | G_LIGHTING | G_CULL_BACK);
     gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_DECALRGB2);
