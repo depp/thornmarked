@@ -23,3 +23,5 @@ enum {
     PRIORITY_MAIN = 10,
     PRIORITY_SCHEDULER = 11,
 };
+
+#define ASSET __attribute__((section("uninit"), aligned(16)))

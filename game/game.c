@@ -13,6 +13,7 @@
 #include "game/defs.h"
 #include "game/graphics.h"
 #include "game/model.h"
+#include "game/texture_n64.h"
 #include "game/texture_n64_dl.h"
 
 #include <stdbool.h>
@@ -49,8 +50,6 @@ static const Gfx init_dl[] = {
     gsSPEndDisplayList(),
 };
 
-#define ASSET __attribute__((section("uninit"), aligned(16)))
-
 struct model_header {
     void *vertex_data;
     void *display_list;
@@ -60,7 +59,6 @@ static union {
     struct model_header header;
     uint8_t data[16 * 1024];
 } model_data[2] ASSET;
-static uint8_t texture[2][4 * 1024] ASSET;
 
 static void *pointer_fixup(void *base, void *ptr, size_t size) {
     uintptr_t value = (uintptr_t)ptr;
@@ -82,11 +80,6 @@ static void load_model(int slot, int asset) {
     size_t sz = sizeof(model_data[slot]);
     p->vertex_data = pointer_fixup(p, p->vertex_data, sz);
     p->display_list = pointer_fixup(p, p->display_list, sz);
-}
-
-static void texture_init(void) {
-    pak_load_asset_sync(texture[0], sizeof(texture[0]), IMG_GROUND);
-    pak_load_asset_sync(texture[1], sizeof(texture[1]), IMG_FAIRY);
 }
 
 void game_init(struct game_state *restrict gs) {
@@ -140,23 +133,6 @@ void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
         gs->walk.entities[i].drive = drive;
     }
     gs->button_state = pad->button;
-}
-
-static Gfx *texture_use(Gfx *dl, int asset_id) {
-    int index;
-    switch (asset_id) {
-    case IMG_GROUND:
-        index = 0;
-        break;
-    case IMG_FAIRY:
-        index = 1;
-        break;
-    default:
-        fatal_error("Texture not loaded\nAsset ID: %d", asset_id);
-    }
-    gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[index]);
-    gSPDisplayList(dl++, texture_dl);
-    return dl;
 }
 
 static const Gfx model_setup_dl[] = {
