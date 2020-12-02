@@ -183,6 +183,7 @@ func (pk *pkg) putInfo(info *buildInfo) error {
 	}
 	w, err := pk.zfp.CreateHeader(&zip.FileHeader{
 		Name:     "INFO.json",
+		Method:   zip.Deflate,
 		Modified: info.BuildTimestamp,
 	})
 	if err != nil {
@@ -203,6 +204,7 @@ func (pk *pkg) addFile(dest, src string) error {
 	defer fp.Close()
 	w, err := pk.zfp.CreateHeader(&zip.FileHeader{
 		Name:     dest,
+		Method:   zip.Deflate,
 		Modified: pk.tstamp,
 	})
 	if err != nil {
