@@ -24,6 +24,8 @@ cc_binary(
         "main.c",
         "model.c",
         "model.h",
+        "n64/model.c",
+        "n64/model.h",
         "n64/texture.c",
         "n64/texture.h",
         "n64/texture_dl.c",

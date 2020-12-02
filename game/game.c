@@ -4,15 +4,12 @@
 #include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
-#include "base/mat4.h"
-#include "base/mat4_n64.h"
 #include "base/pak/pak.h"
 #include "base/random.h"
-#include "base/vec2.h"
-#include "base/vec3.h"
 #include "game/defs.h"
 #include "game/graphics.h"
 #include "game/model.h"
+#include "game/n64/model.h"
 #include "game/n64/texture.h"
 
 #include <stdbool.h>
@@ -49,42 +46,9 @@ static const Gfx init_dl[] = {
     gsSPEndDisplayList(),
 };
 
-struct model_header {
-    void *vertex_data;
-    void *display_list;
-};
-
-static union {
-    struct model_header header;
-    uint8_t data[16 * 1024];
-} model_data[2] ASSET;
-
-static void *pointer_fixup(void *base, void *ptr, size_t size) {
-    uintptr_t value = (uintptr_t)ptr;
-    if (value == 0) {
-        return NULL;
-    }
-    if (value > size) {
-        fatal_error("Bad pointer in asset\nPointer: %p\nBase: %p\nSize: %zu",
-                    ptr, base, size);
-    }
-    value += (uintptr_t)base;
-    return (void *)value;
-}
-
-static void load_model(int slot, int asset) {
-    pak_load_asset_sync(model_data[slot].data, sizeof(model_data[slot].data),
-                        asset);
-    struct model_header *p = &model_data[slot].header;
-    size_t sz = sizeof(model_data[slot]);
-    p->vertex_data = pointer_fixup(p, p->vertex_data, sz);
-    p->display_list = pointer_fixup(p, p->display_list, sz);
-}
-
 void game_init(struct game_state *restrict gs) {
     rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
-    load_model(0, MODEL_FAIRY);
-    load_model(1, MODEL_SPIKE);
+    model_render_init();
     texture_init();
     physics_init(&gs->physics);
     walk_init(&gs->walk);
@@ -133,22 +97,6 @@ void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
     }
     gs->button_state = pad->button;
 }
-
-static const Gfx model_setup_dl[] = {
-    gsDPPipeSync(),
-    gsDPSetCycleType(G_CYC_1CYCLE),
-    gsSPTexture(0, 0, 0, 0, G_OFF),
-    gsSPGeometryMode(0, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH | G_LIGHTING),
-    gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
-    gsSPEndDisplayList(),
-};
-
-static const Gfx fairy_setup_dl[] = {
-    gsDPPipeSync(),
-    gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
-    gsDPSetCombineMode(G_CC_TRILERP, G_CC_MODULATERGB2),
-    gsSPEndDisplayList(),
-};
 
 void game_update(struct game_state *restrict gs, float dt) {
     walk_update(&gs->walk, &gs->physics, dt);
@@ -278,55 +226,8 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
 
     gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
     gSPSetLights1(dl++, lights);
-    int current_model = 0, current_model_index = 0;
-    float scale = 0.5f;
-    for (unsigned i = 0; i < gs->physics.count; i++) {
-        struct cp_phys *restrict cp = &gs->physics.entities[i];
-        if (i >= gs->model.count) {
-            continue;
-        }
-        struct cp_model *restrict mp = &gs->model.entities[i];
-        if (mp->model == 0) {
-            continue;
-        }
-        int model = mp->model;
-        if (model != current_model) {
-            int index;
-            switch (model) {
-            case MODEL_FAIRY:
-                index = 0;
-                gSPDisplayList(dl++, fairy_setup_dl);
-                dl = texture_use(dl, IMG_FAIRY);
-                break;
-            case MODEL_SPIKE:
-                index = 1;
-                gSPDisplayList(dl++, model_setup_dl);
-                break;
-            default:
-                index = -1;
-            }
-            if (index < 0) {
-                continue;
-            }
-            current_model_index = index;
-            gSPSegment(dl++, 1,
-                       K0_TO_PHYS(model_data[index].header.vertex_data));
-        }
-        Mtx *mtx = gr->mtx_ptr++;
-        {
-            mat4 mat;
-            mat4_translate_rotate_scale(
-                &mat, vec3_vec2(vec2_scale(cp->pos, meter), meter),
-                cp->orientation, scale);
-            mat4_tofixed(mtx, &mat);
-        }
-        gSPMatrix(dl++, K0_TO_PHYS(mtx),
-                  G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-        gSPDisplayList(
-            dl++,
-            K0_TO_PHYS(model_data[current_model_index].header.display_list));
-        scale *= 0.5f;
-    }
+
+    dl = model_render(dl, gr, &gs->model, &gs->physics);
 
     dl = texture_use(dl, IMG_GROUND);
     gSPClearGeometryMode(dl++,
