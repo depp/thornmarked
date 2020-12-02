@@ -13,41 +13,70 @@
 #include "game/n64/texture.h"
 #include "game/physics.h"
 
-struct model_header {
-    void *vertex_data;
-    void *display_list;
+// A frame in a model animation.
+struct model_frame {
+    float time;
+    float inv_dt; // Inverse of time delta to next frame.
+    Vtx *vertex;
 };
 
+// An animation in a model.
+struct model_animation {
+    float duration;
+    int frame_count;
+    struct model_frame *frame;
+};
+
+// Header for the model data.
+struct model_header {
+    Vtx *vertex_data;
+    Gfx *display_list;
+    int animation_count;
+    struct model_animation animation[];
+};
+
+// Loaded models.
 static union {
     struct model_header header;
-    uint8_t data[16 * 1024];
+    uint8_t data[200 * 1024];
 } model_data[2] ASSET;
 
-static void *pointer_fixup(void *base, void *ptr, size_t size) {
+static void *pointer_fixup(void *ptr, uintptr_t base, size_t size) {
     uintptr_t value = (uintptr_t)ptr;
-    if (value == 0) {
-        return NULL;
-    }
     if (value > size) {
         fatal_error("Bad pointer in asset\nPointer: %p\nBase: %p\nSize: %zu",
-                    ptr, base, size);
+                    ptr, (void *)base, size);
     }
-    value += (uintptr_t)base;
-    return (void *)value;
+    return (void *)(value + base);
 }
 
-static void load_model(int slot, int asset) {
+static void model_fixup(struct model_header *restrict p, uintptr_t base,
+                        size_t size) {
+    p->vertex_data = pointer_fixup(p->vertex_data, base, size);
+    p->display_list = pointer_fixup(p->display_list, base, size);
+    for (int i = 0; i < p->animation_count; i++) {
+        struct model_animation *restrict anim = &p->animation[i];
+        if (anim->frame_count > 0) {
+            struct model_frame *restrict frame =
+                pointer_fixup(p->animation[i].frame, base, size);
+            anim->frame = frame;
+            for (int j = 0; j < anim->frame_count; j++) {
+                frame[j].vertex = pointer_fixup(frame[j].vertex, base, size);
+            }
+        }
+    }
+}
+
+static void model_load(int slot, int asset) {
     pak_load_asset_sync(model_data[slot].data, sizeof(model_data[slot].data),
                         asset);
     struct model_header *p = &model_data[slot].header;
-    size_t sz = sizeof(model_data[slot]);
-    p->vertex_data = pointer_fixup(p, p->vertex_data, sz);
-    p->display_list = pointer_fixup(p, p->display_list, sz);
+    model_fixup(p, (uintptr_t)&model_data[slot], sizeof(model_data[slot]));
 }
 
 void model_render_init(void) {
-    load_model(0, MODEL_FAIRY);
-    load_model(1, MODEL_SPIKE);
+    model_load(0, MODEL_FAIRY);
+    model_load(1, MODEL_SPIKE);
 }
 
 static const Gfx model_setup_dl[] = {
