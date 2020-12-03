@@ -19,6 +19,6 @@ struct cp_model *model_new(struct sys_model *restrict msys) {
     unsigned index = msys->count;
     msys->count++;
     struct cp_model *mp = &msys->entities[index];
-    mp->model = 0;
+    mp->model_id = MODEL_NONE;
     return mp;
 }

@@ -1,5 +1,6 @@
 #include "game/defs.h"
 
+#include "assets/pak.h"
 #include "base/base.h"
 #include "base/pak/pak.h"
 
@@ -42,9 +43,10 @@ static struct font_char *charmap;
 static struct font_glyph *glyphinfo;
 static struct font_texture *textures[4];
 
-void font_load(int asset_id) {
+void font_load(pak_data asset_id) {
     // Load from cartridge memory.
-    pak_load_asset_sync(font_buffer.data, sizeof(font_buffer.data), asset_id);
+    pak_load_asset_sync(font_buffer.data, sizeof(font_buffer.data),
+                        PAK_DATA_START + asset_id.id - 1);
 
     // Get pointers to all the objects inside.
     const struct font_header *restrict h = &font_buffer.header;

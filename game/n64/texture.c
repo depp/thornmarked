@@ -1,6 +1,7 @@
 #include "game/n64/texture.h"
 
-#include "assets/assets.h"
+#include "assets/pak.h"
+#include "assets/texture.h"
 #include "base/base.h"
 #include "base/pak/pak.h"
 #include "game/defs.h"
@@ -8,30 +9,30 @@
 
 static uint8_t texture[4][4 * 1024] ASSET;
 
-void texture_init(void) {
-    pak_load_asset_sync(texture[0], sizeof(texture[0]), IMG_GROUND);
-    pak_load_asset_sync(texture[1], sizeof(texture[1]), IMG_FAIRY);
-    pak_load_asset_sync(texture[2], sizeof(texture[2]), IMG_BLUEENEMY);
-    pak_load_asset_sync(texture[3], sizeof(texture[3]), IMG_GREENENEMY);
+static void texture_load(int slot, pak_texture asset) {
+    int obj_id = PAK_TEXTURE_START + asset.id - 1;
+    pak_load_asset_sync(texture[slot], sizeof(texture[slot]), obj_id);
 }
 
-Gfx *texture_use(Gfx *dl, int asset_id) {
+void texture_init(void) {
+    texture_load(0, IMG_GROUND);
+    texture_load(1, IMG_FAIRY);
+    texture_load(2, IMG_BLUEENEMY);
+    texture_load(3, IMG_GREENENEMY);
+}
+
+Gfx *texture_use(Gfx *dl, pak_texture asset_id) {
     int index;
-    switch (asset_id) {
-    case IMG_GROUND:
+    if (asset_id.id == IMG_GROUND.id) {
         index = 0;
-        break;
-    case IMG_FAIRY:
+    } else if (asset_id.id == IMG_FAIRY.id) {
         index = 1;
-        break;
-    case IMG_BLUEENEMY:
+    } else if (asset_id.id == IMG_BLUEENEMY.id) {
         index = 2;
-        break;
-    case IMG_GREENENEMY:
+    } else if (asset_id.id == IMG_GREENENEMY.id) {
         index = 3;
-        break;
-    default:
-        fatal_error("Texture not loaded\nAsset ID: %d", asset_id);
+    } else {
+        fatal_error("Texture not loaded\nAsset ID: %d", asset_id.id);
     }
     gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, texture[index]);
     gSPDisplayList(dl++, texture_dl);

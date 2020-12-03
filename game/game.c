@@ -1,6 +1,7 @@
 #include "game/game.h"
 
-#include "assets/assets.h"
+#include "assets/model.h"
+#include "assets/texture.h"
 #include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
@@ -72,11 +73,11 @@ void game_init(struct game_state *restrict gs) {
     gs->button_state = 0;
     gs->prev_button_state = 0;
     struct cp_model *restrict mp = model_new(&gs->model);
-    mp->model = MODEL_FAIRY;
+    mp->model_id = MODEL_FAIRY;
     mp = model_new(&gs->model);
-    mp->model = MODEL_BLUEENEMY;
+    mp->model_id = MODEL_BLUEENEMY;
     mp = model_new(&gs->model);
-    mp->model = MODEL_GREENENEMY;
+    mp->model_id = MODEL_GREENENEMY;
 }
 
 void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {

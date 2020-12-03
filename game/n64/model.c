@@ -1,6 +1,8 @@
 #include "game/n64/model.h"
 
-#include "assets/assets.h"
+#include "assets/model.h"
+#include "assets/pak.h"
+#include "assets/texture.h"
 #include "base/base.h"
 #include "base/mat4.h"
 #include "base/mat4_n64.h"
@@ -67,9 +69,9 @@ static void model_fixup(struct model_header *restrict p, uintptr_t base,
     }
 }
 
-static void model_load(int slot, int asset) {
+static void model_load(int slot, pak_model asset_id) {
     pak_load_asset_sync(model_data[slot].data, sizeof(model_data[slot].data),
-                        asset);
+                        PAK_MODEL_START + asset_id.id - 1);
     struct model_header *p = &model_data[slot].header;
     model_fixup(p, (uintptr_t)&model_data[slot], sizeof(model_data[slot]));
 }
@@ -100,14 +102,13 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
             continue;
         }
         struct cp_model *restrict mp = &msys->entities[i];
-        if (mp->model == 0) {
+        if (mp->model_id.id == 0) {
             continue;
         }
-        int model = mp->model;
+        int model = mp->model_id.id;
         if (model != current_model) {
             int index;
-            switch (model) {
-            case MODEL_FAIRY:
+            if (model == MODEL_FAIRY.id) {
                 index = 0;
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_FAIRY);
@@ -116,25 +117,19 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                                           .header.animation[anim_id]
                                           .frame[frame_id]
                                           .vertex));
-                break;
-            case MODEL_BLUEENEMY:
+            } else if (model == MODEL_BLUEENEMY.id) {
                 index = 1;
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_BLUEENEMY);
                 gSPSegment(dl++, 1,
                            K0_TO_PHYS(model_data[index].header.vertex_data));
-                break;
-            case MODEL_GREENENEMY:
+            } else if (model == MODEL_GREENENEMY.id) {
                 index = 2;
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_GREENENEMY);
                 gSPSegment(dl++, 1,
                            K0_TO_PHYS(model_data[index].header.vertex_data));
-                break;
-            default:
-                index = -1;
-            }
-            if (index < 0) {
+            } else {
                 continue;
             }
             current_model_index = index;

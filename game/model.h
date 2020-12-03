@@ -1,9 +1,11 @@
 #pragma once
 
+#include "base/pak/types.h"
+
 // Model component. Used for entities that have a 3D model.
 struct cp_model {
     // The model asset index. 0 means "no model".
-    int model;
+    pak_model model_id;
 };
 
 // Model system.

@@ -2,7 +2,6 @@ load(":defs.bzl", "asset_data", "asset_header")
 
 asset_header(
     name = "assets",
-    header = "assets.h",
     manifest = "manifest.txt",
     visibility = ["//game:__subpackages__"],
 )

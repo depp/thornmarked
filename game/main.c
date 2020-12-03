@@ -1,4 +1,5 @@
-#include "assets/assets.h"
+#include "assets/data.h"
+#include "assets/pak.h"
 #include "base/base.h"
 #include "base/console.h"
 #include "base/console_n64.h"
@@ -96,7 +97,8 @@ enum {
 static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
 
 // Info for the pak objects, to be loaded from cartridge.
-struct pak_object pak_objects[(PAK_SIZE + 1) & ~1] __attribute__((aligned(16)));
+struct pak_object pak_objects[(PAK_SIZE + 1) & ~1]
+    __attribute__((section("uninit"), aligned(16)));
 
 static Gfx display_lists[2][1024] __attribute__((section("uninit")));
 static Mtx matrixes[2][64] __attribute__((section("uninit")));

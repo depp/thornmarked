@@ -1,17 +1,34 @@
+def _dirname(path):
+    dirname, sep, _ = path.rpartition("/")
+    if not dirname:
+        return sep
+    return dirname.rstrip("/")
+
 def _asset_header_impl(ctx):
     manifest = ctx.file.manifest
-    header = ctx.actions.declare_file(ctx.attr.header)
+    headers = [
+        "data.h",
+        "model.h",
+        "pak.h",
+        "texture.h",
+        "track.h",
+    ]
+    header_files = [
+        ctx.actions.declare_file(ctx.attr.prefix + header)
+        for header in headers
+    ]
     ctx.actions.run(
-        outputs = [header],
+        outputs = header_files,
         inputs = [manifest],
-        progress_message = "Creating asset header %s" % header.short_path,
+        progress_message = "Creating asset headers for %s" % manifest.short_path,
         executable = ctx.executable._makepak,
         arguments = [
             "-manifest=" + manifest.path,
-            "-out-header=" + header.path,
+            "-out-code-dir=" + _dirname(header_files[0].path),
+            "-out-code-prefix=" + ctx.attr.prefix,
         ],
     )
-    files = depset([header])
+    files = depset(header_files)
     return [
         DefaultInfo(files = files),
         CcInfo(
@@ -28,9 +45,7 @@ asset_header = rule(
             mandatory = True,
             allow_single_file = True,
         ),
-        "header": attr.string(
-            mandatory = True,
-        ),
+        "prefix": attr.string(),
         "_makepak": attr.label(
             default = Label("//tools/makepak"),
             allow_single_file = True,
@@ -77,7 +92,7 @@ def _asset_data_impl(ctx):
     )
     return [DefaultInfo(files = depset([out]))]
 
-asset_data = rule (
+asset_data = rule(
     implementation = _asset_data_impl,
     attrs = {
         "manifest": attr.label(
