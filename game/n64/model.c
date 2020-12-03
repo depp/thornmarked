@@ -39,7 +39,7 @@ struct model_header {
 static union {
     struct model_header header;
     uint8_t data[200 * 1024];
-} model_data[2] ASSET;
+} model_data[3] ASSET;
 
 static void *pointer_fixup(void *ptr, uintptr_t base, size_t size) {
     uintptr_t value = (uintptr_t)ptr;
@@ -76,17 +76,9 @@ static void model_load(int slot, int asset) {
 
 void model_render_init(void) {
     model_load(0, MODEL_FAIRY);
-    model_load(1, MODEL_SPIKE);
+    model_load(1, MODEL_BLUEENEMY);
+    model_load(2, MODEL_GREENENEMY);
 }
-
-static const Gfx model_setup_dl[] = {
-    gsDPPipeSync(),
-    gsDPSetCycleType(G_CYC_1CYCLE),
-    gsSPTexture(0, 0, 0, 0, G_OFF),
-    gsSPGeometryMode(0, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH | G_LIGHTING),
-    gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
-    gsSPEndDisplayList(),
-};
 
 static const Gfx fairy_setup_dl[] = {
     gsDPPipeSync(),
@@ -125,9 +117,17 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                                           .frame[frame_id]
                                           .vertex));
                 break;
-            case MODEL_SPIKE:
+            case MODEL_BLUEENEMY:
                 index = 1;
-                gSPDisplayList(dl++, model_setup_dl);
+                gSPDisplayList(dl++, fairy_setup_dl);
+                dl = texture_use(dl, IMG_BLUEENEMY);
+                gSPSegment(dl++, 1,
+                           K0_TO_PHYS(model_data[index].header.vertex_data));
+                break;
+            case MODEL_GREENENEMY:
+                index = 2;
+                gSPDisplayList(dl++, fairy_setup_dl);
+                dl = texture_use(dl, IMG_GREENENEMY);
                 gSPSegment(dl++, 1,
                            K0_TO_PHYS(model_data[index].header.vertex_data));
                 break;
@@ -153,7 +153,6 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
         gSPDisplayList(
             dl++,
             K0_TO_PHYS(model_data[current_model_index].header.display_list));
-        scale *= 0.5f;
     }
 
     frame_id++;

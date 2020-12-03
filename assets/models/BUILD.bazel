@@ -34,9 +34,23 @@ models(
     vertex_colors = True,
 )
 
+models(
+    name = "enemy",
+    srcs = [
+        "BlueEnemy.fbx",
+        "GreenEnemy.fbx",
+    ],
+    axes = "z,x,y",
+    scale = "meter*2/500",
+    texcoords = True,
+    vertex_colors = True,
+)
+
 textures(
     name = "textures",
     srcs = [
+        "BlueEnemy.png",
+        "GreenEnemy.png",
         "fairy.png",
     ],
     format = "rgba.16",

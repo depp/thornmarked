@@ -12,9 +12,9 @@ asset_data(
     srcs = [
         "//assets/fonts/grenze_gotisch",
         "//assets/images",
+        "//assets/models:enemy",
         "//assets/models:fairy2",
         "//assets/models:logo",
-        "//assets/models:spike",
         "//assets/models:textures",
     ],
     manifest = "manifest.txt",

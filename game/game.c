@@ -74,9 +74,9 @@ void game_init(struct game_state *restrict gs) {
     struct cp_model *restrict mp = model_new(&gs->model);
     mp->model = MODEL_FAIRY;
     mp = model_new(&gs->model);
-    mp->model = MODEL_SPIKE;
+    mp->model = MODEL_BLUEENEMY;
     mp = model_new(&gs->model);
-    mp->model = MODEL_SPIKE;
+    mp->model = MODEL_GREENENEMY;
 }
 
 void game_input(struct game_state *restrict gs, OSContPad *restrict pad) {
