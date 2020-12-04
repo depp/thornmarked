@@ -33,6 +33,8 @@ noreturn void assert_fail(const char *file, int line, const char *pred);
             assert_fail(__FILE__, __LINE__, #p); \
     } while (0)
 
+#define static_assert _Static_assert
+
 // =============================================================================
 // Memory Allocation
 // =============================================================================

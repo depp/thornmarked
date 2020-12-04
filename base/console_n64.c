@@ -40,7 +40,7 @@ enum {
     TEX_HEIGHT = TEX_ROWS * FONT_HEIGHT,
 };
 
-_Static_assert((TEX_WIDTH / 2) * TEX_HEIGHT <= 4096);
+static_assert((TEX_WIDTH / 2) * TEX_HEIGHT <= 4096);
 
 struct console_texpos {
     uint8_t x, y;
