@@ -25,7 +25,9 @@ struct cp_walk *walk_new(struct sys_walk *restrict wsys) {
     }
     unsigned index = wsys->count;
     wsys->count++;
-    return &wsys->entities[index];
+    struct cp_walk *restrict wp = &wsys->entities[index];
+    *wp = (struct cp_walk){.face_angle = 0.0f};
+    return wp;
 }
 
 // Update walkers.
