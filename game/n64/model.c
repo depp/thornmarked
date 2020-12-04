@@ -4,6 +4,7 @@
 #include "assets/pak.h"
 #include "assets/texture.h"
 #include "base/base.h"
+#include "base/hash.h"
 #include "base/mat4.h"
 #include "base/mat4_n64.h"
 #include "base/pak/pak.h"
@@ -21,6 +22,10 @@ enum {
 
     // Number of animation frames which can be loaded at once.
     FRAME_SLOTS = 8,
+
+    // Number of buckets in frame hash table. Must be a power of two, must be
+    // larger than FRAME_SLOTS by some margin.
+    FRAME_BUCKETS = 16,
 };
 
 // =============================================================================
@@ -139,14 +144,110 @@ static int model_load(pak_model asset) {
 // Animation Frames
 // =============================================================================
 
+// Must be a power of two.
+static_assert((FRAME_BUCKETS & (FRAME_BUCKETS - 1)) == 0);
+// Must have more hash buckets than possible entries in hash table.
+static_assert(FRAME_BUCKETS > FRAME_SLOTS);
+
+// Bucket in frame hash table.
+struct frame_bucket {
+    unsigned frame;
+    int slot;
+};
+
+// Hash table mapping frame addresses to slots.
+static struct frame_bucket frame_to_slot[FRAME_BUCKETS];
+
+// Get the slot for a frame, or return -1 if the frame is not loaded.
+static int frame_slot_get(struct frame_bucket *restrict table, unsigned hash,
+                          unsigned frame_addr) {
+    const unsigned mask = FRAME_BUCKETS - 1;
+    for (unsigned i = 0; i < FRAME_BUCKETS; i++) {
+        unsigned pos = (hash + i) & mask;
+        if (table[pos].frame == frame_addr) {
+            return table[pos].slot;
+        }
+        if (table[pos].frame == 0) {
+            break;
+        }
+    }
+    return -1;
+}
+
+// Set the slot that a frame maps to.
+static void frame_slot_set(struct frame_bucket *restrict table, unsigned hash,
+                           unsigned frame_addr, int slot) {
+    const unsigned mask = FRAME_BUCKETS - 1;
+    for (unsigned i = 0; i < FRAME_BUCKETS; i++) {
+        unsigned pos = (hash + i) & mask;
+        if (table[pos].frame == frame_addr) {
+            table[pos].slot = slot;
+            return;
+        }
+        if (table[pos].frame == 0) {
+            table[pos] = (struct frame_bucket){frame_addr, slot};
+            return;
+        }
+    }
+    fatal_error("Frame table full");
+}
+
+// Erase an entry mapping a frame to a slot.
+static void frame_slot_erase(struct frame_bucket *restrict table, unsigned hash,
+                             unsigned frame_addr) {
+    const unsigned mask = FRAME_BUCKETS - 1;
+    // Find and remove this hash entry.
+    bool found = false;
+    unsigned pos;
+    for (unsigned i = 0; i < FRAME_BUCKETS; i++) {
+        pos = (hash + i) & mask;
+        if (table[pos].frame == frame_addr) {
+            found = true;
+            table[pos] = (struct frame_bucket){0, 0};
+            break;
+        }
+    }
+    if (found) {
+        // Move later hash entries back to fill in the gap.
+        unsigned hole = pos;
+        for (unsigned i = 1; i < FRAME_BUCKETS; i++) {
+            unsigned npos = (pos + i) & mask;
+            if (table[npos].frame == 0) {
+                break;
+            }
+            unsigned nhash = hash32(table[npos].frame);
+            unsigned hole_dist = (hole - nhash) & mask;
+            unsigned cur_dist = (npos - nhash) & mask;
+            if (hole_dist < cur_dist) {
+                table[hole] = table[npos];
+                table[npos] = (struct frame_bucket){0, 0};
+                hole = npos;
+            }
+        }
+    }
+}
+
 // Loaded animation frame data.
 static uint8_t frame_data[FRAME_SLOTS][5 * 1024] ASSET;
 
 // Map from slots to animation frame cartridge addresses.
 static unsigned frame_from_slot[FRAME_SLOTS];
 
-// Load the given animation frame into the given slot.
-static void frame_load_slot(int slot, unsigned frame_addr, unsigned size) {
+// Next slot to load into.
+static int frame_next_slot;
+
+// Load an animation frame. Return the slot index.
+static int frame_load(unsigned frame_addr, unsigned size) {
+    unsigned hash = hash32(frame_addr);
+
+    // Find the frame if it is loaded.
+    int slot = frame_slot_get(frame_to_slot, hash, frame_addr);
+
+    // Find an empty slot, and load it there.
+    slot = frame_next_slot++;
+    if (frame_next_slot >= FRAME_SLOTS) {
+        frame_next_slot = 0;
+    }
     if (size > sizeof(frame_data[slot])) {
         fatal_error(
             "frame_load_slot: frame too large\n"
@@ -154,27 +255,12 @@ static void frame_load_slot(int slot, unsigned frame_addr, unsigned size) {
             size, sizeof(frame_data[slot]));
     }
     pak_load_data_sync(&frame_data[slot], frame_addr, size);
+    unsigned old_addr = frame_from_slot[slot];
+    if (old_addr != 0) {
+        frame_slot_erase(frame_to_slot, hash32(old_addr), old_addr);
+    }
+    frame_slot_set(frame_to_slot, hash, frame_addr, slot);
     frame_from_slot[slot] = frame_addr;
-}
-
-// Next slot to load into.
-static int frame_next_slot;
-
-// Load an animation frame. Return the slot index.
-static int frame_load(unsigned frame_addr, unsigned size) {
-    // Find the frame if it is loaded.
-    for (int slot = 0; slot < FRAME_SLOTS; slot++) {
-        if (frame_from_slot[slot] == frame_addr) {
-            return slot;
-        }
-    }
-
-    // Find an empty slot, and load it there.
-    int slot = frame_next_slot++;
-    if (frame_next_slot >= FRAME_SLOTS) {
-        frame_next_slot = 0;
-    }
-    frame_load_slot(slot, frame_addr, size);
     return slot;
 }
 
