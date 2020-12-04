@@ -18,13 +18,20 @@
 enum {
     // Number of model assets which can be loaded at once.
     MODEL_SLOTS = 3,
+
+    // Number of animation frames which can be loaded at once.
+    FRAME_SLOTS = 8,
 };
+
+// =============================================================================
+// Models
+// =============================================================================
 
 // A frame in a model animation.
 struct model_frame {
     float time;
-    float inv_dt; // Inverse of time delta to next frame.
-    Vtx *vertex;
+    float inv_dt;    // Inverse of time delta to next frame.
+    unsigned vertex; // Cartridge address of vertex data.
 };
 
 // An animation in a model.
@@ -39,13 +46,14 @@ struct model_header {
     Vtx *vertex_data;
     Gfx *display_list;
     int animation_count;
+    unsigned frame_size;
     struct model_animation animation[];
 };
 
 // Model data, including buffer.
 union model_data {
     struct model_header header;
-    uint8_t data[200 * 1024];
+    uint8_t data[10 * 1024];
 };
 
 // Loaded models.
@@ -58,6 +66,12 @@ static int model_to_slot[PAK_MODEL_COUNT + 1];
 // Map from model slot number to model asset ID.
 static int model_from_slot[MODEL_SLOTS];
 
+// Get the pak object index for the first object in a given model.
+static int model_object_id(pak_model asset) {
+    return PAK_MODEL_START + (asset.id - 1) * 2;
+}
+
+// Convert a relative offset to a pointer.
 static void *pointer_fixup(void *ptr, uintptr_t base, size_t size) {
     uintptr_t value = (uintptr_t)ptr;
     if (value > size) {
@@ -68,10 +82,13 @@ static void *pointer_fixup(void *ptr, uintptr_t base, size_t size) {
 }
 
 // Fix the internal pointers in a model after loading.
-static void model_fixup(union model_data *p) {
+static void model_fixup(union model_data *p, pak_model asset) {
+    const struct pak_object vtx_obj = pak_objects[model_object_id(asset) + 1];
     const uintptr_t base = (uintptr_t)p;
     const size_t size = sizeof(union model_data);
     struct model_header *restrict hdr = &p->header;
+    const unsigned max_vtx_offset =
+        vtx_obj.size < hdr->frame_size ? 0 : vtx_obj.size - hdr->frame_size;
     hdr->vertex_data = pointer_fixup(hdr->vertex_data, base, size);
     hdr->display_list = pointer_fixup(hdr->display_list, base, size);
     for (int i = 0; i < hdr->animation_count; i++) {
@@ -81,7 +98,11 @@ static void model_fixup(union model_data *p) {
                 pointer_fixup(hdr->animation[i].frame, base, size);
             anim->frame = frame;
             for (int j = 0; j < anim->frame_count; j++) {
-                frame[j].vertex = pointer_fixup(frame[j].vertex, base, size);
+                unsigned vtx_offset = frame[j].vertex;
+                if (vtx_offset > max_vtx_offset) {
+                    fatal_error("Bad vertex offset\nOffset: $%x", vtx_offset);
+                }
+                frame[j].vertex = vtx_obj.offset + vtx_offset;
             }
         }
     }
@@ -90,8 +111,8 @@ static void model_fixup(union model_data *p) {
 // Load a model into the given slot.
 static void model_load_slot(pak_model asset, int slot) {
     pak_load_asset_sync(&model_data[slot], sizeof(model_data[slot]),
-                        PAK_MODEL_START + asset.id - 1);
-    model_fixup(&model_data[slot]);
+                        model_object_id(asset));
+    model_fixup(&model_data[slot], asset);
     model_to_slot[asset.id] = slot;
     model_from_slot[slot] = asset.id;
 }
@@ -113,6 +134,53 @@ static int model_load(pak_model asset) {
     }
     fatal_error("model_load: no slots available");
 }
+
+// =============================================================================
+// Animation Frames
+// =============================================================================
+
+// Loaded animation frame data.
+static uint8_t frame_data[FRAME_SLOTS][5 * 1024] ASSET;
+
+// Map from slots to animation frame cartridge addresses.
+static unsigned frame_from_slot[FRAME_SLOTS];
+
+// Load the given animation frame into the given slot.
+static void frame_load_slot(int slot, unsigned frame_addr, unsigned size) {
+    if (size > sizeof(frame_data[slot])) {
+        fatal_error(
+            "frame_load_slot: frame too large\n"
+            "Frame size: %u\nSlot size: %zu\n",
+            size, sizeof(frame_data[slot]));
+    }
+    pak_load_data_sync(&frame_data[slot], frame_addr, size);
+    frame_from_slot[slot] = frame_addr;
+}
+
+// Next slot to load into.
+static int frame_next_slot;
+
+// Load an animation frame. Return the slot index.
+static int frame_load(unsigned frame_addr, unsigned size) {
+    // Find the frame if it is loaded.
+    for (int slot = 0; slot < FRAME_SLOTS; slot++) {
+        if (frame_from_slot[slot] == frame_addr) {
+            return slot;
+        }
+    }
+
+    // Find an empty slot, and load it there.
+    int slot = frame_next_slot++;
+    if (frame_next_slot >= FRAME_SLOTS) {
+        frame_next_slot = 0;
+    }
+    frame_load_slot(slot, frame_addr, size);
+    return slot;
+}
+
+// =============================================================================
+// Public
+// =============================================================================
 
 void model_render_init(void) {
     model_load(MODEL_FAIRY);
@@ -149,27 +217,25 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
             fatal_error("Model not loaded");
         }
         if (model != current_model) {
+            const struct model_header *restrict mp = &model_data[slot].header;
             switch (model) {
             case ID_MODEL_FAIRY:
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_FAIRY);
-                gSPSegment(dl++, 1,
-                           K0_TO_PHYS(model_data[slot]
-                                          .header.animation[anim_id]
-                                          .frame[frame_id]
-                                          .vertex));
+                unsigned frame_addr =
+                    mp->animation[anim_id].frame[frame_id].vertex;
+                int frame_slot = frame_load(frame_addr, mp->frame_size);
+                gSPSegment(dl++, 1, K0_TO_PHYS(frame_data[frame_slot]));
                 break;
             case ID_MODEL_BLUEENEMY:
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_BLUEENEMY);
-                gSPSegment(dl++, 1,
-                           K0_TO_PHYS(model_data[slot].header.vertex_data));
+                gSPSegment(dl++, 1, K0_TO_PHYS(mp->vertex_data));
                 break;
             case ID_MODEL_GREENENEMY:
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_GREENENEMY);
-                gSPSegment(dl++, 1,
-                           K0_TO_PHYS(model_data[slot].header.vertex_data));
+                gSPSegment(dl++, 1, K0_TO_PHYS(mp->vertex_data));
                 break;
             default:
                 fatal_error("Cannot use model\nModel: %d", model);
