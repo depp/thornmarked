@@ -151,6 +151,7 @@ static const Gfx ground_dl[] = {
 };
 
 void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
+    texture_startframe();
     Gfx *dl = gr->dl_start;
     const bool full = true;
     const bool clear_z = true;
