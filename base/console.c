@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 void console_init(struct console *cs, console_type ctype) {
     cs->ptr = cs->chars;
