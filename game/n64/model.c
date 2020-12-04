@@ -140,16 +140,17 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
             continue;
         }
         struct cp_model *restrict mp = &msys->entities[i];
-        if (mp->model_id.id == 0) {
+        int model = mp->model_id.id;
+        if (model == 0) {
             continue;
         }
-        int model = mp->model_id.id;
         int slot = model_to_slot[model];
         if (model_from_slot[slot] != model) {
             fatal_error("Model not loaded");
         }
         if (model != current_model) {
-            if (model == MODEL_FAIRY.id) {
+            switch (model) {
+            case ID_MODEL_FAIRY:
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_FAIRY);
                 gSPSegment(dl++, 1,
@@ -157,18 +158,21 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                                           .header.animation[anim_id]
                                           .frame[frame_id]
                                           .vertex));
-            } else if (model == MODEL_BLUEENEMY.id) {
+                break;
+            case ID_MODEL_BLUEENEMY:
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_BLUEENEMY);
                 gSPSegment(dl++, 1,
                            K0_TO_PHYS(model_data[slot].header.vertex_data));
-            } else if (model == MODEL_GREENENEMY.id) {
+                break;
+            case ID_MODEL_GREENENEMY:
                 gSPDisplayList(dl++, fairy_setup_dl);
                 dl = texture_use(dl, IMG_GREENENEMY);
                 gSPSegment(dl++, 1,
                            K0_TO_PHYS(model_data[slot].header.vertex_data));
-            } else {
-                continue;
+                break;
+            default:
+                fatal_error("Cannot use model\nModel: %d", model);
             }
         }
         current_model = model;
