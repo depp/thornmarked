@@ -74,9 +74,11 @@ def _join(path, *paths):
 def _asset_data_impl(ctx):
     manifest = ctx.file.manifest
     out = ctx.actions.declare_file(ctx.label.name + ".pak")
+    stats = ctx.actions.declare_file(ctx.label.name + ".txt")
     arguments = [
         "-manifest=" + manifest.path,
         "-out-data=" + out.path,
+        "-out-data-stats=" + stats.path,
     ]
     for dirname in ctx.attr.dirs:
         arguments += [
@@ -84,7 +86,7 @@ def _asset_data_impl(ctx):
             "-dir=" + _join(ctx.label.workspace_root, ctx.label.package, dirname),
         ]
     ctx.actions.run(
-        outputs = [out],
+        outputs = [out, stats],
         inputs = [manifest] + ctx.files.srcs,
         progress_message = "Creating asset package %s" % out.short_path,
         executable = ctx.executable._makepak,
