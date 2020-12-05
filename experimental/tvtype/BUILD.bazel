@@ -10,7 +10,7 @@ cc_binary(
     copts = COPTS,
     deps = [
         "//base",
-        "//base/pak",
+        "//base/pak:n64",
         "//experimental/simple",
     ],
 )

@@ -33,7 +33,7 @@ cc_binary(
         ":assets",
         "//base",
         "//base/n64:scheduler",
-        "//base/pak",
+        "//base/pak:n64",
         "//sdk:aspMain",
         "//sdk:gspF3DEX2.xbus",
         "//sdk:rspboot",

@@ -1,18 +1,27 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//base:copts.bzl", "COPTS")
 
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "pak",
+    hdrs = [
+        "types.h",
+    ],
+    copts = COPTS,
+)
+
+cc_library(
+    name = "n64",
     srcs = [
         "pak.c",
     ],
     hdrs = [
         "pak.h",
-        "types.h",
     ],
     copts = COPTS,
-    visibility = ["//visibility:public"],
     deps = [
+        ":pak",
         "//base/n64",
     ],
 )
