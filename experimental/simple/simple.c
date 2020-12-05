@@ -70,10 +70,6 @@ static void idle(void *arg) {
     osViSetMode(mode);
     osViBlack(1);
 
-    // Initialize peripheral manager.
-    osCreatePiManager(OS_PRIORITY_PIMGR, &pi_message_queue, pi_message_buffer,
-                      PI_MSG_COUNT);
-
     // Start main thread.
     thread_create(&main_thread, main, NULL, _main_thread_stack, PRIORITY_MAIN);
     osStartThread(&main_thread);
@@ -138,6 +134,10 @@ static OSTask task;
 
 static void main(void *arg) {
     (void)arg;
+    // Initialize peripheral manager.
+    osCreatePiManager(OS_PRIORITY_PIMGR, &pi_message_queue, pi_message_buffer,
+                      PI_MSG_COUNT);
+
     program_init();
 
     // Set up message queues.

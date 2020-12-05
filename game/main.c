@@ -78,10 +78,6 @@ static void idle(void *arg) {
     osViSetMode(mode);
     osViBlack(1);
 
-    // Initialize peripheral manager.
-    osCreatePiManager(OS_PRIORITY_PIMGR, &pi_message_queue, pi_message_buffer,
-                      PI_MSG_COUNT);
-
     // Start main thread.
     thread_create(&main_thread, main, NULL, _main_thread_stack, PRIORITY_MAIN);
     osStartThread(&main_thread);
@@ -184,6 +180,10 @@ static struct game_state game_state;
 static void main(void *arg) {
     (void)arg;
     struct main_state *st = &main_state;
+
+    // Initialize peripheral manager.
+    osCreatePiManager(OS_PRIORITY_PIMGR, &pi_message_queue, pi_message_buffer,
+                      PI_MSG_COUNT);
 
     mem_init();
     pak_init(PAK_SIZE);

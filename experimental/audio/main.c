@@ -67,10 +67,6 @@ static void idle(void *arg) {
     osViSetMode(&osViModeNtscLpn1);
     osViBlack(1);
 
-    // Initialize peripheral manager.
-    osCreatePiManager(OS_PRIORITY_PIMGR, &pi_message_queue, pi_message_buffer,
-                      PI_MSG_COUNT);
-
     // Start main thread.
     thread_create(&main_thread, main, NULL, _main_thread_stack, PRIORITY_MAIN);
     osStartThread(&main_thread);
@@ -223,6 +219,10 @@ struct pak_object pak_objects[PAK_SIZE] __attribute__((aligned(16)));
 
 static void main(void *arg) {
     (void)arg;
+
+    // Initialize peripheral manager.
+    osCreatePiManager(OS_PRIORITY_PIMGR, &pi_message_queue, pi_message_buffer,
+                      PI_MSG_COUNT);
 
     for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
         framebuffers[0][i] = 0xffff;
