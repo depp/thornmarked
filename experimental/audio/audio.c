@@ -4,7 +4,8 @@
 #include "base/console.h"
 #include "base/pak/pak.h"
 #include "base/scheduler.h"
-#include "experimental/audio/assets.h"
+#include "experimental/audio/pak.h"
+#include "experimental/audio/track.h"
 
 #include <ultra64.h>
 
@@ -103,7 +104,7 @@ static ALGlobals audio_globals;
 static ALSndPlayer audio_sndp;
 
 void audio_init(void) {
-    const int obj = TRACK1_SURRENDER_OF_INNOCENCE;
+    const int obj = pak_track_object(TRACK1_SURRENDER_OF_INNOCENCE);
 
     // Mark all DMA buffers as "old" so they get used.
     for (int i = 0; i < AUDIO_DMA_COUNT; i++) {

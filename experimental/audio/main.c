@@ -6,7 +6,7 @@
 #include "base/os.h"
 #include "base/pak/pak.h"
 #include "base/scheduler.h"
-#include "experimental/audio/assets.h"
+#include "experimental/audio/pak.h"
 
 #include <ultra64.h>
 
