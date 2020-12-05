@@ -13,7 +13,7 @@ struct cp_phys {
 // Physics system.
 struct sys_phys {
     struct cp_phys *entities;
-    unsigned count;
+    int count;
 };
 
 // Initialize physics system.

@@ -10,10 +10,10 @@
 #include "base/pak/pak.h"
 #include "base/vec2.h"
 #include "base/vec3.h"
+#include "game/core/physics.h"
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
 #include "game/n64/texture.h"
-#include "game/core/physics.h"
 
 enum {
     // Number of model assets which can be loaded at once.
@@ -282,7 +282,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   struct sys_phys *restrict psys) {
     int current_model = 0;
     float scale = 0.5f;
-    for (unsigned i = 0; i < psys->count; i++) {
+    for (int i = 0; i < psys->count; i++) {
         struct cp_phys *restrict cp = &psys->entities[i];
         if (i >= msys->count) {
             continue;

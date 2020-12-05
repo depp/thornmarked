@@ -12,7 +12,7 @@ struct cp_walk {
 
 struct sys_walk {
     struct cp_walk *entities;
-    unsigned count;
+    int count;
 };
 
 // Initailize walkers.

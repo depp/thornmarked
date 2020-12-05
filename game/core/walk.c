@@ -23,7 +23,7 @@ struct cp_walk *walk_new(struct sys_walk *restrict wsys) {
     if (wsys->count >= MAX_WALK_OBJS) {
         fatal_error("Too many walk objects");
     }
-    unsigned index = wsys->count;
+    int index = wsys->count;
     wsys->count++;
     struct cp_walk *restrict wp = &wsys->entities[index];
     *wp = (struct cp_walk){.face_angle = 0.0f};
@@ -33,7 +33,7 @@ struct cp_walk *walk_new(struct sys_walk *restrict wsys) {
 // Update walkers.
 void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
                  float dt) {
-    for (unsigned i = 0; i < wsys->count; i++) {
+    for (int i = 0; i < wsys->count; i++) {
         struct cp_walk *wp = &wsys->entities[i];
         if (i >= psys->count) {
             continue;

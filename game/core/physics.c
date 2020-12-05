@@ -18,7 +18,7 @@ struct cp_phys *physics_new(struct sys_phys *restrict psys) {
     if (psys->count >= MAX_PHYSICS_OBJS) {
         fatal_error("Too many physics objects");
     }
-    unsigned index = psys->count;
+    int index = psys->count;
     psys->count++;
     struct cp_phys *pp = &psys->entities[index];
     pp->pos = (vec2){{0.0f, 0.0f}};

@@ -11,7 +11,7 @@ struct cp_model {
 // Model system.
 struct sys_model {
     struct cp_model *entities;
-    unsigned count;
+    int count;
 };
 
 // Initialize model system.

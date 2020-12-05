@@ -39,7 +39,7 @@ void game_init(struct game_state *restrict gs) {
 
 void game_input(struct game_state *restrict gs,
                 const struct controller_input *restrict input) {
-    for (unsigned i = 0; i < gs->walk.count; i++) {
+    for (int i = 0; i < gs->walk.count; i++) {
         gs->walk.entities[i].drive = input->joystick;
     }
     gs->button_state = input->buttons;

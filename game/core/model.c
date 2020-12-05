@@ -16,7 +16,7 @@ struct cp_model *model_new(struct sys_model *restrict msys) {
     if (msys->count >= MAX_MODEL_OBJS) {
         fatal_error("Too many model objects");
     }
-    unsigned index = msys->count;
+    int index = msys->count;
     msys->count++;
     struct cp_model *mp = &msys->entities[index];
     mp->model_id = MODEL_NONE;
