@@ -11,7 +11,6 @@
 #include "base/console.h"
 #include "base/n64/console.h"
 #include "base/n64/os.h"
-#include "base/n64/system.h"
 
 #include <ultra64.h>
 
@@ -51,25 +50,16 @@ noreturn void test_fail_func(const char *file, int line) {
 
 static void main(void *arg);
 
-static OSThread main_thread;
 extern u8 _main_thread_stack[];
 
-void boot(void);
 void boot(void) {
-    osInitialize();
-    fatal_init();
-    thread_create(&main_thread, main, NULL, _main_thread_stack,
-                  PRIORITY_IDLE_INIT);
-    osStartThread(&main_thread);
+    system_main(main, NULL, _main_thread_stack);
 }
 
 static void main(void *arg) {
     (void)arg;
 
     // Setup.
-    osCreateViManager(OS_PRIORITY_VIMGR);
-    osViSetMode(&osViModeNtscLpn1);
-    osViBlack(true);
     console_init(&console, CONSOLE_TRUNCATE);
     console_puts(&console, "Running tests...");
     test_show(framebuffers[0]);

@@ -21,7 +21,6 @@ cc_library(
     visibility = ["//experimental:__subpackages__"],
     deps = [
         "//base",
-        "//n64:libultra",
         "//sdk:gspF3DEX2.xbus",
         "//sdk:rspboot",
     ],

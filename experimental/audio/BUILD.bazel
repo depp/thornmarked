@@ -34,7 +34,6 @@ cc_binary(
         "//base",
         "//base:scheduler",
         "//base/pak",
-        "//n64:libultra",
         "//sdk:aspMain",
         "//sdk:gspF3DEX2.xbus",
         "//sdk:rspboot",

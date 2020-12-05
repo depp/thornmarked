@@ -5,7 +5,6 @@
 #include "base/n64/console.h"
 #include "base/n64/os.h"
 #include "base/n64/scheduler.h"
-#include "base/n64/system.h"
 #include "base/pak/pak.h"
 #include "experimental/audio/pak.h"
 
@@ -26,12 +25,7 @@ enum {
     SCREEN_HEIGHT = 240,
 };
 
-// Stacks (defined in linker script).
 extern u8 _main_thread_stack[];
-extern u8 _idle_thread_stack[];
-
-OSThread idle_thread;
-static OSThread main_thread;
 
 static OSMesg pi_message_buffer[PI_MSG_COUNT];
 static OSMesgQueue pi_message_queue;
@@ -42,38 +36,11 @@ static OSMesgQueue cont_message_queue;
 u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((section("uninit.cfb"), aligned(16)));
 
-// Idle thread. Creates other threads then drops to lowest priority.
-static void idle(void *arg);
-
 // Main game thread.
 static void main(void *arg);
 
-// Main N64 entry point. This must be declared extern.
-void boot(void);
-
 void boot(void) {
-    osInitialize();
-    fatal_init();
-    thread_create(&idle_thread, idle, NULL, _idle_thread_stack,
-                  PRIORITY_IDLE_INIT);
-    osStartThread(&idle_thread);
-}
-
-static void idle(void *arg) {
-    (void)arg;
-
-    // Initialize video.
-    osCreateViManager(OS_PRIORITY_VIMGR);
-    osViSetMode(&osViModeNtscLpn1);
-    osViBlack(1);
-
-    // Start main thread.
-    thread_create(&main_thread, main, NULL, _main_thread_stack, PRIORITY_MAIN);
-    osStartThread(&main_thread);
-
-    // Idle loop.
-    osSetThreadPri(NULL, OS_PRIORITY_IDLE);
-    for (;;) {}
+    system_main(main, NULL, _main_thread_stack);
 }
 
 // Viewport scaling parameters.
@@ -229,7 +196,6 @@ static void main(void *arg) {
     }
     osWritebackDCache(framebuffers[0], sizeof(framebuffers[0]));
 
-    mem_init();
     pak_init(PAK_SIZE);
     audio_init();
 

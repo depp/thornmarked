@@ -3,6 +3,8 @@
 
 #include <ultra64.h>
 
+#include <stdnoreturn.h>
+
 // Avoid gprel access by declaring a different section.
 extern s32 osTvType __attribute__((section(".data")));
 
@@ -17,3 +19,14 @@ enum {
 // correctly. This must be called instead of osCreateThread.
 void thread_create(OSThread *thread, void (*func)(void *arg), void *arg,
                    void *stack, int priority);
+
+// Main entry point.
+//
+// - Initializes LibUltra.
+// - Initializes //base libary: initializes heap and error handler.
+// - Creates VI manager, sets a low-res mode, and blacks the screen.
+// - Runs the main thread.
+noreturn void system_main(void (*func)(void *arg), void *arg, void *stack);
+
+// Declaration for the main entry point, which must be defined by the program.
+void boot(void);

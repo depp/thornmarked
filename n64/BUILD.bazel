@@ -3,15 +3,6 @@ load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 
 SMALL_OBJECT_SIZE = "8"
 
-# LibUltra with startup code.
-cc_library(
-    name = "libultra",
-    srcs = ["start.s"],
-    defines = ["F3DEX_GBI_2"],
-    visibility = ["//visibility:public"],
-    deps = ["//sdk:libultra"],
-)
-
 filegroup(
     name = "empty",
     srcs = [],
