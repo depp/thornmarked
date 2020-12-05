@@ -1,7 +1,7 @@
 #include "game/camera.h"
 
 #include "base/mat4.h"
-#include "base/mat4_n64.h"
+#include "base/n64/mat4.h"
 #include "game/graphics.h"
 
 #include <math.h>

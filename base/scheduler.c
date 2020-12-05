@@ -2,7 +2,7 @@
 
 #include "base/base.h"
 #include "base/console.h"
-#include "base/os.h"
+#include "base/n64/os.h"
 
 #include <limits.h>
 #include <stdint.h>

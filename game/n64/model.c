@@ -6,7 +6,7 @@
 #include "base/base.h"
 #include "base/hash.h"
 #include "base/mat4.h"
-#include "base/mat4_n64.h"
+#include "base/n64/mat4.h"
 #include "base/pak/pak.h"
 #include "base/vec2.h"
 #include "base/vec3.h"

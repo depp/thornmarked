@@ -4,7 +4,7 @@
 #include "assets/texture.h"
 #include "base/base.h"
 #include "base/console.h"
-#include "base/console_n64.h"
+#include "base/n64/console.h"
 #include "base/pak/pak.h"
 #include "base/random.h"
 #include "game/defs.h"

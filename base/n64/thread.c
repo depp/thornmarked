@@ -1,4 +1,4 @@
-#include "base/os.h"
+#include "base/n64/os.h"
 
 // ID of previous thread created.
 static int thread_index;

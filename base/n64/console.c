@@ -1,4 +1,4 @@
-#include "base/console_n64.h"
+#include "base/n64/console.h"
 
 #define INCLUDE_FONT_DATA 1
 

@@ -1,3 +1,3 @@
-#include "base/mat4_n64.h"
+#include "base/n64/mat4.h"
 
 void mat4_tofixed(Mtx *out, mat4 *in);
