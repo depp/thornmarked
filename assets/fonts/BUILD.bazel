@@ -1,1 +1,4 @@
-exports_files(["charset.txt"], visibility=["__subpackages__"])
+exports_files(
+    ["charset.txt"],
+    visibility = ["__subpackages__"],
+)
