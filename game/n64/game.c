@@ -4,7 +4,6 @@
 #include "base/base.h"
 #include "base/console.h"
 #include "base/n64/console.h"
-#include "game/game.h"
 #include "game/n64/camera.h"
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"

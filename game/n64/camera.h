@@ -1,5 +1,7 @@
 #pragma once
 
+#include "game/camera.h"
+
 #include <ultra64.h>
 
 struct sys_camera;

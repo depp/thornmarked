@@ -10,7 +10,6 @@
 #include "base/pak/pak.h"
 #include "base/vec2.h"
 #include "base/vec3.h"
-#include "game/model.h"
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
 #include "game/n64/texture.h"

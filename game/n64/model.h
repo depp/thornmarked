@@ -1,5 +1,7 @@
 #pragma once
 
+#include "game/model.h"
+
 #include <ultra64.h>
 
 struct graphics;

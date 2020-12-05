@@ -2,7 +2,6 @@
 
 #include "base/mat4.h"
 #include "base/n64/mat4.h"
-#include "game/camera.h"
 #include "game/n64/graphics.h"
 
 Gfx *camera_render(struct sys_camera *restrict csys,

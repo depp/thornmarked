@@ -7,7 +7,6 @@
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
 #include "base/random.h"
-#include "game/game.h"
 #include "game/input.h"
 #include "game/n64/defs.h"
 #include "game/n64/game.h"
