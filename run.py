@@ -160,12 +160,12 @@ def image_from_binary(binary):
     binary_copy = temp / binary.name
     shutil.copy(binary, binary_copy)
     image = temp / (binary.name + '.n64')
-    run(['mips32-elf-objcopy', '-O', 'binary', binary_copy, image])
     run([
         'bazel', 'run', '-c', 'opt', '//tools/makemask', '--',
-        '-rom', image, '-bootcode', SRCDIR / 'sdk/boot6102.bin',
+        '-program', binary_copy,
+        '-output', image,
+        '-bootcode', SRCDIR / 'sdk/boot6102.bin',
     ])
-    run(['makemask', image])
     return image
 
 def get_image(args):
