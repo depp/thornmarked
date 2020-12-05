@@ -1,4 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("//base:copts.bzl", "COPTS")
 load("//n64:defs.bzl", "n64_rom")
 
@@ -11,30 +11,21 @@ filegroup(
     visibility = ["//:__pkg__"],
 )
 
-cc_binary(
-    name = "Thornmarked.elf",
+cc_library(
+    name = "game_core",
     srcs = [
         "camera.c",
-        "camera.h",
-        "defs.h",
         "game.c",
-        "game.h",
-        "graphics.c",
-        "graphics.h",
-        "main.c",
+        "input.h",
         "model.c",
-        "model.h",
-        "n64/model.c",
-        "n64/model.h",
-        "n64/texture.c",
-        "n64/texture.h",
-        "n64/texture_dl.c",
-        "n64/texture_dl.h",
         "physics.c",
-        "physics.h",
-        "stack.s",
-        "text.c",
         "walk.c",
+    ],
+    hdrs = [
+        "camera.h",
+        "game.h",
+        "model.h",
+        "physics.h",
         "walk.h",
     ],
     copts = COPTS,
@@ -42,8 +33,37 @@ cc_binary(
         "//assets",
         "//base",
         "//base:random",
+    ],
+)
+
+cc_binary(
+    name = "Thornmarked.elf",
+    srcs = [
+        "defs.h",
+        "graphics.c",
+        "graphics.h",
+        "main.c",
+        "n64/camera.c",
+        "n64/camera.h",
+        "n64/game.c",
+        "n64/game.h",
+        "n64/model.c",
+        "n64/model.h",
+        "n64/texture.c",
+        "n64/texture.h",
+        "n64/texture_dl.c",
+        "n64/texture_dl.h",
+        "stack.s",
+        "text.c",
+    ],
+    copts = COPTS,
+    deps = [
+        ":game_core",
+        "//assets",
+        "//base",
+        "//base:random",
         "//base/n64:scheduler",
-        "//base/pak",
+        "//base/pak:n64",
         "//sdk:gspF3DEX2.xbus",
         "//sdk:rspboot",
     ],

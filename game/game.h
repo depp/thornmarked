@@ -1,12 +1,11 @@
 #pragma once
 
 #include "base/random.h"
+#include "base/vectypes.h"
 #include "game/camera.h"
 #include "game/model.h"
 #include "game/physics.h"
 #include "game/walk.h"
-
-#include <ultra64.h>
 
 #include <stdbool.h>
 
@@ -24,7 +23,9 @@ struct game_state {
     bool show_console;
 };
 
+struct controller_input;
+
 void game_init(struct game_state *restrict gs);
-void game_input(struct game_state *restrict gs, OSContPad *restrict pad);
+void game_input(struct game_state *restrict gs,
+                const struct controller_input *restrict input);
 void game_update(struct game_state *restrict gs, float dt);
-void game_render(struct game_state *restrict gs, struct graphics *restrict gr);

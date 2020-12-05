@@ -10,6 +10,10 @@
 #include "game/defs.h"
 #include "game/game.h"
 #include "game/graphics.h"
+#include "game/input.h"
+#include "game/n64/game.h"
+#include "game/n64/model.h"
+#include "game/n64/texture.h"
 
 #include <ultra64.h>
 
@@ -165,6 +169,8 @@ static void main(void *arg) {
     }
 
     OSTime cur_time = osGetTime();
+    model_render_init();
+    texture_init();
     game_init(&game_state);
 
     scheduler_start(&scheduler, 1);
@@ -194,8 +200,19 @@ static void main(void *arg) {
             osContGetReadData(controller_state);
             st->controler_read_active = false;
             if (st->has_controller) {
-                game_input(&game_state,
-                           &controller_state[st->controller_index]);
+                const OSContPad *restrict pad =
+                    &controller_state[st->controller_index];
+                struct controller_input input = {.buttons = pad->button};
+                const int dead_zone = 4;
+                if (pad->stick_x < -dead_zone || dead_zone < pad->stick_x ||
+                    pad->stick_y < -dead_zone || dead_zone < pad->stick_y) {
+                    const float scale = 1.0f / 64.0f;
+                    input.joystick = (vec2){{
+                        scale * (float)pad->stick_x,
+                        scale * (float)pad->stick_y,
+                    }};
+                }
+                game_input(&game_state, &input);
             }
         }
         if (!st->controler_read_active) {
