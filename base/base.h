@@ -3,8 +3,8 @@
 
 #include "base/defs.h"
 
-#include <stdnoreturn.h>
 #include <stddef.h>
+#include <stdnoreturn.h>
 
 // =============================================================================
 // Error Handling
@@ -38,9 +38,6 @@ noreturn void assert_fail(const char *file, int line, const char *pred);
 // =============================================================================
 // Memory Allocation
 // =============================================================================
-
-// Initialize the memory subsystem.
-void mem_init(void);
 
 // Allocate a region of memory. If not enough memory is available, this calls
 // fatal_error, aborting the program. Memory cannot be freed.

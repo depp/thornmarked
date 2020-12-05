@@ -5,6 +5,7 @@
 #include "base/n64/console.h"
 #include "base/n64/os.h"
 #include "base/n64/scheduler.h"
+#include "base/n64/system.h"
 #include "base/pak/pak.h"
 #include "base/random.h"
 #include "game/defs.h"
