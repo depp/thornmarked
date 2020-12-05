@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/random.h"
 #include "base/vectypes.h"
 #include "game/core/camera.h"
 #include "game/core/model.h"
@@ -12,7 +11,6 @@
 struct graphics;
 
 struct game_state {
-    struct rand rand;
     struct sys_phys physics;
     struct sys_walk walk;
     struct sys_camera camera;

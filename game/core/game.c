@@ -3,11 +3,12 @@
 #include "assets/model.h"
 #include "assets/texture.h"
 #include "game/core/input.h"
+#include "game/core/random.h"
 
 #include <stdbool.h>
 
 void game_init(struct game_state *restrict gs) {
-    rand_init(&gs->rand, 0x01234567, 0x243F6A88); // Pi fractional digits.
+    rand_init(&grand, 0x01234567, 0x243F6A88); // Pi fractional digits.
     physics_init(&gs->physics);
     walk_init(&gs->walk);
     camera_init(&gs->camera);
@@ -15,12 +16,12 @@ void game_init(struct game_state *restrict gs) {
     for (int i = 0; i < 3; i++) {
         struct cp_phys *restrict phys = physics_new(&gs->physics, (ent_id){i});
         phys->pos = (vec2){{
-            rand_frange(&gs->rand, -1.0f, 1.0f),
-            rand_frange(&gs->rand, -1.0f, 1.0f),
+            rand_frange(&grand, -1.0f, 1.0f),
+            rand_frange(&grand, -1.0f, 1.0f),
         }};
         phys->vel = (vec2){{
-            rand_frange(&gs->rand, -1.0f, 1.0f),
-            rand_frange(&gs->rand, -1.0f, 1.0f),
+            rand_frange(&grand, -1.0f, 1.0f),
+            rand_frange(&grand, -1.0f, 1.0f),
         }};
     }
     walk_new(&gs->walk, (ent_id){0});
