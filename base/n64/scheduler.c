@@ -1,4 +1,4 @@
-#include "base/scheduler.h"
+#include "base/n64/scheduler.h"
 
 #include "base/base.h"
 #include "base/console.h"
