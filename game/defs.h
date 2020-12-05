@@ -18,12 +18,4 @@ enum {
     SCREEN_HEIGHT = 288,
 };
 
-enum {
-    // Thread priorities.
-    PRIORITY_IDLE_INIT = 10,
-    PRIORITY_IDLE = OS_PRIORITY_IDLE,
-    PRIORITY_MAIN = 10,
-    PRIORITY_SCHEDULER = 11,
-};
-
 #define ASSET __attribute__((section("uninit"), aligned(16)))

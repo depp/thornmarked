@@ -51,13 +51,6 @@ static void main(void *arg);
 // Main N64 entry point. This must be declared extern.
 void boot(void);
 
-enum {
-    PRIORITY_IDLE = OS_PRIORITY_IDLE,
-    PRIORITY_IDLE_INIT = 10,
-    PRIORITY_MAIN = 10,
-    PRIORITY_SCHEDULER = 12,
-};
-
 void boot(void) {
     osInitialize();
     fatal_init();
@@ -83,7 +76,7 @@ static void idle(void *arg) {
     osStartThread(&main_thread);
 
     // Idle loop.
-    osSetThreadPri(NULL, PRIORITY_IDLE);
+    osSetThreadPri(NULL, OS_PRIORITY_IDLE);
     for (;;) {}
 }
 
@@ -250,7 +243,7 @@ static void main(void *arg) {
     osSetEventMesg(OS_EVENT_SI, &cont_message_queue, NULL);
     st->cont_mask = init_controllers(&cont_message_queue);
 
-    scheduler_start(&scheduler, PRIORITY_SCHEDULER, 3);
+    scheduler_start(&scheduler, 3);
 
     int which_vbuffer = 0;
     struct console *cs = &console;

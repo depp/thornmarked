@@ -277,7 +277,7 @@ static void scheduler_main(void *arg) {
     }
 }
 
-void scheduler_start(struct scheduler *sc, int priority, int video_divisor) {
+void scheduler_start(struct scheduler *sc, int video_divisor) {
     extern u8 _scheduler_thread_stack[];
     osCreateMesgQueue(&sc->task_queue, sc->task_buffer,
                       ARRAY_COUNT(sc->task_buffer));
@@ -288,7 +288,7 @@ void scheduler_start(struct scheduler *sc, int priority, int video_divisor) {
     osSetEventMesg(OS_EVENT_DP, &sc->evt_queue, (OSMesg)EVT_RDP);
     osViSetEvent(&sc->evt_queue, (OSMesg)EVT_VSYNC, video_divisor);
     thread_create(&sc->thread, scheduler_main, sc, _scheduler_thread_stack,
-                  priority);
+                  PRIORITY_SCHEDULER);
     osStartThread(&sc->thread);
 }
 

@@ -82,8 +82,7 @@ struct scheduler_task {
 // Start the scheduler. The video_divisor is the number of vsyncs per vsync
 // event. A divisor of 1 swaps frames at 60/50 Hz, a divisor of 2 swaps at 30/25
 // Hz, etc.
-void scheduler_start(struct scheduler *scheduler, int priority,
-                     int video_divisor);
+void scheduler_start(struct scheduler *scheduler, int video_divisor);
 
 // Submit a task to the scheduler.
 void scheduler_submit(struct scheduler *scheduler, struct scheduler_task *task);

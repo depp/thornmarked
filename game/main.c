@@ -87,7 +87,7 @@ static void idle(void *arg) {
     osStartThread(&main_thread);
 
     // Idle loop.
-    osSetThreadPri(NULL, PRIORITY_IDLE);
+    osSetThreadPri(NULL, OS_PRIORITY_IDLE);
     for (;;) {}
 }
 
@@ -214,7 +214,7 @@ static void main(void *arg) {
     OSTime cur_time = osGetTime();
     game_init(&game_state);
 
-    scheduler_start(&scheduler, PRIORITY_SCHEDULER, 1);
+    scheduler_start(&scheduler, 1);
     int frame_num = 0;
     const bool is_pal = osTvType == OS_TV_PAL;
     for (int current_task = 0;; current_task ^= 1) {

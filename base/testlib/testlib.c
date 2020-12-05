@@ -56,7 +56,8 @@ void boot(void);
 void boot(void) {
     osInitialize();
     fatal_init();
-    thread_create(&main_thread, main, NULL, _main_thread_stack, 10);
+    thread_create(&main_thread, main, NULL, _main_thread_stack,
+                  PRIORITY_IDLE_INIT);
     osStartThread(&main_thread);
 }
 
