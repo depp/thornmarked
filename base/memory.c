@@ -7,6 +7,8 @@ static noreturn void malloc_fail(size_t size) {
 
 #if _ULTRA64
 
+#include <string.h>
+
 enum {
     // Memory allocation alignment.
     MEM_ALIGN = 16,
@@ -68,6 +70,12 @@ void *mem_alloc(size_t size) {
     return ptr;
 }
 
+void *mem_calloc(size_t size) {
+    void *ptr = mem_alloc(size);
+    memset(ptr, 0, size);
+    return ptr;
+}
+
 #else
 
 #include <stdlib.h>
@@ -77,6 +85,17 @@ void *mem_alloc(size_t size) {
         return NULL;
     }
     void *ptr = malloc(size);
+    if (ptr == NULL) {
+        malloc_fail(size);
+    }
+    return ptr;
+}
+
+void *mem_calloc(size_t size) {
+    if (size == 0) {
+        return NULL;
+    }
+    void *ptr = calloc(size, 1);
     if (ptr == NULL) {
         malloc_fail(size);
     }

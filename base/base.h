@@ -37,5 +37,11 @@ noreturn void assert_fail(const char *file, int line, const char *pred);
 
 // Allocate a region of memory. If not enough memory is available, this calls
 // fatal_error, aborting the program. Memory cannot be freed.
-void *mem_alloc(size_t sz)
+void *mem_alloc(size_t size)
+    __attribute__((malloc, alloc_size(1), warn_unused_result));
+
+// Allocate a region of memory filled with zeroes. If not enough memory is
+// available, this calls fatal_error, aborting the program. Memory cannot be
+// freed.
+void *mem_calloc(size_t size)
     __attribute__((malloc, alloc_size(1), warn_unused_result));
