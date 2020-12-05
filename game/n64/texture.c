@@ -26,7 +26,7 @@ static int texture_from_slot[TEXTURE_SLOTS];
 // not check if the texture is already loaded into another slot.
 static void texture_load_slot(pak_texture asset, int slot) {
     pak_load_asset_sync(texture_data[slot], sizeof(texture_data[slot]),
-                        PAK_TEXTURE_START + asset.id - 1);
+                        pak_texture_object(asset));
     texture_to_slot[asset.id] = slot;
     texture_from_slot[slot] = asset.id;
 }

@@ -71,11 +71,6 @@ static int model_to_slot[PAK_MODEL_COUNT + 1];
 // Map from model slot number to model asset ID.
 static int model_from_slot[MODEL_SLOTS];
 
-// Get the pak object index for the first object in a given model.
-static int model_object_id(pak_model asset) {
-    return PAK_MODEL_START + (asset.id - 1) * 2;
-}
-
 // Convert a relative offset to a pointer.
 static void *pointer_fixup(void *ptr, uintptr_t base, size_t size) {
     uintptr_t value = (uintptr_t)ptr;
@@ -88,7 +83,7 @@ static void *pointer_fixup(void *ptr, uintptr_t base, size_t size) {
 
 // Fix the internal pointers in a model after loading.
 static void model_fixup(union model_data *p, pak_model asset) {
-    const struct pak_object vtx_obj = pak_objects[model_object_id(asset) + 1];
+    const struct pak_object vtx_obj = pak_objects[pak_model_object(asset) + 1];
     const uintptr_t base = (uintptr_t)p;
     const size_t size = sizeof(union model_data);
     struct model_header *restrict hdr = &p->header;
@@ -116,7 +111,7 @@ static void model_fixup(union model_data *p, pak_model asset) {
 // Load a model into the given slot.
 static void model_load_slot(pak_model asset, int slot) {
     pak_load_asset_sync(&model_data[slot], sizeof(model_data[slot]),
-                        model_object_id(asset));
+                        pak_model_object(asset));
     model_fixup(&model_data[slot], asset);
     model_to_slot[asset.id] = slot;
     model_from_slot[slot] = asset.id;
