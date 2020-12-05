@@ -13,6 +13,6 @@ cc_library(
     copts = COPTS,
     visibility = ["//visibility:public"],
     deps = [
-        "//base:base_n64",
+        "//base/n64",
     ],
 )

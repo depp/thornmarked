@@ -18,7 +18,7 @@ cc_library(
     deps = [
         "//base",
     ] + select({
-        "//n64:os": ["//base:base_n64"],
+        "//n64:os": ["//base/n64"],
         "//conditions:default": ["//base:base_pc"],
     }),
 )

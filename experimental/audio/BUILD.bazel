@@ -32,7 +32,7 @@ cc_binary(
     deps = [
         ":assets",
         "//base",
-        "//base:scheduler",
+        "//base/n64:scheduler",
         "//base/pak",
         "//sdk:aspMain",
         "//sdk:gspF3DEX2.xbus",

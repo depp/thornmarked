@@ -1,0 +1,45 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//base:copts.bzl", "COPTS")
+
+cc_library(
+    name = "n64",
+    srcs = [
+        "console.c",
+        "fatal.c",
+        "mat4.c",
+        "memory.c",
+        "os.c",
+        "stack_boot.s",
+        "stack_idle.s",
+        "start.s",
+        "thread.c",
+    ],
+    hdrs = [
+        "console.h",
+        "mat4.h",
+        "os.h",
+        "system.h",
+    ],
+    copts = COPTS,
+    defines = ["F3DEX_GBI_2"],
+    deps = [
+        "//base",
+        "//sdk:libultra",
+    ],
+)
+
+cc_library(
+    name = "scheduler",
+    srcs = [
+        "scheduler.c",
+    ],
+    hdrs = [
+        "scheduler.h",
+    ],
+    copts = COPTS,
+    deps = [
+        ":n64",
+    ],
+)
