@@ -10,8 +10,8 @@ import subprocess
 import sys
 import urllib.parse
 
-NTSC_TARGET = '//game:Thornmarked_NTSC'
-PAL_TARGET = '//game:Thornmarked_PAL'
+NTSC_TARGET = '//game/n64:Thornmarked_NTSC'
+PAL_TARGET = '//game/n64:Thornmarked_PAL'
 EXTRA_PATHS = [
     '/usr/games',
 ]

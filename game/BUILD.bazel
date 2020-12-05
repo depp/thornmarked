@@ -1,18 +1,8 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//base:copts.bzl", "COPTS")
-load("//n64:defs.bzl", "n64_rom")
-
-filegroup(
-    name = "game",
-    srcs = [
-        ":Thornmarked_NTSC",
-        ":Thornmarked_PAL",
-    ],
-    visibility = ["//:__pkg__"],
-)
 
 cc_library(
-    name = "game_core",
+    name = "core",
     srcs = [
         "camera.c",
         "game.c",
@@ -29,58 +19,10 @@ cc_library(
         "walk.h",
     ],
     copts = COPTS,
+    visibility = ["//game:__subpackages__"],
     deps = [
         "//assets",
         "//base",
         "//base:random",
     ],
-)
-
-cc_binary(
-    name = "Thornmarked.elf",
-    srcs = [
-        "n64/camera.c",
-        "n64/camera.h",
-        "n64/defs.h",
-        "n64/game.c",
-        "n64/game.h",
-        "n64/graphics.c",
-        "n64/graphics.h",
-        "n64/main.c",
-        "n64/model.c",
-        "n64/model.h",
-        "n64/stack.s",
-        "n64/text.c",
-        "n64/texture.c",
-        "n64/texture.h",
-        "n64/texture_dl.c",
-        "n64/texture_dl.h",
-    ],
-    copts = COPTS,
-    deps = [
-        ":game_core",
-        "//assets",
-        "//base",
-        "//base:random",
-        "//base/n64:scheduler",
-        "//base/pak:n64",
-        "//sdk:gspF3DEX2.xbus",
-        "//sdk:rspboot",
-    ],
-)
-
-n64_rom(
-    name = "Thornmarked_NTSC",
-    data = "//assets:assets_files",
-    program = ":Thornmarked.elf",
-    region = "E",
-    title = "Thornmarked (NTSC)",
-)
-
-n64_rom(
-    name = "Thornmarked_PAL",
-    data = "//assets:assets_files",
-    program = ":Thornmarked.elf",
-    region = "P",
-    title = "Thornmarked (PAL)",
 )

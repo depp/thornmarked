@@ -17,5 +17,5 @@ asset_data(
         "//assets/models:textures",
     ],
     manifest = "manifest.txt",
-    visibility = ["//game:__pkg__"],
+    visibility = ["//game:__subpackages__"],
 )

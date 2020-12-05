@@ -4,7 +4,7 @@ filegroup(
         "//experimental/audio",
         "//experimental/tvtype:tvtype_ntsc",
         "//experimental/tvtype:tvtype_pal",
-        "//game",
+        "//game/n64",
     ],
 )
 

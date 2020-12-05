@@ -291,7 +291,7 @@ func mainE() error {
 		if err := pk.putInfo(&binfo); err != nil {
 			return err
 		}
-		if err := buildArtifact("-c", "opt", "--platforms=//n64", "//game"); err != nil {
+		if err := buildArtifact("-c", "opt", "--platforms=//n64", "//game/n64"); err != nil {
 			return err
 		}
 		fileList := []string{"Thornmarked.elf", "Thornmarked_NTSC.n64", "Thornmarked_PAL.n64"}
