@@ -33,12 +33,12 @@ cc_binary(
     ],
     copts = COPTS,
     deps = [
-        "//game:core",
         "//assets",
         "//base",
         "//base:random",
         "//base/n64:scheduler",
         "//base/pak:n64",
+        "//game/core",
         "//sdk:gspF3DEX2.xbus",
         "//sdk:rspboot",
     ],

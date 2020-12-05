@@ -13,7 +13,7 @@
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
 #include "game/n64/texture.h"
-#include "game/physics.h"
+#include "game/core/physics.h"
 
 enum {
     // Number of model assets which can be loaded at once.

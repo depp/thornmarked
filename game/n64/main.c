@@ -1,3 +1,4 @@
+
 #include "assets/data.h"
 #include "assets/pak.h"
 #include "base/base.h"
@@ -7,7 +8,7 @@
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
 #include "base/random.h"
-#include "game/input.h"
+#include "game/core/input.h"
 #include "game/n64/defs.h"
 #include "game/n64/game.h"
 #include "game/n64/graphics.h"

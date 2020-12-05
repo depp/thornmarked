@@ -1,9 +1,9 @@
-#include "game/walk.h"
+#include "game/core/walk.h"
 
 #include "base/base.h"
 #include "base/quat.h"
 #include "base/vec2.h"
-#include "game/physics.h"
+#include "game/core/physics.h"
 
 #include <math.h>
 

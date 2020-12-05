@@ -2,10 +2,10 @@
 
 #include "base/random.h"
 #include "base/vectypes.h"
-#include "game/camera.h"
-#include "game/model.h"
-#include "game/physics.h"
-#include "game/walk.h"
+#include "game/core/camera.h"
+#include "game/core/model.h"
+#include "game/core/physics.h"
+#include "game/core/walk.h"
 
 #include <stdbool.h>
 

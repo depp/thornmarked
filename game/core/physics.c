@@ -1,4 +1,4 @@
-#include "game/physics.h"
+#include "game/core/physics.h"
 
 #include "base/base.h"
 #include "base/quat.h"

@@ -1,8 +1,8 @@
-#include "game/game.h"
+#include "game/core/game.h"
 
 #include "assets/model.h"
 #include "assets/texture.h"
-#include "game/input.h"
+#include "game/core/input.h"
 
 #include <stdbool.h>
 

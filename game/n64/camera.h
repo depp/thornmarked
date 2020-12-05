@@ -1,6 +1,6 @@
 #pragma once
 
-#include "game/camera.h"
+#include "game/core/camera.h"
 
 #include <ultra64.h>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "game/model.h"
+#include "game/core/model.h"
 
 #include <ultra64.h>
 

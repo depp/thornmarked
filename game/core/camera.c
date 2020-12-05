@@ -1,4 +1,4 @@
-#include "game/camera.h"
+#include "game/core/camera.h"
 
 #include <math.h>
 #include <stdbool.h>
