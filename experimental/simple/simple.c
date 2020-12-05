@@ -4,6 +4,7 @@
 #include "base/console.h"
 #include "base/n64/console.h"
 #include "base/n64/os.h"
+#include "base/n64/system.h"
 
 #include <ultra64.h>
 
@@ -48,6 +49,7 @@ enum {
 
 void boot(void) {
     osInitialize();
+    fatal_init();
     thread_create(&idle_thread, idle, NULL, _idle_thread_stack,
                   PRIORITY_IDLE_INIT);
     osStartThread(&idle_thread);

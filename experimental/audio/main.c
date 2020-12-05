@@ -60,6 +60,7 @@ enum {
 
 void boot(void) {
     osInitialize();
+    fatal_init();
     thread_create(&idle_thread, idle, NULL, _idle_thread_stack,
                   PRIORITY_IDLE_INIT);
     osStartThread(&idle_thread);
@@ -217,7 +218,7 @@ static int main_event(struct main_state *st, int mode) {
         st->audio.busy &= ~(unsigned)evt.value;
         break;
     default:
-        fatal_error_con(&console, "Bad event: %p", &mesg);
+        console_fatal(&console, "Bad event: %p", &mesg);
     }
     return 0;
 }

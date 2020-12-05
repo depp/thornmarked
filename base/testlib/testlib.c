@@ -55,6 +55,7 @@ extern u8 _main_thread_stack[];
 void boot(void);
 void boot(void) {
     osInitialize();
+    fatal_init();
     thread_create(&main_thread, main, NULL, _main_thread_stack, 10);
     osStartThread(&main_thread);
 }
@@ -89,6 +90,9 @@ static void main(void *arg) {
 
 #else
 
+#include "base/console.h"
+#include "base/system_pc.h"
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,6 +118,7 @@ noreturn void test_fail_func(const char *file, int line) {
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
+    console_vfatal_func = console_vfatal_impl;
     test_main();
     fputs("OK\n", stderr);
     return 0;

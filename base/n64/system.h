@@ -3,3 +3,6 @@
 
 // Initialize the heap.
 void mem_init(void);
+
+// Initialize the fatal error handler.
+void fatal_init(void);

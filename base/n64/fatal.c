@@ -1,5 +1,6 @@
-#include "base/base.h"
+#include "base/n64/system.h"
 
+#include "base/base.h"
 #include "base/console.h"
 #include "base/n64/console.h"
 #include "base/n64/os.h"
@@ -16,8 +17,8 @@ static u8 fatal_thread_stack[256]
 
 static void fatal_thread_func(void *arg);
 
-static noreturn void fatal_error_impl(struct console *cs, const char *fmt,
-                                      va_list ap) {
+static noreturn void console_vfatal_impl(struct console *cs, const char *fmt,
+                                         va_list ap) {
     if (cs == NULL) {
         cs = &console;
         console_init(cs, CONSOLE_TRUNCATE);
@@ -34,20 +35,6 @@ static noreturn void fatal_error_impl(struct console *cs, const char *fmt,
     __builtin_unreachable();
 }
 
-noreturn void fatal_error_con(struct console *cs, const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    fatal_error_impl(cs, fmt, ap);
-    va_end(ap);
-}
-
-noreturn void fatal_error(const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    fatal_error_impl(NULL, fmt, ap);
-    va_end(ap);
-}
-
 static void fatal_thread_func(void *arg) {
     struct console *cs = arg;
     enum {
@@ -56,23 +43,25 @@ static void fatal_thread_func(void *arg) {
     };
 
     uint16_t *fb = (uint16_t *)(uintptr_t)0x80300000;
-    OSViMode *mode;
-    switch (osTvType) {
-    case OS_TV_PAL:
-        mode = &osViModeFpalLpn1;
-        break;
-    default:
-    case OS_TV_NTSC:
-        mode = &osViModeNtscLpn1;
-        break;
-    case OS_TV_MPAL:
-        mode = &osViModeMpalLpn1;
-        break;
+    {
+        OSViMode *mode;
+        switch (osTvType) {
+        case OS_TV_PAL:
+            mode = &osViModeFpalLpn1;
+            break;
+        default:
+        case OS_TV_NTSC:
+            mode = &osViModeNtscLpn1;
+            break;
+        case OS_TV_MPAL:
+            mode = &osViModeMpalLpn1;
+            break;
+        }
+        osViSetMode(mode);
+        osViSetSpecialFeatures(OS_VI_GAMMA_OFF);
+        osViBlack(false);
+        osViSwapBuffer(fb);
     }
-    osViSetMode(mode);
-    osViSetSpecialFeatures(OS_VI_GAMMA_OFF);
-    osViBlack(false);
-    osViSwapBuffer(fb);
 
     for (;;) {
         console_draw_raw(cs, fb);
@@ -83,6 +72,10 @@ static void fatal_thread_func(void *arg) {
     }
 }
 
-noreturn void assert_fail(const char *file, int line, const char *pred) {
-    fatal_error("\nAssertion failed\n%s:%d\n%s", file, line, pred);
+noreturn void fatal_dloverflow_func(const char *file, int line) {
+    fatal_error("Display list overflow\n%s:%d", file, line);
+}
+
+void fatal_init(void) {
+    console_vfatal_func = console_vfatal_impl;
 }

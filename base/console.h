@@ -2,6 +2,7 @@
 #pragma once
 
 #include <stdarg.h>
+#include <stdnoreturn.h>
 
 // Types of consoles.
 typedef enum {
@@ -33,6 +34,21 @@ void console_printf(struct console *cs, const char *fmt, ...)
 
 // Write a formatted string to the console.
 void console_vprintf(struct console *cs, const char *fmt, va_list ap);
+
+// Callback for fatal errors. This should be initialized once at program
+// startup. This is a function pointer in order to prevent backwards linking
+// dependencies.
+extern void (*console_vfatal_func)(struct console *cs, const char *fmt,
+                                   va_list ap);
+
+// Show a "fatal error" screen using the given console. If the console is NULL,
+// no console is displayed.
+noreturn void console_fatal(struct console *cs, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+// Show a "fatal error" screen using the given console. If the console is NULL,
+// no console is displayed.
+noreturn void console_vfatal(struct console *cs, const char *fmt, va_list ap);
 
 // The main debugging console.
 extern struct console console;

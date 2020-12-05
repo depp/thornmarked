@@ -558,3 +558,19 @@ int console_rows(struct console *cs, struct console_rowptr *restrict rows) {
         return CON_ROWS;
     }
 }
+
+void (*console_vfatal_func)(struct console *cs, const char *fmt, va_list ap);
+
+noreturn void console_fatal(struct console *cs, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    console_vfatal(cs, fmt, ap);
+    va_end(ap);
+}
+
+noreturn void console_vfatal(struct console *cs, const char *fmt, va_list ap) {
+    if (console_vfatal_func != NULL) {
+        console_vfatal_func(cs, fmt, ap);
+    }
+    __builtin_trap();
+}
