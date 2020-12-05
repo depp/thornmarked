@@ -14,19 +14,30 @@ enum {
 
 // Initailize walkers.
 void walk_init(struct sys_walk *restrict wsys) {
-    wsys->entities = mem_alloc(sizeof(*wsys->entities) * MAX_WALK_OBJS);
-    wsys->count = 0;
+    *wsys = (struct sys_walk){
+        .components = mem_alloc(sizeof(*wsys->entities) * MAX_WALK_OBJS),
+        .entities = mem_calloc(sizeof(*wsys->entities) * ENTITY_COUNT),
+    };
 }
 
-// Create new walker.
-struct cp_walk *walk_new(struct sys_walk *restrict wsys) {
-    if (wsys->count >= MAX_WALK_OBJS) {
-        fatal_error("Too many walk objects");
+struct cp_walk *walk_get(struct sys_walk *restrict wsys, ent_id ent);
+
+struct cp_walk *walk_new(struct sys_walk *restrict wsys, ent_id ent) {
+    int index = wsys->entities[ent.id];
+    struct cp_walk *wp = &wsys->components[index];
+    if (wp->ent.id != ent.id || index >= wsys->count) {
+        index = wsys->count;
+        if (index > MAX_WALK_OBJS) {
+            fatal_error("Too many walk objects");
+        }
+        wsys->count = index + 1;
+        wp = &wsys->components[index];
+        wsys->entities[ent.id] = index;
     }
-    int index = wsys->count;
-    wsys->count++;
-    struct cp_walk *restrict wp = &wsys->entities[index];
-    *wp = (struct cp_walk){.face_angle = 0.0f};
+    *wp = (struct cp_walk){
+        .ent = ent,
+        .face_angle = 0.0f,
+    };
     return wp;
 }
 
@@ -34,8 +45,8 @@ struct cp_walk *walk_new(struct sys_walk *restrict wsys) {
 void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
                  float dt) {
     for (int i = 0; i < wsys->count; i++) {
-        struct cp_walk *wp = &wsys->entities[i];
-        struct cp_phys *pp = physics_get(psys, (ent_id){i});
+        struct cp_walk *wp = &wsys->components[i];
+        struct cp_phys *pp = physics_get(psys, wp->ent);
         if (pp == NULL) {
             continue;
         }

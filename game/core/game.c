@@ -23,8 +23,7 @@ void game_init(struct game_state *restrict gs) {
             rand_frange(&gs->rand, -1.0f, 1.0f),
         }};
     }
-    struct cp_walk *restrict wp = walk_new(&gs->walk);
-    wp->drive = (vec2){{0, 0}};
+    walk_new(&gs->walk, (ent_id){0});
     gs->button_state = 0;
     gs->prev_button_state = 0;
     struct cp_model *restrict mp;
@@ -39,7 +38,7 @@ void game_init(struct game_state *restrict gs) {
 void game_input(struct game_state *restrict gs,
                 const struct controller_input *restrict input) {
     for (int i = 0; i < gs->walk.count; i++) {
-        gs->walk.entities[i].drive = input->joystick;
+        gs->walk.components[i].drive = input->joystick;
     }
     gs->button_state = input->buttons;
 }
