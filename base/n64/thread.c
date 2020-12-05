@@ -7,5 +7,9 @@ void thread_create(OSThread *thread, void (*func)(void *arg), void *arg,
                    void *stack, int priority) {
     int thread_id = ++thread_index;
     osCreateThread(thread, thread_id, func, arg, stack, priority);
-    __asm__("sd $gp, %0" : "=m"(thread->context.gp));
+    __asm__(
+        ".set gp=64\n\t"
+        "sd $gp, %0\n\t"
+        ".set gp=default"
+        : "=m"(thread->context.gp));
 }

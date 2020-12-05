@@ -1,6 +1,8 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_toolchain", "cc_toolchain_suite")
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 
+SMALL_OBJECT_SIZE = "8"
+
 # LibUltra with startup code.
 cc_library(
     name = "libultra",
@@ -54,7 +56,7 @@ cc_toolchain_config(
         "-ffreestanding",  # new
         "-mfix4300",  # new
         "-G",
-        "0",
+        SMALL_OBJECT_SIZE,
     ],
     cpu = "mips3",
     cxx_flags = ["-std=c++0x"],
@@ -70,7 +72,7 @@ cc_toolchain_config(
         "-T",
         "n64/link.lds",
         "-G",
-        "4",
+        SMALL_OBJECT_SIZE,
     ],
     link_libs = [
         "-lm",
