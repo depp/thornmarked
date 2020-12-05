@@ -284,10 +284,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
     float scale = 0.5f;
     for (int i = 0; i < msys->count; i++) {
         struct cp_model *restrict mp = &msys->models[i];
-        if (mp->ent.id >= psys->count) {
-            continue;
-        }
-        struct cp_phys *restrict cp = &psys->entities[mp->ent.id];
+        struct cp_phys *restrict cp = physics_get(psys, mp->ent);
         int model = mp->model_id.id;
         if (model == 0 || cp == NULL) {
             continue;

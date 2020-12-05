@@ -13,17 +13,15 @@ void game_init(struct game_state *restrict gs) {
     camera_init(&gs->camera);
     model_init(&gs->model);
     for (int i = 0; i < 3; i++) {
-        struct cp_phys *restrict phys = physics_new(&gs->physics);
-        *phys = (struct cp_phys){
-            .pos = {{
-                rand_frange(&gs->rand, -1.0f, 1.0f),
-                rand_frange(&gs->rand, -1.0f, 1.0f),
-            }},
-            .vel = {{
-                rand_frange(&gs->rand, -1.0f, 1.0f),
-                rand_frange(&gs->rand, -1.0f, 1.0f),
-            }},
-        };
+        struct cp_phys *restrict phys = physics_new(&gs->physics, (ent_id){i});
+        phys->pos = (vec2){{
+            rand_frange(&gs->rand, -1.0f, 1.0f),
+            rand_frange(&gs->rand, -1.0f, 1.0f),
+        }};
+        phys->vel = (vec2){{
+            rand_frange(&gs->rand, -1.0f, 1.0f),
+            rand_frange(&gs->rand, -1.0f, 1.0f),
+        }};
     }
     struct cp_walk *restrict wp = walk_new(&gs->walk);
     wp->drive = (vec2){{0, 0}};

@@ -10,25 +10,35 @@ enum {
 };
 
 void physics_init(struct sys_phys *restrict psys) {
-    psys->entities = mem_alloc(sizeof(*psys->entities) * MAX_PHYSICS_OBJS);
-    psys->count = 0;
+    *psys = (struct sys_phys){
+        .physics = mem_alloc(sizeof(*psys->physics) * MAX_PHYSICS_OBJS),
+        .entities = mem_calloc(sizeof(*psys->entities) * ENTITY_COUNT),
+    };
 }
 
-struct cp_phys *physics_new(struct sys_phys *restrict psys) {
-    if (psys->count >= MAX_PHYSICS_OBJS) {
-        fatal_error("Too many physics objects");
+struct cp_phys *physics_get(struct sys_phys *restrict psys, ent_id ent);
+
+struct cp_phys *physics_new(struct sys_phys *restrict psys, ent_id ent) {
+    int index = psys->entities[ent.id];
+    struct cp_phys *pp = &psys->physics[index];
+    if (pp->ent.id != ent.id || index >= psys->count) {
+        index = psys->count;
+        if (index > MAX_PHYSICS_OBJS) {
+            fatal_error("Too many physics objects");
+        }
+        psys->count = index + 1;
+        pp = &psys->physics[index];
+        psys->entities[ent.id] = index;
     }
-    int index = psys->count;
-    psys->count++;
-    struct cp_phys *pp = &psys->entities[index];
-    pp->pos = (vec2){{0.0f, 0.0f}};
-    pp->vel = (vec2){{0.0f, 0.0f}};
-    pp->orientation = quat_identity();
+    *pp = (struct cp_phys){
+        .ent = ent,
+        .orientation = quat_identity(),
+    };
     return pp;
 }
 
 void physics_update(struct sys_phys *restrict psys, float dt) {
-    struct cp_phys *restrict entities = psys->entities;
+    struct cp_phys *restrict entities = psys->physics;
     for (struct cp_phys *cp = entities, *ce = cp + psys->count; cp != ce;
          cp++) {
         cp->pos = vec2_madd(cp->pos, cp->vel, dt);

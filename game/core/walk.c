@@ -35,10 +35,10 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
                  float dt) {
     for (int i = 0; i < wsys->count; i++) {
         struct cp_walk *wp = &wsys->entities[i];
-        if (i >= psys->count) {
+        struct cp_phys *pp = physics_get(psys, (ent_id){i});
+        if (pp == NULL) {
             continue;
         }
-        struct cp_phys *pp = &psys->entities[i];
 
         // Update velocity.
         float speed = 5.0f;
