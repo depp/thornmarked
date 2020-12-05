@@ -2,8 +2,8 @@
 
 #include "base/base.h"
 #include "base/console.h"
-#include "base/console_n64.h"
-#include "base/os.h"
+#include "base/n64/console.h"
+#include "base/n64/os.h"
 
 #include <ultra64.h>
 

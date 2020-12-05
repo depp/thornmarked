@@ -2,10 +2,10 @@
 
 #include "base/base.h"
 #include "base/console.h"
-#include "base/console_n64.h"
-#include "base/os.h"
+#include "base/n64/console.h"
+#include "base/n64/os.h"
+#include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
-#include "base/scheduler.h"
 #include "experimental/audio/pak.h"
 
 #include <ultra64.h>
