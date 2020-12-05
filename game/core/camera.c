@@ -6,6 +6,7 @@
 void camera_init(struct sys_camera *restrict csys) {
     *csys = (struct sys_camera){
         .focal = 3.5f,
+        .look_at = {{0.0f, 0.0f, 1.0f}},
     };
 }
 
@@ -15,7 +16,7 @@ void camera_update(struct sys_camera *restrict csys) {
     // etc.
     const float viewpoint = 1.6f;
     // Distance from subject.
-    const float distance = 5.0f;
+    const float distance = 10.0f;
 
     // Calculate camera horizontal and vertical position and direction.
     const float cmag = sqrtf(1.0f + viewpoint * viewpoint);
