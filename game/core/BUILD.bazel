@@ -12,6 +12,7 @@ cc_library(
         "walk.c",
     ],
     hdrs = [
+        "entity.h",
         "camera.h",
         "game.h",
         "model.h",

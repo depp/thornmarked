@@ -29,12 +29,13 @@ void game_init(struct game_state *restrict gs) {
     wp->drive = (vec2){{0, 0}};
     gs->button_state = 0;
     gs->prev_button_state = 0;
-    struct cp_model *restrict mp = model_new(&gs->model);
-    mp->model_id = MODEL_FAIRY;
-    mp = model_new(&gs->model);
+    struct cp_model *restrict mp;
+    mp = model_new(&gs->model, (ent_id){1});
     mp->model_id = MODEL_BLUEENEMY;
-    mp = model_new(&gs->model);
+    mp = model_new(&gs->model, (ent_id){2});
     mp->model_id = MODEL_GREENENEMY;
+    mp = model_new(&gs->model, (ent_id){0});
+    mp->model_id = MODEL_FAIRY;
 }
 
 void game_input(struct game_state *restrict gs,

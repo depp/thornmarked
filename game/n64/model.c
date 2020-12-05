@@ -282,14 +282,14 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   struct sys_phys *restrict psys) {
     int current_model = 0;
     float scale = 0.5f;
-    for (int i = 0; i < psys->count; i++) {
-        struct cp_phys *restrict cp = &psys->entities[i];
-        if (i >= msys->count) {
+    for (int i = 0; i < msys->count; i++) {
+        struct cp_model *restrict mp = &msys->models[i];
+        if (mp->ent.id >= psys->count) {
             continue;
         }
-        struct cp_model *restrict mp = &msys->entities[i];
+        struct cp_phys *restrict cp = &psys->entities[mp->ent.id];
         int model = mp->model_id.id;
-        if (model == 0) {
+        if (model == 0 || cp == NULL) {
             continue;
         }
         int slot = model_to_slot[model];
