@@ -4,10 +4,10 @@
 #include "base/base.h"
 #include "base/console.h"
 #include "base/n64/console.h"
-#include "game/defs.h"
 #include "game/game.h"
-#include "game/graphics.h"
 #include "game/n64/camera.h"
+#include "game/n64/defs.h"
+#include "game/n64/graphics.h"
 #include "game/n64/model.h"
 #include "game/n64/texture.h"
 

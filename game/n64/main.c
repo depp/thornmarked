@@ -7,11 +7,11 @@
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
 #include "base/random.h"
-#include "game/defs.h"
 #include "game/game.h"
-#include "game/graphics.h"
 #include "game/input.h"
+#include "game/n64/defs.h"
 #include "game/n64/game.h"
+#include "game/n64/graphics.h"
 #include "game/n64/model.h"
 #include "game/n64/texture.h"
 

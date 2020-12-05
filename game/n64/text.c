@@ -1,4 +1,4 @@
-#include "game/defs.h"
+#include "game/n64/defs.h"
 
 #include "assets/pak.h"
 #include "base/base.h"

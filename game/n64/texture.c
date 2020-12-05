@@ -4,7 +4,7 @@
 #include "assets/texture.h"
 #include "base/base.h"
 #include "base/pak/pak.h"
-#include "game/defs.h"
+#include "game/n64/defs.h"
 #include "game/n64/texture_dl.h"
 
 enum {
