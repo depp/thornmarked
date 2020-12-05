@@ -4,6 +4,7 @@
 #include "base/testlib/testlib.h"
 
 #include <stdbool.h>
+#include <string.h>
 
 static void test_printf(const char *expect, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
