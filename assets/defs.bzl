@@ -38,7 +38,7 @@ def _asset_header_impl(ctx):
         ),
     ]
 
-asset_header = rule(
+asset_header_files = rule(
     implementation = _asset_header_impl,
     attrs = {
         "manifest": attr.label(
@@ -55,6 +55,20 @@ asset_header = rule(
     },
     provides = [CcInfo],
 )
+
+def asset_header(name, manifest, prefix = None, visibility = None):
+    headers = name + "_headers"
+    asset_header_files(
+        name = headers,
+        manifest = manifest,
+        prefix = prefix,
+    )
+    native.cc_library(
+        name = name,
+        hdrs = [":" + headers],
+        visibility = visibility,
+        deps = ["//base/pak"],
+    )
 
 def _join(path, *paths):
     result = path
