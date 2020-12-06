@@ -286,19 +286,19 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
         struct cp_model *restrict mp = &msys->models[i];
         struct cp_phys *restrict cp = physics_get(psys, mp->ent);
         int model = mp->model_id.id;
-        if (model == 0 || cp == NULL) {
+        if (model == 0 || mp->texture_id.id == 0 || cp == NULL) {
             continue;
         }
         int slot = model_to_slot[model];
         if (model_from_slot[slot] != model) {
             fatal_error("Model not loaded");
         }
+        dl = texture_use(dl, mp->texture_id);
         if (model != current_model) {
             const struct model_header *restrict mp = &model_data[slot].header;
             switch (model) {
             case ID_MODEL_FAIRY:
                 gSPDisplayList(dl++, fairy_setup_dl);
-                dl = texture_use(dl, IMG_FAIRY);
                 unsigned frame_addr =
                     mp->animation[anim_id].frame[frame_id].vertex;
                 int frame_slot = frame_load(frame_addr, mp->frame_size);
@@ -306,12 +306,10 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                 break;
             case ID_MODEL_BLUEENEMY:
                 gSPDisplayList(dl++, fairy_setup_dl);
-                dl = texture_use(dl, IMG_BLUEENEMY);
                 gSPSegment(dl++, 1, K0_TO_PHYS(mp->vertex_data));
                 break;
             case ID_MODEL_GREENENEMY:
                 gSPDisplayList(dl++, fairy_setup_dl);
-                dl = texture_use(dl, IMG_GREENENEMY);
                 gSPSegment(dl++, 1, K0_TO_PHYS(mp->vertex_data));
                 break;
             default:

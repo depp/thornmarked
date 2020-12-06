@@ -8,6 +8,8 @@ struct cp_model {
     ent_id ent;
     // The model asset index. 0 means "no model".
     pak_model model_id;
+    // The texture to render the model with.
+    pak_texture texture_id;
 };
 
 // Model system.

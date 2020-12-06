@@ -13,10 +13,11 @@ static void spawn_player(struct game_state *restrict gs, ent_id ent) {
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = MODEL_FAIRY;
+    mp->texture_id = IMG_FAIRY;
 }
 
 static void spawn_monster(struct game_state *restrict gs, ent_id ent,
-                          pak_model model) {
+                          pak_model model, pak_texture texture) {
     struct cp_phys *pp = physics_new(&gs->physics, ent);
     pp->pos = (vec2){{
         rand_frange(&grand, -2.0f, 2.0f),
@@ -25,6 +26,7 @@ static void spawn_monster(struct game_state *restrict gs, ent_id ent,
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = model;
+    mp->texture_id = texture;
     monster_new(&gs->monster, ent);
 }
 
@@ -42,7 +44,8 @@ void game_init(struct game_state *restrict gs) {
     spawn_player(gs, (ent_id){0});
     for (int i = 0; i < 5; i++) {
         spawn_monster(gs, (ent_id){i + 1},
-                      i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY);
+                      i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY,
+                      i & 1 ? IMG_BLUEENEMY : IMG_GREENENEMY);
     }
 }
 
