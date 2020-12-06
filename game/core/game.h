@@ -3,6 +3,7 @@
 #include "base/vectypes.h"
 #include "game/core/camera.h"
 #include "game/core/model.h"
+#include "game/core/monster.h"
 #include "game/core/physics.h"
 #include "game/core/walk.h"
 
@@ -15,6 +16,7 @@ struct game_state {
     struct sys_walk walk;
     struct sys_camera camera;
     struct sys_model model;
+    struct sys_monster monster;
 
     unsigned button_state;
     unsigned prev_button_state;

@@ -2,6 +2,7 @@
 
 #include "assets/model.h"
 #include "assets/texture.h"
+#include "base/base.h"
 #include "game/core/input.h"
 #include "game/core/random.h"
 
@@ -13,18 +14,13 @@ void game_init(struct game_state *restrict gs) {
     walk_init(&gs->walk);
     camera_init(&gs->camera);
     model_init(&gs->model);
+    monster_init(&gs->monster);
     for (int i = 0; i < 3; i++) {
-        struct cp_phys *restrict phys = physics_new(&gs->physics, (ent_id){i});
-        phys->pos = (vec2){{
-            rand_frange(&grand, -1.0f, 1.0f),
-            rand_frange(&grand, -1.0f, 1.0f),
-        }};
-        phys->vel = (vec2){{
-            rand_frange(&grand, -1.0f, 1.0f),
-            rand_frange(&grand, -1.0f, 1.0f),
-        }};
+        physics_new(&gs->physics, (ent_id){i});
     }
     walk_new(&gs->walk, (ent_id){0});
+    walk_new(&gs->walk, (ent_id){1});
+    walk_new(&gs->walk, (ent_id){2});
     gs->button_state = 0;
     gs->prev_button_state = 0;
     struct cp_model *restrict mp;
@@ -34,17 +30,21 @@ void game_init(struct game_state *restrict gs) {
     mp->model_id = MODEL_GREENENEMY;
     mp = model_new(&gs->model, (ent_id){0});
     mp->model_id = MODEL_FAIRY;
+    monster_new(&gs->monster, (ent_id){1});
+    monster_new(&gs->monster, (ent_id){2});
 }
 
 void game_input(struct game_state *restrict gs,
                 const struct controller_input *restrict input) {
-    for (int i = 0; i < gs->walk.count; i++) {
-        gs->walk.components[i].drive = input->joystick;
+    struct cp_walk *restrict wp = walk_get(&gs->walk, (ent_id){0});
+    if (wp != NULL) {
+        wp->drive = input->joystick;
     }
     gs->button_state = input->buttons;
 }
 
 void game_update(struct game_state *restrict gs, float dt) {
+    monster_update(&gs->monster, &gs->physics, &gs->walk, dt);
     walk_update(&gs->walk, &gs->physics, dt);
     physics_update(&gs->physics, dt);
     camera_update(&gs->camera);
