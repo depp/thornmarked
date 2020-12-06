@@ -4,6 +4,7 @@
 #include "assets/pak.h"
 #include "assets/texture.h"
 #include "base/base.h"
+#include "base/fixup.h"
 #include "base/hash.h"
 #include "base/mat4.h"
 #include "base/n64/mat4.h"
@@ -69,16 +70,6 @@ static int model_to_slot[PAK_MODEL_COUNT + 1];
 
 // Map from model slot number to model asset ID.
 static int model_from_slot[MODEL_SLOTS];
-
-// Convert a relative offset to a pointer.
-static void *pointer_fixup(void *ptr, uintptr_t base, size_t size) {
-    uintptr_t value = (uintptr_t)ptr;
-    if (value > size) {
-        fatal_error("Bad pointer in asset\nPointer: %p\nBase: %p\nSize: %zu",
-                    ptr, (void *)base, size);
-    }
-    return (void *)(value + base);
-}
 
 // Fix the internal pointers in a model after loading.
 static void model_fixup(union model_data *p, pak_model asset) {
