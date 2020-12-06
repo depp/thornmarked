@@ -1,3 +1,6 @@
+// Conflicts with <string.h>
+#define _OS_LIBC_H_ 1
+
 #include "game/n64/defs.h"
 
 #include "assets/pak.h"
@@ -8,6 +11,12 @@
 #include <ultra64.h>
 
 #include <stdint.h>
+#include <string.h>
+
+// Maximum number of font textures.
+enum {
+    MAX_FONT_TEXTURES = 4,
+};
 
 // =============================================================================
 // Font Loading
@@ -39,7 +48,7 @@ struct font_texture {
 
 union font_buffer {
     struct font_header header;
-    uint8_t data[8 * 1024];
+    uint8_t data[16 * 1024];
 };
 
 // Fix internal pointers in font after loading.
@@ -67,30 +76,83 @@ void font_load(pak_data asset_id) {
 // Text Rendering
 // =============================================================================
 
-static uint16_t glyphs[256];
+// A glyph and its position on-screen.
+struct text_glyph {
+    short x, y;
+    unsigned short glyph;
+    unsigned short texture;
+};
 
-static uint16_t *text_to_glyphs(const struct font_header *restrict fn,
-                                uint16_t *gptr, const char *text) {
+static struct text_glyph *text_to_glyphs(const struct font_header *restrict fn,
+                                         struct text_glyph *gptr,
+                                         struct text_glyph *gend,
+                                         const char *text) {
     while (*text != '\0') {
+        if (gptr == gend) {
+            fatal_error("String too long\nLength: %zu\nString: %s",
+                        strlen(text), text);
+        }
         unsigned cp = (unsigned char)*text++;
-        *gptr++ = fn->charmap[cp];
+        gptr->glyph = fn->charmap[cp];
+        gptr++;
     }
     return gptr;
 }
 
-Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text) {
-    const struct font_header *restrict fn = &font_buffer.header;
-    if (16 > dl_end - dl) {
-        fatal_dloverflow();
+// Calculate the pen coordinates for glyphs.
+static void text_place(const struct font_header *restrict fn,
+                       struct text_glyph *restrict glyphs, int count, int x,
+                       int y) {
+    for (int i = 0; i < count; i++) {
+        int glyph = glyphs[i].glyph;
+        const struct font_glyph *restrict gi = &fn->glyphs[glyph];
+        glyphs[i].x = x;
+        glyphs[i].y = y;
+        x += gi->advance;
     }
-    gDPPipeSync(dl++);
-    gDPSetCycleType(dl++, G_CYC_1CYCLE);
-    gDPSetTextureFilter(dl++, G_TF_POINT);
-    gDPSetTexturePersp(dl++, G_TP_NONE);
-    gDPSetPrimColor(dl++, 0, 0, 255, 128, 0, 255);
-    gDPSetRenderMode(dl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
-    gDPSetCombineMode(dl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    struct font_texture *tex = &fn->textures[0];
+}
+
+// Calculate the location of glyph sprite images, removing empty glyphs and
+// sorting by texture index. Returns the output number of glyphs.
+static int text_to_sprite(const struct font_header *restrict fn,
+                          struct text_glyph *restrict out_glyphs,
+                          struct text_glyph *restrict in_glyphs, int count) {
+    const int NO_TEXTURE = 0xffff;
+    // Bucket sort by texture.
+    int tex_count[MAX_FONT_TEXTURES] = {0};
+    for (int i = 0; i < count; i++) {
+        int glyph = in_glyphs[i].glyph;
+        const struct font_glyph *restrict gi = &fn->glyphs[glyph];
+        if (gi->size[0] > 0 && gi->size[1] > 0) {
+            tex_count[gi->texindex]++;
+            in_glyphs[i].x += gi->offset[0];
+            in_glyphs[i].y += gi->offset[1];
+            in_glyphs[i].texture = gi->texindex;
+        } else {
+            in_glyphs[i].texture = NO_TEXTURE;
+        }
+    }
+    int tex_offset[MAX_FONT_TEXTURES];
+    int pos = 0;
+    for (int i = 0; i < MAX_FONT_TEXTURES; i++) {
+        tex_offset[i] = pos;
+        pos += tex_count[i];
+    }
+    for (int i = 0; i < count; i++) {
+        int tex = in_glyphs[i].texture;
+        if (tex < MAX_FONT_TEXTURES) {
+            int gpos = tex_offset[tex]++;
+            out_glyphs[gpos] = in_glyphs[i];
+        }
+    }
+    return pos;
+}
+
+// Two buffers -- first buffer is for the raw glyphs, second buffer is for
+// glyphs converted to sprites + textures + coordinates.
+static struct text_glyph glyph_buffer[2][256];
+
+static Gfx *text_use_texture(Gfx *dl, const struct font_texture *restrict tex) {
     switch (tex->pix_size) {
     case G_IM_SIZ_4b:
         gDPLoadTextureBlock_4b(dl++, tex->pixels, tex->pix_fmt, tex->width,
@@ -107,20 +169,55 @@ Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text) {
     default:
         fatal_error("Unsupported font texture size\nSize: %d", tex->pix_size);
     }
-    uint16_t *gend = text_to_glyphs(fn, glyphs, text);
-    for (uint16_t *gptr = glyphs; gptr != gend; gptr++) {
-        const struct font_glyph *restrict gi = &fn->glyphs[*gptr];
-        if (gi->size[0] != 0) {
-            if (3 > dl_end - dl) {
-                fatal_dloverflow();
-            }
-            int dx = x + gi->offset[0];
-            int dy = y + gi->offset[1];
-            gSPTextureRectangle(dl++, dx << 2, dy << 2, (dx + gi->size[0]) << 2,
-                                (dy + gi->size[1]) << 2, 0, gi->pos[0] << 5,
-                                gi->pos[1] << 5, 1 << 10, 1 << 10);
+    return dl;
+}
+
+Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text) {
+    const struct font_header *restrict fn = &font_buffer.header;
+
+    struct text_glyph *gend =
+        text_to_glyphs(fn, glyph_buffer[0],
+                       glyph_buffer[0] + ARRAY_COUNT(glyph_buffer[0]), text);
+    int gcount = gend - glyph_buffer[0];
+    if (gcount == 0) {
+        return dl;
+    }
+    text_place(fn, glyph_buffer[0], gcount, x, y);
+    int scount = text_to_sprite(fn, glyph_buffer[1], glyph_buffer[0], gcount);
+    if (scount == 0) {
+        return dl;
+    }
+
+    int ncommands = 7 + 7 * MAX_FONT_TEXTURES + 3 * scount;
+    if (ncommands > dl_end - dl) {
+        fatal_dloverflow();
+    }
+
+    // 7 commands.
+    gDPPipeSync(dl++);
+    gDPSetCycleType(dl++, G_CYC_1CYCLE);
+    gDPSetTextureFilter(dl++, G_TF_POINT);
+    gDPSetTexturePersp(dl++, G_TP_NONE);
+    gDPSetPrimColor(dl++, 0, 0, 255, 128, 0, 255);
+    gDPSetRenderMode(dl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
+    gDPSetCombineMode(dl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+
+    int current_texture = -1;
+    for (int i = 0; i < scount; i++) {
+        struct text_glyph *restrict g = &glyph_buffer[1][i];
+        const struct font_glyph *restrict gi = &fn->glyphs[g->glyph];
+        if (g->texture != current_texture) {
+            // 7 commands.
+            const struct font_texture *tex = &fn->textures[g->texture];
+            dl = text_use_texture(dl, tex);
+            current_texture = g->texture;
         }
-        x += gi->advance;
+
+        // 3 commands.
+        gSPTextureRectangle(dl++, g->x << 2, g->y << 2,
+                            (g->x + gi->size[0]) << 2,
+                            (g->y + gi->size[1]) << 2, 0, gi->pos[0] << 5,
+                            gi->pos[1] << 5, 1 << 10, 1 << 10);
     }
     return dl;
 }

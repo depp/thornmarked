@@ -4,7 +4,7 @@ bitmap_font(
     name = "grenze_gotisch",
     src = "GrenzeGotisch-Medium.ttf",
     charset = "//assets/fonts:charset.txt",
-    font_size = "20",
+    font_size = "32",
     format = "i.4",
     texsize = "64:128",
     visibility = ["//assets:__pkg__"],
