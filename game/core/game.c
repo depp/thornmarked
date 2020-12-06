@@ -17,7 +17,11 @@ static void spawn_player(struct game_state *restrict gs, ent_id ent) {
 
 static void spawn_monster(struct game_state *restrict gs, ent_id ent,
                           pak_model model) {
-    physics_new(&gs->physics, ent);
+    struct cp_phys *pp = physics_new(&gs->physics, ent);
+    pp->pos = (vec2){{
+        rand_frange(&grand, -2.0f, 2.0f),
+        rand_frange(&grand, -2.0f, 2.0f),
+    }};
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = model;
