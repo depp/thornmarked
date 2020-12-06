@@ -268,7 +268,7 @@ void model_render_init(void) {
     model_load(MODEL_GREENENEMY);
 }
 
-static const Gfx fairy_setup_dl[] = {
+static const Gfx model_sutp_dl[] = {
     gsDPPipeSync(),
     gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
     gsDPSetCombineMode(G_CC_TRILERP, G_CC_MODULATERGB2),
@@ -298,18 +298,18 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
             const struct model_header *restrict mp = &model_data[slot].header;
             switch (model) {
             case ID_MODEL_FAIRY:
-                gSPDisplayList(dl++, fairy_setup_dl);
+                gSPDisplayList(dl++, model_sutp_dl);
                 unsigned frame_addr =
                     mp->animation[anim_id].frame[frame_id].vertex;
                 int frame_slot = frame_load(frame_addr, mp->frame_size);
                 gSPSegment(dl++, 1, K0_TO_PHYS(frame_data[frame_slot]));
                 break;
             case ID_MODEL_BLUEENEMY:
-                gSPDisplayList(dl++, fairy_setup_dl);
+                gSPDisplayList(dl++, model_sutp_dl);
                 gSPSegment(dl++, 1, K0_TO_PHYS(mp->vertex_data));
                 break;
             case ID_MODEL_GREENENEMY:
-                gSPDisplayList(dl++, fairy_setup_dl);
+                gSPDisplayList(dl++, model_sutp_dl);
                 gSPSegment(dl++, 1, K0_TO_PHYS(mp->vertex_data));
                 break;
             default:
