@@ -15,7 +15,7 @@ enum {
 // Initailize walkers.
 void walk_init(struct sys_walk *restrict wsys) {
     *wsys = (struct sys_walk){
-        .components = mem_alloc(sizeof(*wsys->entities) * MAX_WALK_OBJS),
+        .components = mem_alloc(sizeof(*wsys->components) * MAX_WALK_OBJS),
         .entities = mem_calloc(sizeof(*wsys->entities) * ENTITY_COUNT),
     };
 }
@@ -27,7 +27,7 @@ struct cp_walk *walk_new(struct sys_walk *restrict wsys, ent_id ent) {
     struct cp_walk *wp = &wsys->components[index];
     if (wp->ent.id != ent.id || index >= wsys->count) {
         index = wsys->count;
-        if (index > MAX_WALK_OBJS) {
+        if (index >= MAX_WALK_OBJS) {
             fatal_error("Too many walk objects");
         }
         wsys->count = index + 1;

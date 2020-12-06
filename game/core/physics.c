@@ -23,7 +23,7 @@ struct cp_phys *physics_new(struct sys_phys *restrict psys, ent_id ent) {
     struct cp_phys *pp = &psys->physics[index];
     if (pp->ent.id != ent.id || index >= psys->count) {
         index = psys->count;
-        if (index > MAX_PHYSICS_OBJS) {
+        if (index >= MAX_PHYSICS_OBJS) {
             fatal_error("Too many physics objects");
         }
         psys->count = index + 1;
