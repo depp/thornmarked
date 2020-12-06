@@ -35,3 +35,16 @@ Use Homebrew.
 ```shell
 brew install bazel sox flac assimp freetype
 ```
+
+## Capture
+
+When capturing video from Mupen64Plus, the video will look desaturated and dark compared to a real TV. These are encoding parameters that attempt to fix it:
+
+```shell
+ffmpeg -i <in.mkv> -codec:v libx264
+    -filter:v eq=gamma=1.5:contrast=1.1:saturation=1.5
+    -pix_fmt yuv420p -profile:v high -crf 20
+    <out.mp4>
+```
+
+These corrections were done by eye so they may be inaccurate.
