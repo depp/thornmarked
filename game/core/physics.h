@@ -3,13 +3,22 @@
 #include "base/vectypes.h"
 #include "game/core/entity.h"
 
+#include <stdbool.h>
+
 // Physical object component. Used for entities with a physical presence in the
 // game world.
 struct cp_phys {
     ent_id ent;
     vec2 pos;         // Position: updated by physics.
     vec2 vel;         // Velocity: must be set as an input.
+    float max_vel;    // Maximum velocity after collision response.
     quat orientation; // Orientation: must be set as an input.
+    float radius;     // Radius for collisions.
+
+    // Private.
+    vec2 adj;      // Collision adjustment to position.
+    bool collided; // Has collision adjustment.
+    bool stable;   // True if component has stable position.
 };
 
 // Physics system.
