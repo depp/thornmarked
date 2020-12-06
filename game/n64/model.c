@@ -268,19 +268,64 @@ void model_render_init(void) {
     model_load(MODEL_GREENENEMY);
 }
 
-static const Gfx model_sutp_dl[] = {
+static const Gfx model_setup_dl[] = {
     gsDPPipeSync(),
     gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
     gsDPSetCombineMode(G_CC_TRILERP, G_CC_MODULATERGB2),
     gsSPEndDisplayList(),
 };
 
-static int anim_id, frame_id;
+static const struct model_frame *model_getframe(
+    const struct model_header *restrict mdl, int anim_id, float time) {
+    if (anim_id < 1 || mdl->animation_count < anim_id) {
+        return NULL;
+    }
+    const struct model_animation *restrict anim = &mdl->animation[anim_id - 1];
+    if (anim->frame_count == 0) {
+        return NULL;
+    }
+    for (int i = 0; i < anim->frame_count; i++) {
+        if (anim->frame[i].time > time) {
+            return i > 0 ? &anim->frame[i - 1] : &anim->frame[0];
+        }
+    }
+    return &anim->frame[anim->frame_count - 1];
+}
+
+void model_update(struct sys_model *restrict msys, float dt) {
+    for (int i = 0; i < msys->count; i++) {
+        struct cp_model *restrict mp = &msys->models[i];
+        if (mp->model_id.id == 0 || mp->animation_id == 0) {
+            // No model or not animated.
+            continue;
+        }
+        int slot = model_to_slot[mp->model_id.id];
+        if (model_from_slot[slot] != mp->model_id.id) {
+            // Model not loaded.
+            continue;
+        }
+        const struct model_header *restrict mdl = &model_data[slot].header;
+        if (mp->animation_id < 1 || mdl->animation_count < mp->animation_id) {
+            // No such animation.
+            continue;
+        }
+        const struct model_animation *restrict anim =
+            &mdl->animation[mp->animation_id - 1];
+        mp->animation_time += dt * 60.0f;
+        if (mp->animation_time >= anim->duration) {
+            mp->animation_time -= anim->duration;
+            if (mp->animation_time >= anim->duration) {
+                mp->animation_time = 0.0f;
+            }
+        }
+    }
+}
 
 Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   struct sys_model *restrict msys,
                   struct sys_phys *restrict psys) {
-    int current_model = 0;
+    bool has_setup = false;
+    void *current_segment = 0;
     float scale = 0.5f;
     for (int i = 0; i < msys->count; i++) {
         struct cp_model *restrict mp = &msys->models[i];
@@ -294,29 +339,21 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
             fatal_error("Model not loaded");
         }
         dl = texture_use(dl, mp->texture_id);
-        if (model != current_model) {
-            const struct model_header *restrict mp = &model_data[slot].header;
-            switch (model) {
-            case ID_MODEL_FAIRY:
-                gSPDisplayList(dl++, model_sutp_dl);
-                unsigned frame_addr =
-                    mp->animation[anim_id].frame[frame_id].vertex;
-                int frame_slot = frame_load(frame_addr, mp->frame_size);
-                gSPSegment(dl++, 1, K0_TO_PHYS(frame_data[frame_slot]));
-                break;
-            case ID_MODEL_BLUEENEMY:
-                gSPDisplayList(dl++, model_sutp_dl);
-                gSPSegment(dl++, 1, K0_TO_PHYS(mp->vertex_data));
-                break;
-            case ID_MODEL_GREENENEMY:
-                gSPDisplayList(dl++, model_sutp_dl);
-                gSPSegment(dl++, 1, K0_TO_PHYS(mp->vertex_data));
-                break;
-            default:
-                fatal_error("Cannot use model\nModel: %d", model);
-            }
+        const struct model_header *restrict mdl = &model_data[slot].header;
+        void *segment = mdl->vertex_data;
+        const struct model_frame *frame =
+            model_getframe(mdl, mp->animation_id, mp->animation_time);
+        if (frame != NULL) {
+            int frame_slot = frame_load(frame->vertex, mdl->frame_size);
+            segment = frame_data[frame_slot];
         }
-        current_model = model;
+        if (segment != current_segment) {
+            gSPSegment(dl++, 1, K0_TO_PHYS(segment));
+        }
+        if (!has_setup) {
+            gSPDisplayList(dl++, model_setup_dl);
+            has_setup = true;
+        }
         Mtx *mtx = gr->mtx_ptr++;
         {
             mat4 mat;
@@ -329,15 +366,5 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         gSPDisplayList(dl++, K0_TO_PHYS(model_data[slot].header.display_list));
     }
-
-    frame_id++;
-    if (frame_id >= model_data[0].header.animation[anim_id].frame_count) {
-        frame_id = 0;
-        anim_id++;
-        if (anim_id >= model_data[0].header.animation_count) {
-            anim_id = 0;
-        }
-    }
-
     return dl;
 }

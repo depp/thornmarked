@@ -169,9 +169,8 @@ static void main(void *arg) {
     }
 
     OSTime cur_time = osGetTime();
-    model_render_init();
-    texture_init();
-    game_init(&game_state);
+
+    game_n64_init(&game_state);
 
     scheduler_start(&scheduler, 1);
     int frame_num = 0;
@@ -229,7 +228,7 @@ static void main(void *arg) {
                 delta_time = MAX_DELTA_TIME;
             }
             float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
-            game_update(&game_state, dt);
+            game_n64_update(&game_state, dt);
         }
 
         // Create up display lists.

@@ -10,6 +10,10 @@ struct cp_model {
     pak_model model_id;
     // The texture to render the model with.
     pak_texture texture_id;
+    // 1-based index of the animation to play. 0 means no animation.
+    int animation_id;
+    // Current time in the animation, in seconds.
+    float animation_time;
 };
 
 // Model system.

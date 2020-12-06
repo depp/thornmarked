@@ -14,6 +14,7 @@ static void spawn_player(struct game_state *restrict gs, ent_id ent) {
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = MODEL_FAIRY;
     mp->texture_id = IMG_FAIRY;
+    mp->animation_id = 4;
 }
 
 static void spawn_monster(struct game_state *restrict gs, ent_id ent,

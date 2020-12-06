@@ -10,6 +10,17 @@
 #include "game/n64/model.h"
 #include "game/n64/texture.h"
 
+void game_n64_init(struct game_state *restrict gs) {
+    model_render_init();
+    texture_init();
+    game_init(gs);
+}
+
+void game_n64_update(struct game_state *restrict gs, float dt) {
+    model_update(&gs->model, dt);
+    game_update(gs, dt);
+}
+
 enum {
     // Margin (black border) at edge of screen.
     MARGIN_X = 16,
