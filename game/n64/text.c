@@ -13,9 +13,12 @@
 #include <stdint.h>
 #include <string.h>
 
-// Maximum number of font textures.
 enum {
-    MAX_FONT_TEXTURES = 4,
+    // Maximum number of textures per font.
+    MAX_FONT_TEXTURES = 8,
+
+    // Maximum size in bytes of font asset.
+    FONT_BUFFER_SIZE = 32 * 1024,
 };
 
 // =============================================================================
@@ -48,7 +51,7 @@ struct font_texture {
 
 union font_buffer {
     struct font_header header;
-    uint8_t data[16 * 1024];
+    uint8_t data[FONT_BUFFER_SIZE];
 };
 
 // Fix internal pointers in font after loading.
@@ -57,6 +60,10 @@ static void font_fixup(union font_buffer *p) {
     const size_t size = sizeof(union font_buffer);
     struct font_header *restrict hdr = &p->header;
     hdr->textures = pointer_fixup(hdr->textures, base, size);
+    if (hdr->texture_count > MAX_FONT_TEXTURES) {
+        fatal_error("Font has too many textures\n\nTextures: %d",
+                    hdr->texture_count);
+    }
     for (int i = 0; i < hdr->texture_count; i++) {
         struct font_texture *restrict tex = &hdr->textures[i];
         tex->pixels = pointer_fixup(tex->pixels, base, size);
