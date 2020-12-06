@@ -8,6 +8,22 @@
 
 #include <stdbool.h>
 
+static void spawn_player(struct game_state *restrict gs, ent_id ent) {
+    physics_new(&gs->physics, ent);
+    walk_new(&gs->walk, ent);
+    struct cp_model *mp = model_new(&gs->model, ent);
+    mp->model_id = MODEL_FAIRY;
+}
+
+static void spawn_monster(struct game_state *restrict gs, ent_id ent,
+                          pak_model model) {
+    physics_new(&gs->physics, ent);
+    walk_new(&gs->walk, ent);
+    struct cp_model *mp = model_new(&gs->model, ent);
+    mp->model_id = model;
+    monster_new(&gs->monster, ent);
+}
+
 void game_init(struct game_state *restrict gs) {
     rand_init(&grand, 0x01234567, 0x243F6A88); // Pi fractional digits.
     physics_init(&gs->physics);
@@ -15,23 +31,15 @@ void game_init(struct game_state *restrict gs) {
     camera_init(&gs->camera);
     model_init(&gs->model);
     monster_init(&gs->monster);
-    for (int i = 0; i < 3; i++) {
-        physics_new(&gs->physics, (ent_id){i});
-    }
-    walk_new(&gs->walk, (ent_id){0});
-    walk_new(&gs->walk, (ent_id){1});
-    walk_new(&gs->walk, (ent_id){2});
+
     gs->button_state = 0;
     gs->prev_button_state = 0;
-    struct cp_model *restrict mp;
-    mp = model_new(&gs->model, (ent_id){1});
-    mp->model_id = MODEL_BLUEENEMY;
-    mp = model_new(&gs->model, (ent_id){2});
-    mp->model_id = MODEL_GREENENEMY;
-    mp = model_new(&gs->model, (ent_id){0});
-    mp->model_id = MODEL_FAIRY;
-    monster_new(&gs->monster, (ent_id){1});
-    monster_new(&gs->monster, (ent_id){2});
+
+    spawn_player(gs, (ent_id){0});
+    for (int i = 0; i < 5; i++) {
+        spawn_monster(gs, (ent_id){i + 1},
+                      i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY);
+    }
 }
 
 void game_input(struct game_state *restrict gs,
