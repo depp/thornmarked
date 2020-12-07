@@ -68,6 +68,18 @@ def _audio_tracks_impl(ctx):
             ],
         )
         outputs.append(out_adpcm)
+        out_decoded = ctx.actions.declare_file(name + ".dec.aiff")
+        ctx.actions.run(
+            outputs = [out_decoded],
+            inputs = [out_adpcm],
+            progress_message = "Decoding ADPCM file %s" % out_adpcm.short_path,
+            executable = ctx.executable._vadpcm_dec,
+            arguments = [
+                out_adpcm.path,
+                out_decoded.path,
+            ],
+        )
+        outputs.append(out_decoded)
     return [DefaultInfo(files = depset(outputs))]
 
 audio_tracks = rule(
@@ -100,6 +112,12 @@ audio_tracks = rule(
         ),
         "_vadpcm_enc": attr.label(
             default = Label("//tools/audio/encode:vadpcm_enc"),
+            allow_single_file = True,
+            executable = True,
+            cfg = "exec",
+        ),
+        "_vadpcm_dec": attr.label(
+            default = Label("//tools/audio/encode:vadpcm_dec"),
             allow_single_file = True,
             executable = True,
             cfg = "exec",
