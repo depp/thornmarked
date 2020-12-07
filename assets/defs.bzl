@@ -8,6 +8,7 @@ def _asset_header_impl(ctx):
     manifest = ctx.file.manifest
     headers = [
         "data.h",
+        "font.h",
         "model.h",
         "pak.h",
         "texture.h",

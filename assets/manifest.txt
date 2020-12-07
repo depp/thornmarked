@@ -3,7 +3,7 @@ texture IMG_FAIRY models/fairy.texture
 texture IMG_BLUEENEMY models/BlueEnemy.texture
 texture IMG_GREENENEMY models/GreenEnemy.texture
 
-data FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
+font FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
 
 # model MODEL_LOGO models/logo.model
 model MODEL_FAIRY models/fairy2.model

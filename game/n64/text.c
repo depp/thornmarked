@@ -72,10 +72,10 @@ static void font_fixup(union font_buffer *p) {
 
 static union font_buffer font_buffer ASSET;
 
-void font_load(pak_data asset_id) {
+void font_load(pak_font asset_id) {
     // Load from cartridge memory.
     pak_load_asset_sync(font_buffer.data, sizeof(font_buffer.data),
-                        pak_data_object(asset_id));
+                        pak_font_object(asset_id));
     font_fixup(&font_buffer);
 }
 

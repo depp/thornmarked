@@ -9,6 +9,11 @@ typedef struct pak_data {
     int id;
 } pak_data;
 
+// Identifier for a font asset.
+typedef struct pak_font {
+    int id;
+} pak_font;
+
 // Identifier for a model asset.
 typedef struct pak_model {
     int id;
