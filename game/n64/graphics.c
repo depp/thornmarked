@@ -6,7 +6,7 @@
 #include "game/n64/game.h"
 #include "game/n64/task.h"
 
-#define TRIPLE_BUFFER 1
+#define TRIPLE_BUFFER 0
 
 const float meter = 64.0f;
 
