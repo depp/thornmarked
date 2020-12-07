@@ -6,9 +6,6 @@
 #include "game/n64/game.h"
 #include "game/n64/task.h"
 
-unsigned graphics_taskmask(int i);
-unsigned graphics_buffermask(int i);
-
 const float meter = 64.0f;
 
 static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
@@ -25,6 +22,16 @@ enum {
 };
 
 static u64 sp_dram_stack[SP_STACK_SIZE / 8] __attribute__((section("uninit")));
+
+// Get the resource mask for the given task.
+static unsigned graphics_taskmask(int i) {
+    return 1u << i;
+}
+
+// Get the resource mask for the given framebuffer.
+static unsigned graphics_buffermask(int i) {
+    return 4u << i;
+}
 
 // Render the next graphics frame.
 void graphics_frame(struct game_state *restrict gs,
@@ -82,16 +89,16 @@ void graphics_frame(struct game_state *restrict gs,
     }};
     task->done_queue = queue;
     task->done_mesg = event_pack((struct event_data){
-        .type = EVENT_VTASKDONE,
-        .value = st->current_task,
+        .type = EVENT_VIDEO,
+        .value = graphics_taskmask(st->current_task),
     });
     task->runtime = 0;
     task->data.framebuffer = (struct scheduler_framebuffer){
         .ptr = framebuffers[st->current_task],
         .done_queue = queue,
         .done_mesg = event_pack((struct event_data){
-            .type = EVENT_VBUFDONE,
-            .value = st->current_task,
+            .type = EVENT_VIDEO,
+            .value = graphics_buffermask(st->current_task),
         }),
     };
     scheduler_submit(sc, task);

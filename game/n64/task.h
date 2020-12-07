@@ -8,19 +8,18 @@
 // Events received on the main queue.
 typedef enum {
     EVENT_INVALID,
-    EVENT_VTASKDONE,
-    EVENT_VBUFDONE,
+    EVENT_VIDEO,
 } event_type;
 
 // A decoded event.
 struct event_data {
     event_type type;
-    int value;
+    unsigned value;
 };
 
 // Pack an event into an OSMesg.
 inline OSMesg event_pack(struct event_data evt) {
-    uintptr_t v = (unsigned)evt.type | ((unsigned)evt.value << 8);
+    uintptr_t v = (unsigned)evt.type | (evt.value << 8);
     return (OSMesg)v;
 }
 

@@ -43,16 +43,6 @@ struct graphics_state {
     int current_buffer;
 };
 
-// Get the resource mask for the given task.
-inline unsigned graphics_taskmask(int i) {
-    return 1u << i;
-}
-
-// Get the resource mask for the given framebuffer.
-inline unsigned graphics_buffermask(int i) {
-    return 0x100 << i;
-}
-
 // Render the next graphics frame.
 void graphics_frame(struct game_state *restrict gs,
                     struct graphics_state *restrict st, struct scheduler *sc,

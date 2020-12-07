@@ -80,11 +80,8 @@ static int process_event(struct main_state *restrict st, int flags) {
         e = event_unpack(evt);
     }
     switch (e.type) {
-    case EVENT_VTASKDONE:
-        st->graphics.busy &= ~graphics_taskmask(e.value);
-        break;
-    case EVENT_VBUFDONE:
-        st->graphics.busy &= ~graphics_buffermask(e.value);
+    case EVENT_VIDEO:
+        st->graphics.busy &= ~e.value;
         break;
     default:
         fatal_error("Bad message type: %d", e.type);
