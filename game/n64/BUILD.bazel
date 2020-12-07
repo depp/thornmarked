@@ -25,6 +25,8 @@ cc_binary(
         "model.c",
         "model.h",
         "stack.s",
+        "task.c",
+        "task.h",
         "text.c",
         "text.h",
         "texture.c",

@@ -177,7 +177,7 @@ void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
     gSPDisplayList(dl++, ground_dl);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 
-    dl = text_render(dl, gr->dl_end, 20, ysize - 18, "“Non-ASCII”");
+    dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Refactor");
 
     // Render debugging text overlay.
     if (gs->show_console) {
