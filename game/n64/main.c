@@ -1,21 +1,15 @@
-
 #include "assets/font.h"
 #include "assets/pak.h"
 #include "base/base.h"
 #include "base/console.h"
-#include "base/n64/console.h"
 #include "base/n64/os.h"
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
-#include "base/random.h"
 #include "game/core/input.h"
-#include "game/n64/defs.h"
 #include "game/n64/game.h"
 #include "game/n64/graphics.h"
-#include "game/n64/model.h"
 #include "game/n64/task.h"
 #include "game/n64/text.h"
-#include "game/n64/texture.h"
 
 #include <ultra64.h>
 
