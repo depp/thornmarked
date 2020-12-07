@@ -16,7 +16,7 @@ struct scheduler_vstate {
     // Framebuffers: framebuffer[0] is on-screen right now, framebuffer[1] being
     // swapped in by the VI thread, and framebufer[2] is waiting. The
     // framebuffers_pending field is the index of the last valid array entry.
-    struct scheduler_framebuffer buffers[3];
+    struct scheduler_framebuffer buffers[4];
 };
 
 static void scheduler_vpush(struct scheduler_vstate *restrict st,
@@ -24,7 +24,7 @@ static void scheduler_vpush(struct scheduler_vstate *restrict st,
     if (((uintptr_t)fb->ptr & 15) != 0) {
         fatal_error("Unaligned framebuffer\nptr=%p", fb->ptr);
     }
-    if (st->pending >= 2) {
+    if (st->pending >= 3) {
         fatal_error("Framebuffer overflow");
     }
     if (st->pending == 0) {
@@ -50,7 +50,8 @@ static void scheduler_vpop(struct scheduler_vstate *restrict st) {
     }
     st->buffers[0] = st->buffers[1];
     st->buffers[1] = st->buffers[2];
-    st->buffers[2] = (struct scheduler_framebuffer){0};
+    st->buffers[2] = st->buffers[3];
+    st->buffers[3] = (struct scheduler_framebuffer){0};
     if (st->pending > 1) {
         osViSwapBuffer(st->buffers[1].ptr);
     }

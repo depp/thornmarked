@@ -6,9 +6,15 @@
 #include "game/n64/game.h"
 #include "game/n64/task.h"
 
+#define TRIPLE_BUFFER 1
+
 const float meter = 64.0f;
 
-static u16 framebuffers[2][SCREEN_WIDTH * SCREEN_HEIGHT]
+enum {
+    VIDEO_BUFCOUNT = TRIPLE_BUFFER ? 3 : 2,
+};
+
+static u16 framebuffers[VIDEO_BUFCOUNT][SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((section("uninit.cfb"), aligned(16)));
 static u16 zbuffer[SCREEN_WIDTH * SCREEN_HEIGHT]
     __attribute__((section("uninit.zb"), aligned(16)));
@@ -56,7 +62,7 @@ void graphics_frame(struct game_state *restrict gs,
             .mtx_ptr = mtx_start,
             .mtx_start = mtx_start,
             .mtx_end = mtx_end,
-            .framebuffer = framebuffers[st->current_task],
+            .framebuffer = framebuffers[st->current_buffer],
             .zbuffer = zbuffer,
             .is_pal = is_pal,
         };
@@ -94,11 +100,11 @@ void graphics_frame(struct game_state *restrict gs,
     });
     task->runtime = 0;
     task->data.framebuffer = (struct scheduler_framebuffer){
-        .ptr = framebuffers[st->current_task],
+        .ptr = framebuffers[st->current_buffer],
         .done_queue = queue,
         .done_mesg = event_pack((struct event_data){
             .type = EVENT_VIDEO,
-            .value = graphics_buffermask(st->current_task),
+            .value = graphics_buffermask(st->current_buffer),
         }),
     };
     scheduler_submit(sc, task);
@@ -107,7 +113,10 @@ void graphics_frame(struct game_state *restrict gs,
     st->busy |= graphics_taskmask(st->current_task) |
                 graphics_buffermask(st->current_buffer);
     st->current_task ^= 1;
-    st->current_buffer ^= 1;
+    st->current_buffer++;
+    if (st->current_buffer >= VIDEO_BUFCOUNT) {
+        st->current_buffer = 0;
+    }
     st->wait = graphics_taskmask(st->current_task) |
                graphics_buffermask(st->current_buffer);
 }
