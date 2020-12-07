@@ -9,6 +9,7 @@
 typedef enum {
     EVENT_INVALID,
     EVENT_VIDEO,
+    EVENT_AUDIO,
 } event_type;
 
 // A decoded event.

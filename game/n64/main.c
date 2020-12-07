@@ -6,6 +6,7 @@
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
 #include "game/core/input.h"
+#include "game/n64/audio.h"
 #include "game/n64/game.h"
 #include "game/n64/graphics.h"
 #include "game/n64/task.h"
@@ -67,6 +68,12 @@ struct main_state {
 
     // Graphics task state.
     struct graphics_state graphics;
+
+    // Audio task state.
+    struct audio_state audio;
+
+    // Timestamp of the last game update.
+    OSTime update_time;
 };
 
 // Read the next event sent to the main thread and process it.
@@ -83,10 +90,60 @@ static int process_event(struct main_state *restrict st, int flags) {
     case EVENT_VIDEO:
         st->graphics.busy &= ~e.value;
         break;
+    case EVENT_AUDIO:
+        st->audio.busy &= ~e.value;
+        break;
     default:
         fatal_error("Bad message type: %d", e.type);
     }
     return 0;
+}
+
+// Read the controller, if ready.
+static void process_controllers(struct main_state *restrict st,
+                                struct game_state *restrict gs) {
+    bool has_cont = false;
+    if (osRecvMesg(&st->si_queue, NULL, OS_MESG_NOBLOCK) == 0) {
+        has_cont = true;
+    }
+    if (has_cont) {
+        st->controler_read_active = false;
+        OSContPad controller_state[MAXCONTROLLERS];
+        osContGetReadData(controller_state);
+        st->controler_read_active = false;
+        if (st->has_controller) {
+            const OSContPad *restrict pad =
+                &controller_state[st->controller_index];
+            struct controller_input input = {.buttons = pad->button};
+            const int dead_zone = 4;
+            if (pad->stick_x < -dead_zone || dead_zone < pad->stick_x ||
+                pad->stick_y < -dead_zone || dead_zone < pad->stick_y) {
+                const float scale = 1.0f / 64.0f;
+                input.joystick = (vec2){{
+                    scale * (float)pad->stick_x,
+                    scale * (float)pad->stick_y,
+                }};
+            }
+            game_input(gs, &input);
+        }
+    }
+    if (!st->controler_read_active) {
+        osContStartReadData(&st->si_queue);
+        st->controler_read_active = true;
+    }
+}
+
+static void update_game(struct main_state *restrict st,
+                                struct game_state *restrict gs) {
+    OSTime last_time = st->update_time;
+    st->update_time = osGetTime();
+    uint32_t delta_time = st->update_time - last_time;
+    // Clamp delta time, in case something gets out of hand.
+    if (delta_time > MAX_DELTA_TIME) {
+        delta_time = MAX_DELTA_TIME;
+    }
+    float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
+    game_n64_update(gs, dt);
 }
 
 static struct main_state main_state;
@@ -125,71 +182,34 @@ static void main(void *arg) {
         }
     }
 
-    OSTime cur_time = osGetTime();
-
+    st->update_time = osGetTime();
     game_n64_init(&game_state);
+    audio_init();
 
     scheduler_start(&scheduler, 1);
-    int frame_num = 0;
 
-    for (int current_task = 0;; current_task ^= 1) {
-        console_init(&console, CONSOLE_TRUNCATE);
-        console_printf(&console, "Frame %d\n", frame_num);
-        /*
-        console_printf(&console, "Time: %5.1f ms\n",
-                       (double)st->rcp_time * (1.0e3 / OS_CPU_COUNTER));
-        */
-        frame_num++;
+    for (;;) {
+        bool ready = false;
 
-        // Wait until the task and framebuffer are both free to use.
-        while ((st->graphics.busy & st->graphics.wait) != 0) {
+        // Render an audio frame, if ready.
+        if ((st->audio.busy & st->audio.wait) == 0) {
+            while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
+            audio_frame(&st->audio, &scheduler, &st->evt_queue);
+            ready = true;
+        }
+
+        // Render a graphics frame, if ready.
+        if ((st->graphics.busy & st->graphics.wait) == 0) {
+            while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
+            process_controllers(st, &game_state);
+            update_game(st, &game_state);
+            graphics_frame(&game_state, &st->graphics, &scheduler,
+                           &st->evt_queue);
+            ready = true;
+        }
+
+        if (!ready) {
             process_event(st, OS_MESG_BLOCK);
         }
-        while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
-
-        // Read the controller, if ready.
-        bool has_cont = false;
-        if (osRecvMesg(&st->si_queue, NULL, OS_MESG_NOBLOCK) == 0) {
-            has_cont = true;
-        }
-        if (has_cont) {
-            st->controler_read_active = false;
-            OSContPad controller_state[MAXCONTROLLERS];
-            osContGetReadData(controller_state);
-            st->controler_read_active = false;
-            if (st->has_controller) {
-                const OSContPad *restrict pad =
-                    &controller_state[st->controller_index];
-                struct controller_input input = {.buttons = pad->button};
-                const int dead_zone = 4;
-                if (pad->stick_x < -dead_zone || dead_zone < pad->stick_x ||
-                    pad->stick_y < -dead_zone || dead_zone < pad->stick_y) {
-                    const float scale = 1.0f / 64.0f;
-                    input.joystick = (vec2){{
-                        scale * (float)pad->stick_x,
-                        scale * (float)pad->stick_y,
-                    }};
-                }
-                game_input(&game_state, &input);
-            }
-        }
-        if (!st->controler_read_active) {
-            osContStartReadData(&st->si_queue);
-            st->controler_read_active = true;
-        }
-
-        {
-            OSTime last_time = cur_time;
-            cur_time = osGetTime();
-            uint32_t delta_time = cur_time - last_time;
-            // Clamp delta time, in case something gets out of hand.
-            if (delta_time > MAX_DELTA_TIME) {
-                delta_time = MAX_DELTA_TIME;
-            }
-            float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
-            game_n64_update(&game_state, dt);
-        }
-
-        graphics_frame(&game_state, &st->graphics, &scheduler, &st->evt_queue);
     }
 }

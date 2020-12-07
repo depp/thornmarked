@@ -14,6 +14,8 @@ filegroup(
 cc_binary(
     name = "Thornmarked.elf",
     srcs = [
+        "audio.c",
+        "audio.h",
         "camera.c",
         "camera.h",
         "defs.h",
@@ -42,6 +44,7 @@ cc_binary(
         "//base/n64:scheduler",
         "//base/pak:n64",
         "//game/core",
+        "//sdk:aspMain",
         "//sdk:gspF3DEX2.xbus",
         "//sdk:rspboot",
     ],
