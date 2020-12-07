@@ -1,12 +1,13 @@
 // Conflicts with <string.h>
 #define _OS_LIBC_H_ 1
 
-#include "game/n64/defs.h"
+#include "game/n64/text.h"
 
 #include "assets/pak.h"
 #include "base/base.h"
 #include "base/fixup.h"
 #include "base/pak/pak.h"
+#include "game/n64/defs.h"
 
 #include <ultra64.h>
 

@@ -13,6 +13,7 @@
 #include "game/n64/game.h"
 #include "game/n64/graphics.h"
 #include "game/n64/model.h"
+#include "game/n64/text.h"
 #include "game/n64/texture.h"
 
 #include <ultra64.h>

@@ -8,6 +8,7 @@
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
 #include "game/n64/model.h"
+#include "game/n64/text.h"
 #include "game/n64/texture.h"
 
 void game_n64_init(struct game_state *restrict gs) {
