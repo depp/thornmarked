@@ -1,7 +1,6 @@
 #include "assets/font.h"
 #include "assets/pak.h"
 #include "base/base.h"
-#include "base/console.h"
 #include "base/n64/os.h"
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
@@ -134,7 +133,7 @@ static void process_controllers(struct main_state *restrict st,
 }
 
 static void update_game(struct main_state *restrict st,
-                                struct game_state *restrict gs) {
+                        struct game_state *restrict gs) {
     OSTime last_time = st->update_time;
     st->update_time = osGetTime();
     uint32_t delta_time = st->update_time - last_time;

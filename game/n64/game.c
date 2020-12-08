@@ -89,7 +89,13 @@ static const Gfx ground_dl[] = {
     gsSPEndDisplayList(),
 };
 
+static int current_frame;
+
 void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
+    console_init(&console, CONSOLE_TRUNCATE);
+    current_frame++;
+    console_printf(&console, "Frame: %d\n", current_frame);
+
     texture_startframe();
     Gfx *dl = gr->dl_start;
     const bool full = true;
