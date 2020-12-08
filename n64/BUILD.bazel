@@ -48,6 +48,7 @@ cc_toolchain_config(
         "-mfix4300",  # new
         "-G",
         SMALL_OBJECT_SIZE,
+        "-mno-llsc",  # Single-processor.
     ],
     cpu = "mips3",
     cxx_flags = ["-std=c++0x"],

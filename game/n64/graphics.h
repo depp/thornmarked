@@ -4,7 +4,7 @@
 
 #include <stdbool.h>
 
-struct game_state;
+struct game_system;
 struct scheduler;
 
 enum {
@@ -44,6 +44,6 @@ struct graphics_state {
 };
 
 // Render the next graphics frame.
-void graphics_frame(struct game_state *restrict gs,
+void graphics_frame(struct game_system *restrict sys,
                     struct graphics_state *restrict st, struct scheduler *sc,
                     OSMesgQueue *queue);

@@ -3,7 +3,7 @@
 #include "base/base.h"
 #include "base/n64/os.h"
 #include "base/n64/scheduler.h"
-#include "game/n64/game.h"
+#include "game/n64/system.h"
 #include "game/n64/task.h"
 
 #define TRIPLE_BUFFER 0
@@ -40,7 +40,7 @@ static unsigned graphics_buffermask(int i) {
 }
 
 // Render the next graphics frame.
-void graphics_frame(struct game_state *restrict gs,
+void graphics_frame(struct game_system *restrict sys,
                     struct graphics_state *restrict st, struct scheduler *sc,
                     OSMesgQueue *queue) {
     const bool is_pal = osTvType == OS_TV_PAL;
@@ -66,7 +66,7 @@ void graphics_frame(struct game_state *restrict gs,
             .zbuffer = zbuffer,
             .is_pal = is_pal,
         };
-        game_render(gs, &gr);
+        game_system_render(sys, &gr);
         data_ptr = (u64 *)dl_start;
         data_size = sizeof(*dl_start) * (gr.dl_ptr - dl_start);
         osWritebackDCache(data_ptr, data_size);

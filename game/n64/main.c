@@ -6,8 +6,8 @@
 #include "base/pak/pak.h"
 #include "game/core/input.h"
 #include "game/n64/audio.h"
-#include "game/n64/game.h"
 #include "game/n64/graphics.h"
+#include "game/n64/system.h"
 #include "game/n64/task.h"
 #include "game/n64/text.h"
 
@@ -100,7 +100,7 @@ static int process_event(struct main_state *restrict st, int flags) {
 
 // Read the controller, if ready.
 static void process_controllers(struct main_state *restrict st,
-                                struct game_state *restrict gs) {
+                                struct game_system *restrict sys) {
     bool has_cont = false;
     if (osRecvMesg(&st->si_queue, NULL, OS_MESG_NOBLOCK) == 0) {
         has_cont = true;
@@ -123,7 +123,7 @@ static void process_controllers(struct main_state *restrict st,
                     scale * (float)pad->stick_y,
                 }};
             }
-            game_input(gs, &input);
+            game_input(&sys->state, &input);
         }
     }
     if (!st->controler_read_active) {
@@ -133,7 +133,7 @@ static void process_controllers(struct main_state *restrict st,
 }
 
 static void update_game(struct main_state *restrict st,
-                        struct game_state *restrict gs) {
+                        struct game_system *restrict sys) {
     OSTime last_time = st->update_time;
     st->update_time = osGetTime();
     uint32_t delta_time = st->update_time - last_time;
@@ -142,11 +142,11 @@ static void update_game(struct main_state *restrict st,
         delta_time = MAX_DELTA_TIME;
     }
     float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
-    game_n64_update(gs, dt);
+    game_system_update(sys, dt);
 }
 
 static struct main_state main_state;
-static struct game_state game_state;
+static struct game_system game_system;
 
 static void main(void *arg) {
     (void)arg;
@@ -182,7 +182,7 @@ static void main(void *arg) {
     }
 
     st->update_time = osGetTime();
-    game_n64_init(&game_state);
+    game_system_init(&game_system);
     audio_init();
 
     scheduler_start(&scheduler, 1);
@@ -200,9 +200,9 @@ static void main(void *arg) {
         // Render a graphics frame, if ready.
         if ((st->graphics.busy & st->graphics.wait) == 0) {
             while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
-            process_controllers(st, &game_state);
-            update_game(st, &game_state);
-            graphics_frame(&game_state, &st->graphics, &scheduler,
+            process_controllers(st, &game_system);
+            update_game(st, &game_system);
+            graphics_frame(&game_system, &st->graphics, &scheduler,
                            &st->evt_queue);
             ready = true;
         }

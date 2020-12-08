@@ -1,4 +1,4 @@
-#include "game/n64/game.h"
+#include "game/n64/system.h"
 
 #include "assets/texture.h"
 #include "base/base.h"
@@ -11,15 +11,15 @@
 #include "game/n64/text.h"
 #include "game/n64/texture.h"
 
-void game_n64_init(struct game_state *restrict gs) {
+void game_system_init(struct game_system *restrict sys) {
     model_render_init();
     texture_init();
-    game_init(gs);
+    game_init(&sys->state);
 }
 
-void game_n64_update(struct game_state *restrict gs, float dt) {
-    model_update(&gs->model, dt);
-    game_update(gs, dt);
+void game_system_update(struct game_system *restrict sys, float dt) {
+    model_update(&sys->state.model, dt);
+    game_update(&sys->state, dt);
 }
 
 enum {
@@ -91,7 +91,9 @@ static const Gfx ground_dl[] = {
 
 static int current_frame;
 
-void game_render(struct game_state *restrict gs, struct graphics *restrict gr) {
+void game_system_render(struct game_system *restrict sys,
+                        struct graphics *restrict gr) {
+    struct game_state *restrict gs = &sys->state;
     console_init(&console, CONSOLE_TRUNCATE);
     current_frame++;
     console_printf(&console, "Frame: %d\n", current_frame);
