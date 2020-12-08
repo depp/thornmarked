@@ -139,7 +139,7 @@ static void audio_track_fixup(union audio_tracktablebuf *p, pak_track asset) {
 static union audio_tracktablebuf audio_trackbuf ASSET;
 
 void audio_init(void) {
-    pak_track asset = TRACK_UNDERGROUND_TENSION;
+    pak_track asset = TRACK_RISING_TIDE;
 
     // Mark all DMA buffers as "old" so they get used.
     for (int i = 0; i < AUDIO_DMA_COUNT; i++) {
