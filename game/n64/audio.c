@@ -135,11 +135,8 @@ void audio_init(void) {
     static ALEnvelope sndenv = {
         .attackVolume = 127,
         .decayVolume = 127,
+        .decayTime = -1,
     };
-    int frames = pak_objects[obj + 1].size / 9;
-    int samples = frames * 16;
-    int microsec = (int64_t)samples * 1000000 / AUDIO_SAMPLERATE;
-    sndenv.decayTime = microsec;
     size_t book_size = pak_objects[obj].size;
     ALADPCMBook *book = mem_alloc(book_size);
     pak_load_asset_sync(book, book_size, obj);
