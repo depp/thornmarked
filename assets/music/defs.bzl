@@ -1,85 +1,99 @@
 def _audio_tracks_impl(ctx):
-    outputs = []
+    audioconvert = ctx.executable._audioconvert
+    sox = ctx.executable._sox
+    flac = ctx.executable._flac
+    tabledesign = ctx.executable._tabledesign
+    vadpcm_enc = ctx.executable._vadpcm_enc
+    vadpcm_dec = ctx.executable._vadpcm_dec
+
+    # List metadata and audio files.
+    metadata = {}
+    audio = []
     for src in ctx.files.srcs:
+        if src.basename.endswith(".json"):
+            metadata[src.short_path[:-5]] = src
+        else:
+            audio.append(src)
+    outputs = []
+    for src in audio:
         name = src.basename
         idx = name.rfind(".")
+        ext = ""
         if idx >= 0:
+            ext = name[idx:]
             name = name[:idx]
-        if src.extension == "flac":
-            out_wav = ctx.actions.declare_file(name + ".wav")
-            ctx.actions.run(
-                outputs = [out_wav],
-                inputs = [src],
-                progress_message = "Decompressing %s" % src.short_path,
-                executable = ctx.executable._flac,
-                arguments = [
-                    "--silent",
-                    "--decode",
-                    src.path,
-                    "--output-name",
-                    out_wav.path,
-                ],
-            )
-            src = out_wav
-        if src.extension in ["wav", "aif", "aiff"]:
-            out_aifc = ctx.actions.declare_file(name + ".pcm.aifc")
-            ctx.actions.run(
-                outputs = [out_aifc],
-                inputs = [src],
-                progress_message = "Converting %s" % src.short_path,
-                executable = ctx.executable._sox,
-                arguments = [
-                    src.path,
-                    "--bits",
-                    "16",
-                    "--rate",
-                    ctx.attr.rate,
-                    "--channels",
-                    "1",
-                    out_aifc.path,
-                ],
-            )
-            src = out_aifc
-        if src.extension != "aifc":
-            fail("unknown audio track format: %s" % src.short_path)
+        mkey = src.short_path[:idx - len(src.basename)]
+        msrc = metadata.pop(mkey, None)
+
+        # Convert to correct rate, apply metadata.
+        out_aifc = ctx.actions.declare_file(name + ".pcm.aifc")
+        inputs = [src, sox]
+        arguments = [
+            "-input=" + src.path,
+            "-output=" + out_aifc.path,
+            "-rate=" + ctx.attr.rate,
+            "-sox=" + sox.path,
+        ]
+        if msrc:
+            inputs.append(msrc)
+            arguments.append("-metadata=" + msrc.path)
+        if ext == ".flac":
+            inputs.append(flac)
+            arguments.append("-flac=" + flac.path)
+        ctx.actions.run(
+            outputs = [out_aifc],
+            inputs = inputs,
+            progress_message = "Converting %s" % src.short_path,
+            executable = audioconvert,
+            arguments = arguments,
+        )
+
+        # Generate codebook.
         out_table = ctx.actions.declare_file(name + ".table.txt")
         ctx.actions.run_shell(
             outputs = [out_table],
-            inputs = [src],
+            inputs = [out_aifc],
             progress_message = "Designing ADPCM codebook for %s" % src.short_path,
-            tools = [ctx.executable._tabledesign],
+            tools = [tabledesign],
             command = "%s %s >%s" % (
-                ctx.executable._tabledesign.path,
-                src.path,
+                tabledesign.path,
+                out_aifc.path,
                 out_table.path,
             ),
         )
+
+        # Encode VADPCM.
         out_adpcm = ctx.actions.declare_file(name + ".adpcm.aifc")
         ctx.actions.run(
             outputs = [out_adpcm],
-            inputs = [src, out_table],
+            inputs = [out_aifc, out_table],
             progress_message = "Encoding ADPCM file %s" % out_adpcm.short_path,
-            executable = ctx.executable._vadpcm_enc,
+            executable = vadpcm_enc,
             arguments = [
                 "-c",
                 out_table.path,
-                src.path,
+                out_aifc.path,
                 out_adpcm.path,
             ],
         )
         outputs.append(out_adpcm)
+
+        # Decode back to PCM.
         out_decoded = ctx.actions.declare_file(name + ".dec.aiff")
         ctx.actions.run(
             outputs = [out_decoded],
             inputs = [out_adpcm],
             progress_message = "Decoding ADPCM file %s" % out_adpcm.short_path,
-            executable = ctx.executable._vadpcm_dec,
+            executable = vadpcm_dec,
             arguments = [
                 out_adpcm.path,
                 out_decoded.path,
             ],
         )
         outputs.append(out_decoded)
+
+    for src in metadata.values():
+        fail("Unused input: %s" % src)
     return [DefaultInfo(files = depset(outputs))]
 
 audio_tracks = rule(
@@ -100,6 +114,12 @@ audio_tracks = rule(
         ),
         "_sox": attr.label(
             default = Label("@tools//:sox"),
+            allow_single_file = True,
+            executable = True,
+            cfg = "exec",
+        ),
+        "_audioconvert": attr.label(
+            default = Label("//tools/audioconvert"),
             allow_single_file = True,
             executable = True,
             cfg = "exec",
