@@ -14,15 +14,3 @@ audio_tracks(
     rate = "32000",
     visibility = ["//visibility:public"],
 )
-
-# [genrule(
-#     name = name + "_dec",
-#     srcs = [name + "_adpcm.aifc"],
-#     outs = [name + "_dec.wav"],
-#     cmd = ("$(execpath //tools/audio/encode:vadpcm_dec) $< >$(RULEDIR)/temp.pcm; " +
-#            "$(execpath @tools//:sox) --type raw --bits 16 --rate %d --encoding signed -B $(RULEDIR)/temp.pcm $@" % RATE),
-#     tools = [
-#         "//tools/audio/encode:vadpcm_dec",
-#         "@tools//:sox",
-#     ],
-# ) for name in NAMES]
