@@ -3,8 +3,10 @@
 #include "assets/pak.h"
 #include "assets/track.h"
 #include "base/base.h"
+#include "base/fixup.h"
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
+#include "game/n64/defs.h"
 #include "game/n64/task.h"
 
 enum {
@@ -101,8 +103,43 @@ static ALHeap audio_hp;
 static ALGlobals audio_globals;
 static ALSndPlayer audio_sndp;
 
+union audio_tracktablebuf {
+    ALWaveTable header;
+    uint8_t data[208];
+};
+
+static void audio_adpcm_fixup(ALADPCMWaveInfo *restrict w, uintptr_t base,
+                              size_t size) {
+    w->book = pointer_fixup(w->book, base, size);
+    w->loop = pointer_fixup(w->loop, base, size);
+}
+
+static void audio_raw16_fixup(ALRAWWaveInfo *restrict w, uintptr_t base,
+                              size_t size) {
+    w->loop = pointer_fixup(w->loop, base, size);
+}
+
+static void audio_track_fixup(union audio_tracktablebuf *p, pak_track asset) {
+    const uintptr_t base = (uintptr_t)p;
+    const size_t size = sizeof(union audio_tracktablebuf);
+    ALWaveTable *restrict tbl = &p->header;
+    int obj = pak_track_object(asset) + 1;
+    tbl->base = (u8 *)pak_objects[obj].offset;
+    tbl->len = pak_objects[obj].size;
+    switch (tbl->type) {
+    case AL_ADPCM_WAVE:
+        audio_adpcm_fixup(&tbl->waveInfo.adpcmWave, base, size);
+        break;
+    case AL_RAW16_WAVE:
+        audio_raw16_fixup(&tbl->waveInfo.rawWave, base, size);
+        break;
+    }
+}
+
+static union audio_tracktablebuf audio_trackbuf ASSET;
+
 void audio_init(void) {
-    const int obj = pak_track_object(TRACK_UNDERGROUND_TENSION);
+    pak_track asset = TRACK_UNDERGROUND_TENSION;
 
     // Mark all DMA buffers as "old" so they get used.
     for (int i = 0; i < AUDIO_DMA_COUNT; i++) {
@@ -137,20 +174,13 @@ void audio_init(void) {
         .decayVolume = 127,
         .decayTime = -1,
     };
-    size_t book_size = pak_objects[obj].size;
-    ALADPCMBook *book = mem_alloc(book_size);
-    pak_load_asset_sync(book, book_size, obj);
+    pak_load_asset_sync(&audio_trackbuf, sizeof(audio_trackbuf),
+                        pak_track_object(asset));
+    audio_track_fixup(&audio_trackbuf, asset);
 
-    static ALWaveTable wtable = {
-        .type = AL_ADPCM_WAVE,
-        .flags = 1,
-    };
-    wtable.base = (u8 *)pak_objects[obj + 1].offset;
-    wtable.len = pak_objects[obj + 1].size;
-    wtable.waveInfo.adpcmWave.book = book;
     static ALSound snd = {
         .envelope = &sndenv,
-        .wavetable = &wtable,
+        .wavetable = &audio_trackbuf.header,
         .samplePan = AL_PAN_CENTER,
         .sampleVolume = AL_VOL_FULL,
         .flags = 1,
