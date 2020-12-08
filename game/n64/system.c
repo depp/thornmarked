@@ -15,6 +15,7 @@ void game_system_init(struct game_system *restrict sys) {
     model_render_init();
     texture_init();
     game_init(&sys->state);
+    sys->current_frame = 1;
 }
 
 void game_system_update(struct game_system *restrict sys, float dt) {
@@ -89,14 +90,11 @@ static const Gfx ground_dl[] = {
     gsSPEndDisplayList(),
 };
 
-static int current_frame;
-
 void game_system_render(struct game_system *restrict sys,
                         struct graphics *restrict gr) {
     struct game_state *restrict gs = &sys->state;
     console_init(&console, CONSOLE_TRUNCATE);
-    current_frame++;
-    console_printf(&console, "Frame: %d\n", current_frame);
+    console_printf(&console, "Frame: %u\n", sys->current_frame);
 
     texture_startframe();
     Gfx *dl = gr->dl_start;
@@ -199,4 +197,6 @@ void game_system_render(struct game_system *restrict sys,
     gDPFullSync(dl++);
     gSPEndDisplayList(dl++);
     gr->dl_ptr = dl;
+
+    sys->current_frame++;
 }
