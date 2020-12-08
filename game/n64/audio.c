@@ -214,11 +214,6 @@ static unsigned audio_buffermask(int i) {
 
 void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
                  OSMesgQueue *queue) {
-    /* static int n = 0; */
-    /* n++; */
-    /* if (n == 5) { */
-    /*     fatal_error("n = %d", n); */
-    /* } */
     // Return finished DMA messages.
     {
         int nactive = audio_dmanactive;
