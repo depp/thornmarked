@@ -5,6 +5,7 @@
 #include "base/console.h"
 #include "base/n64/console.h"
 #include "base/n64/scheduler.h"
+#include "game/n64/audio.h"
 #include "game/n64/camera.h"
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
@@ -23,13 +24,28 @@ void game_system_init(struct game_system *restrict sys) {
     game_init(&sys->state);
     sys->current_frame = 1;
     sys->update_time = osGetTime();
+    sys->state.show_console = true;
 }
 
 void game_system_update(struct game_system *restrict sys,
                         struct scheduler *sc) {
-    struct scheduler_frame fr = scheduler_getframe(sc);
-    sys->time_frame = fr.frame;
-    sys->time_sample = fr.sample;
+    // Update timing information.
+    {
+        struct scheduler_frame fr = scheduler_getframe(sc);
+        sys->time_frame = fr.frame;
+        sys->time_sample = fr.sample;
+
+        // Extrapolate from the reference frame.
+        unsigned frame_delta = sys->current_frame - sys->time_frame;
+        if (frame_delta > 2) {
+            // Ignore impossible values.
+            frame_delta = 2;
+        }
+
+        sys->current_frame_sample = sys->time_sample +
+                                    frame_delta * sys->samples_per_frame +
+                                    (sys->samples_per_frame >> 1);
+    }
 
     OSTime last_time = sys->update_time;
     sys->update_time = osGetTime();
@@ -40,6 +56,7 @@ void game_system_update(struct game_system *restrict sys,
     }
     float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
 
+    audio_update(sys);
     model_update(&sys->state.model, dt);
     game_update(&sys->state, dt);
 }
@@ -115,6 +132,8 @@ void game_system_render(struct game_system *restrict sys,
                         struct graphics *restrict gr) {
     struct game_state *restrict gs = &sys->state;
     console_init(&console, CONSOLE_TRUNCATE);
+    console_printf(&console, "Loop %d, pos %d\n", sys->track_loop,
+                   sys->track_pos);
     console_printf(&console, "Frame: %u\n", sys->current_frame);
     console_printf(&console, "DFrame: %u\n",
                    sys->current_frame - sys->time_frame);

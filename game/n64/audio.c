@@ -4,6 +4,7 @@
 #include "assets/track.h"
 #include "base/base.h"
 #include "base/fixup.h"
+#include "base/n64/os.h" // osTvType
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
 #include "game/n64/defs.h"
@@ -104,8 +105,14 @@ static ALHeap audio_hp;
 static ALGlobals audio_globals;
 static ALSndPlayer audio_sndp;
 
+struct audio_header {
+    unsigned lead_in;
+    unsigned loop_length;
+    ALWaveTable wavetable;
+};
+
 union audio_tracktablebuf {
-    ALWaveTable header;
+    struct audio_header header;
     uint8_t data[208];
 };
 
@@ -123,7 +130,7 @@ static void audio_raw16_fixup(ALRAWWaveInfo *restrict w, uintptr_t base,
 static void audio_track_fixup(union audio_tracktablebuf *p, pak_track asset) {
     const uintptr_t base = (uintptr_t)p;
     const size_t size = sizeof(union audio_tracktablebuf);
-    ALWaveTable *restrict tbl = &p->header;
+    ALWaveTable *restrict tbl = &p->header.wavetable;
     int obj = pak_track_object(asset) + 1;
     tbl->base = (u8 *)pak_objects[obj].offset;
     tbl->len = pak_objects[obj].size;
@@ -139,7 +146,7 @@ static void audio_track_fixup(union audio_tracktablebuf *p, pak_track asset) {
 
 static union audio_tracktablebuf audio_trackbuf ASSET;
 
-void audio_init(void) {
+void audio_init(struct game_system *restrict sys) {
     pak_track asset = TRACK_RISING_TIDE;
 
     // Mark all DMA buffers as "old" so they get used.
@@ -151,6 +158,11 @@ void audio_init(void) {
                       ARRAY_COUNT(audio_dmaqueue_buffer));
 
     int audio_rate = osAiSetFrequency(AUDIO_SAMPLERATE);
+    if (osTvType == OS_TV_PAL) {
+        sys->samples_per_frame = (audio_rate + 25) / 50;
+    } else {
+        sys->samples_per_frame = (audio_rate * 1001 + 30000) / 60000;
+    }
 
     alHeapInit(&audio_hp, audio_heap, sizeof(audio_heap));
     ALSynConfig scfg = {
@@ -181,7 +193,7 @@ void audio_init(void) {
 
     static ALSound snd = {
         .envelope = &sndenv,
-        .wavetable = &audio_trackbuf.header,
+        .wavetable = &audio_trackbuf.header.wavetable,
         .samplePan = AL_PAN_CENTER,
         .sampleVolume = AL_VOL_FULL,
         .flags = 1,
@@ -192,6 +204,26 @@ void audio_init(void) {
     alSndpSetPan(&audio_sndp, 64);
     alSndpSetVol(&audio_sndp, 30000);
     alSndpPlay(&audio_sndp);
+}
+
+// =============================================================================
+// Audio Timing Updates
+// =============================================================================
+
+// Update the audio subsystem.
+void audio_update(struct game_system *restrict sys) {
+    unsigned track_offset = sys->current_frame_sample - sys->track_start;
+    if (track_offset > 60 * 60 * AUDIO_SAMPLERATE) {
+        // Paranoia? If sample goes backwards for some reason?
+        fatal_error("Audio desynchronized");
+    }
+    unsigned end = sys->track_loop == 0 ? audio_trackbuf.header.lead_in
+                                        : audio_trackbuf.header.loop_length;
+    if (track_offset >= end) {
+        sys->track_start += end;
+        sys->track_loop++;
+    }
+    sys->track_pos = track_offset;
 }
 
 // =============================================================================

@@ -20,7 +20,10 @@ struct audio_state {
 };
 
 // Initialize the audio system.
-void audio_init(void);
+void audio_init(struct game_system *restrict sys);
+
+// Update the audio subsystem.
+void audio_update(struct game_system *restrict sys);
 
 // Render the next audio frame.
 void audio_frame(struct game_system *restrict sys,

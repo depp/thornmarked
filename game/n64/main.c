@@ -163,7 +163,7 @@ static void main(void *arg) {
     }
 
     game_system_init(&game_system);
-    audio_init();
+    audio_init(&game_system);
 
     scheduler_start(&scheduler, 1);
 
