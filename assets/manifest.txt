@@ -10,4 +10,5 @@ model MODEL_FAIRY models/fairy2.model
 model MODEL_BLUEENEMY models/BlueEnemy.model
 model MODEL_GREENENEMY models/GreenEnemy.model
 
+track TRACK_UNDERGROUND_TENSION music/02_Underground_Tension.adpcm.aifc
 track TRACK_RISING_TIDE music/08_Rising_Tide_Redux.adpcm.aifc

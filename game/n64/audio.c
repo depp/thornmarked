@@ -102,7 +102,7 @@ static ALGlobals audio_globals;
 static ALSndPlayer audio_sndp;
 
 void audio_init(void) {
-    const int obj = pak_track_object(TRACK_RISING_TIDE);
+    const int obj = pak_track_object(TRACK_UNDERGROUND_TENSION);
 
     // Mark all DMA buffers as "old" so they get used.
     for (int i = 0; i < AUDIO_DMA_COUNT; i++) {
