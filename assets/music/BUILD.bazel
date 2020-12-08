@@ -5,6 +5,7 @@ audio_tracks(
     srcs = [
         "01_Surrender_of_Innocence.flac",
         "02_Underground_Tension.flac",
+        "02_Underground_Tension.json",
         "03_Progression.flac",
         "04_Under_the_Moon.flac",
         "05_Descent_Into_Madness.flac",
