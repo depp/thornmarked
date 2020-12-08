@@ -296,7 +296,7 @@ func mainE() error {
 		}
 		fileList := []string{"Thornmarked.elf", "Thornmarked_NTSC.n64", "Thornmarked_PAL.n64"}
 		for _, file := range fileList {
-			if err := pk.addFile(file, filepath.Join(wsdir, "bazel-bin/game", file)); err != nil {
+			if err := pk.addFile(file, filepath.Join(wsdir, "bazel-bin/game/n64", file)); err != nil {
 				return err
 			}
 		}
