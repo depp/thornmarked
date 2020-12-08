@@ -37,16 +37,16 @@ static void scheduler_vpush(struct scheduler_vstate *restrict st,
     st->buffers[st->pending] = *fb;
 }
 
-static void scheduler_vpop(struct scheduler_vstate *restrict st) {
+static bool scheduler_vpop(struct scheduler_vstate *restrict st) {
     if (st->pending == 0) {
-        return;
+        return false;
     }
     // As with the audio buffer, check that the buffer has actually been swapped
     // to what we expect. The swap event may have been sent before we set the
     // next buffer.
     void *ptr = osViGetCurrentFramebuffer();
     if (ptr != st->buffers[1].ptr) {
-        return;
+        return false;
     }
     if (st->buffers[0].done_queue != NULL) {
         int r = osSendMesg(st->buffers[0].done_queue, st->buffers[0].done_mesg,
@@ -63,6 +63,7 @@ static void scheduler_vpop(struct scheduler_vstate *restrict st) {
         osViSwapBuffer(st->buffers[1].ptr);
     }
     st->pending--;
+    return true;
 }
 
 // =============================================================================
@@ -165,6 +166,23 @@ static void scheduler_done(struct scheduler_task *restrict task,
     }
 }
 
+static void scheduler_update_frame(struct scheduler *sc,
+                                   struct scheduler_vstate *restrict video,
+                                   struct scheduler_astate *restrict audio) {
+    // Current video frame.
+    unsigned frame = video->buffers[0].frame;
+
+    // Current offset from start of first audio buffer.
+    unsigned asize = audio->buffers[0].size + audio->buffers[1].size;
+    unsigned arem = osAiGetLength();
+    unsigned apos = arem < asize ? (asize - arem) >> 2 : 0;
+
+    // Write audio position first, and then video position. Assume that all
+    // readers are lower-priority.
+    sc->sample = audio->buffers[0].sample + apos;
+    atomic_store(&sc->frame, frame);
+}
+
 static void scheduler_main(void *arg) {
     struct scheduler *sc = arg;
     scheduler_state state = STATE_READY;
@@ -218,9 +236,12 @@ static void scheduler_main(void *arg) {
             scheduler_apop(&audio);
             break;
 
-        case EVT_VSYNC:
-            scheduler_vpop(&video);
-            break;
+        case EVT_VSYNC: {
+            bool new_frame = scheduler_vpop(&video);
+            if (new_frame) {
+                scheduler_update_frame(sc, &video, &audio);
+            }
+        } break;
 
         default:
             fatal_error("Invalid scheduler event: %d", evt);
@@ -304,4 +325,19 @@ void scheduler_submit(struct scheduler *scheduler,
                       struct scheduler_task *task) {
     osSendMesg(&scheduler->task_queue, task, OS_MESG_BLOCK);
     osSendMesg(&scheduler->evt_queue, (OSMesg)EVT_TASK, OS_MESG_BLOCK);
+}
+
+struct scheduler_frame scheduler_getframe(struct scheduler *scheduler) {
+    unsigned frame = atomic_load(&scheduler->frame);
+    for (;;) {
+        unsigned sample = scheduler->sample;
+        unsigned frame2 = atomic_load(&scheduler->frame);
+        if (frame == frame2) {
+            return (struct scheduler_frame){
+                .frame = frame,
+                .sample = sample,
+            };
+        }
+        frame = frame2;
+    }
 }

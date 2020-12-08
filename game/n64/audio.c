@@ -7,6 +7,7 @@
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
 #include "game/n64/defs.h"
+#include "game/n64/system.h"
 #include "game/n64/task.h"
 
 enum {
@@ -212,7 +213,8 @@ static unsigned audio_buffermask(int i) {
     return 4u << i;
 }
 
-void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
+void audio_frame(struct game_system *restrict sys,
+                 struct audio_state *restrict st, struct scheduler *sc,
                  OSMesgQueue *queue) {
     // Return finished DMA messages.
     {
@@ -276,6 +278,7 @@ void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
     task->data.audiobuffer = (struct scheduler_audiobuffer){
         .ptr = buffer,
         .size = 4 * AUDIO_BUFSZ,
+        .sample = sys->current_sample,
         .done_queue = queue,
         .done_mesg = event_pack((struct event_data){
             .type = EVENT_AUDIO,
@@ -297,4 +300,5 @@ void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
     }
     st->wait =
         audio_taskmask(st->current_task) | audio_buffermask(st->current_buffer);
+    sys->current_sample += AUDIO_BUFSZ;
 }

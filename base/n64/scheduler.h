@@ -3,6 +3,7 @@
 
 #include <ultra64.h>
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -24,6 +25,9 @@ struct scheduler_framebuffer {
     // Switch to this framebuffer.
     void *ptr;
 
+    // Frame number of this frame.
+    unsigned frame;
+
     // Send this message to this queue after the framebuffer is no longer on
     // screen, after another framebuffer has replaced it.
     OSMesgQueue *done_queue;
@@ -35,9 +39,22 @@ struct scheduler_audiobuffer {
     void *ptr;
     size_t size;
 
+    // Sample index of the start of the audio buffer.
+    unsigned sample;
+
     // Send this message to this queue after the audio buffer has been consumed.
     OSMesgQueue *done_queue;
     OSMesg done_mesg;
+};
+
+// Information about the latest displayed frame.
+struct scheduler_frame {
+    // Frame index, taken from the scheduler_framebuffer frame field.
+    unsigned frame;
+    // Sample index, taken from the scheduler_audiobuffer sample field, and
+    // advanced by the number of samples played when the video frame was
+    // displayed.
+    unsigned sample;
 };
 
 // RCP scheduler state. Except for task_queue, these fields are private.
@@ -53,6 +70,11 @@ struct scheduler {
 
     // The main scheduler thread.
     OSThread thread;
+
+    // The index of the latest frame, and the audio sample index that was
+    // playing when it was displayed. Do not read these directly.
+    atomic_uint frame;
+    unsigned sample;
 };
 
 // A task to be scheduled on the RCP.
@@ -86,3 +108,6 @@ void scheduler_start(struct scheduler *scheduler, int video_divisor);
 
 // Submit a task to the scheduler.
 void scheduler_submit(struct scheduler *scheduler, struct scheduler_task *task);
+
+// Return timing information for the most recently displayed frame.
+struct scheduler_frame scheduler_getframe(struct scheduler *scheduler);

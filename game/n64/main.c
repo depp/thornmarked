@@ -173,7 +173,7 @@ static void main(void *arg) {
         // Render an audio frame, if ready.
         if ((st->audio.busy & st->audio.wait) == 0) {
             while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
-            audio_frame(&st->audio, &scheduler, &st->evt_queue);
+            audio_frame(&game_system, &st->audio, &scheduler, &st->evt_queue);
             ready = true;
         }
 
@@ -181,7 +181,7 @@ static void main(void *arg) {
         if ((st->graphics.busy & st->graphics.wait) == 0) {
             while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
             process_controllers(st, &game_system);
-            game_system_update(&game_system);
+            game_system_update(&game_system, &scheduler);
             graphics_frame(&game_system, &st->graphics, &scheduler,
                            &st->evt_queue);
             ready = true;

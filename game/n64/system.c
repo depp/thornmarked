@@ -4,6 +4,7 @@
 #include "base/base.h"
 #include "base/console.h"
 #include "base/n64/console.h"
+#include "base/n64/scheduler.h"
 #include "game/n64/camera.h"
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
@@ -24,7 +25,12 @@ void game_system_init(struct game_system *restrict sys) {
     sys->update_time = osGetTime();
 }
 
-void game_system_update(struct game_system *restrict sys) {
+void game_system_update(struct game_system *restrict sys,
+                        struct scheduler *sc) {
+    struct scheduler_frame fr = scheduler_getframe(sc);
+    sys->time_frame = fr.frame;
+    sys->time_sample = fr.sample;
+
     OSTime last_time = sys->update_time;
     sys->update_time = osGetTime();
     uint32_t delta_time = sys->update_time - last_time;
@@ -33,6 +39,7 @@ void game_system_update(struct game_system *restrict sys) {
         delta_time = MAX_DELTA_TIME;
     }
     float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
+
     model_update(&sys->state.model, dt);
     game_update(&sys->state, dt);
 }
@@ -109,6 +116,9 @@ void game_system_render(struct game_system *restrict sys,
     struct game_state *restrict gs = &sys->state;
     console_init(&console, CONSOLE_TRUNCATE);
     console_printf(&console, "Frame: %u\n", sys->current_frame);
+    console_printf(&console, "DFrame: %u\n",
+                   sys->current_frame - sys->time_frame);
+    console_printf(&console, "Sample: %u\n", sys->time_sample);
 
     texture_startframe();
     Gfx *dl = gr->dl_start;
@@ -211,6 +221,4 @@ void game_system_render(struct game_system *restrict sys,
     gDPFullSync(dl++);
     gSPEndDisplayList(dl++);
     gr->dl_ptr = dl;
-
-    sys->current_frame++;
 }

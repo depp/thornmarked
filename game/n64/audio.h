@@ -3,6 +3,7 @@
 
 #include <ultra64.h>
 
+struct game_system;
 struct scheduler;
 
 enum {
@@ -22,5 +23,6 @@ struct audio_state {
 void audio_init(void);
 
 // Render the next audio frame.
-void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
+void audio_frame(struct game_system *restrict sys,
+                 struct audio_state *restrict st, struct scheduler *sc,
                  OSMesgQueue *queue);

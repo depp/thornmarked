@@ -15,13 +15,20 @@ struct game_system {
     // Frame index being rendered, or rendered next.
     unsigned current_frame;
 
+    // Sample index being rendered, or rendered next.
+    unsigned current_sample;
+
     // Timestamp of the last game update.
     uint64_t update_time;
+
+    // Scheduler timestamps.
+    unsigned time_frame;
+    unsigned time_sample;
 };
 
 void game_system_init(struct game_system *restrict sys);
 
-void game_system_update(struct game_system *restrict sys);
+void game_system_update(struct game_system *restrict sys, struct scheduler *sc);
 
 void game_system_render(struct game_system *restrict sys,
                         struct graphics *restrict gr);
