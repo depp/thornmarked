@@ -41,6 +41,13 @@ static void scheduler_vpop(struct scheduler_vstate *restrict st) {
     if (st->pending == 0) {
         return;
     }
+    // As with the audio buffer, check that the buffer has actually been swapped
+    // to what we expect. The swap event may have been sent before we set the
+    // next buffer.
+    void *ptr = osViGetCurrentFramebuffer();
+    if (ptr != st->buffers[1].ptr) {
+        return;
+    }
     if (st->buffers[0].done_queue != NULL) {
         int r = osSendMesg(st->buffers[0].done_queue, st->buffers[0].done_mesg,
                            OS_MESG_NOBLOCK);
