@@ -11,14 +11,28 @@
 #include "game/n64/text.h"
 #include "game/n64/texture.h"
 
+enum {
+    // Maximum time to advance during a frame.
+    MAX_DELTA_TIME = OS_CPU_COUNTER / 10,
+};
+
 void game_system_init(struct game_system *restrict sys) {
     model_render_init();
     texture_init();
     game_init(&sys->state);
     sys->current_frame = 1;
+    sys->update_time = osGetTime();
 }
 
-void game_system_update(struct game_system *restrict sys, float dt) {
+void game_system_update(struct game_system *restrict sys) {
+    OSTime last_time = sys->update_time;
+    sys->update_time = osGetTime();
+    uint32_t delta_time = sys->update_time - last_time;
+    // Clamp delta time, in case something gets out of hand.
+    if (delta_time > MAX_DELTA_TIME) {
+        delta_time = MAX_DELTA_TIME;
+    }
+    float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
     model_update(&sys->state.model, dt);
     game_update(&sys->state, dt);
 }

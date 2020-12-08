@@ -19,9 +19,6 @@
 enum {
     // Maximum number of simultaneous PI requests.
     PI_MSG_COUNT = 8,
-
-    // Maximum time to advance during a frame.
-    MAX_DELTA_TIME = OS_CPU_COUNTER / 10,
 };
 
 extern u8 _main_thread_stack[];
@@ -70,9 +67,6 @@ struct main_state {
 
     // Audio task state.
     struct audio_state audio;
-
-    // Timestamp of the last game update.
-    OSTime update_time;
 };
 
 // Read the next event sent to the main thread and process it.
@@ -132,19 +126,6 @@ static void process_controllers(struct main_state *restrict st,
     }
 }
 
-static void update_game(struct main_state *restrict st,
-                        struct game_system *restrict sys) {
-    OSTime last_time = st->update_time;
-    st->update_time = osGetTime();
-    uint32_t delta_time = st->update_time - last_time;
-    // Clamp delta time, in case something gets out of hand.
-    if (delta_time > MAX_DELTA_TIME) {
-        delta_time = MAX_DELTA_TIME;
-    }
-    float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
-    game_system_update(sys, dt);
-}
-
 static struct main_state main_state;
 static struct game_system game_system;
 
@@ -181,7 +162,6 @@ static void main(void *arg) {
         }
     }
 
-    st->update_time = osGetTime();
     game_system_init(&game_system);
     audio_init();
 
@@ -201,7 +181,7 @@ static void main(void *arg) {
         if ((st->graphics.busy & st->graphics.wait) == 0) {
             while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
             process_controllers(st, &game_system);
-            update_game(st, &game_system);
+            game_system_update(&game_system);
             graphics_frame(&game_system, &st->graphics, &scheduler,
                            &st->evt_queue);
             ready = true;
