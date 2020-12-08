@@ -132,8 +132,16 @@ void game_system_render(struct game_system *restrict sys,
                         struct graphics *restrict gr) {
     struct game_state *restrict gs = &sys->state;
     console_init(&console, CONSOLE_TRUNCATE);
-    console_printf(&console, "Loop %d, pos %d\n", sys->track_loop,
-                   sys->track_pos);
+    if (sys->track_loop > 0) {
+        const float to_beats = 138.0f / (60.0f * AUDIO_SAMPLERATE);
+        const float fbeat = to_beats * sys->track_pos;
+        int beat = fbeat;
+        const float subbeat = fbeat - beat;
+        int measure = (beat >> 2) + 1;
+        beat = (beat & 3) + 1;
+        console_printf(&console, "%d:%02d:%d:%04.2f\n", sys->track_loop,
+                       measure, beat, (double)subbeat);
+    }
     console_printf(&console, "Frame: %u\n", sys->current_frame);
     console_printf(&console, "DFrame: %u\n",
                    sys->current_frame - sys->time_frame);
