@@ -13,3 +13,12 @@ textures(
     mipmap = True,
     native = True,
 )
+
+textures(
+    name = "big_images",
+    srcs = [
+        "big_image.png",
+    ],
+    format = "rgba.16",
+    strips = True,
+)

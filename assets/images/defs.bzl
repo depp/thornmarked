@@ -7,6 +7,8 @@ def _textures_impl(ctx):
         base_args.append("-native")
     if ctx.attr.dither != "":
         base_args.append("-dither=" + ctx.attr.dither)
+    if ctx.attr.strips:
+        base_args.append("-strips")
     suffix = ctx.attr.suffix + ".texture"
     for src in ctx.files.srcs:
         name = src.basename
@@ -45,6 +47,7 @@ textures = rule(
         ),
         "dither": attr.string(),
         "suffix": attr.string(),
+        "strips": attr.bool(),
         "_converter": attr.label(
             default = Label("//tools/textureconvert"),
             allow_single_file = True,
