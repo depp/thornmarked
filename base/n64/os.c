@@ -1,10 +1,14 @@
 #include "base/n64/os.h"
 
+#include "base/base.h"
+#include "base/n64/fault.h"
 #include "base/n64/system.h"
 
 extern u8 _idle_thread_stack[];
+extern u8 _fault_thread_stack[];
 
 static OSThread idle_thread;
+static OSThread fault_thread;
 static OSThread main_thread;
 
 static void idle(void *arg) {
@@ -31,10 +35,11 @@ static void idle(void *arg) {
         osViBlack(1);
     }
 
-    fatal_init();
+    thread_create(&fault_thread, faultproc, NULL, _fault_thread_stack,
+                  PRIORITY_FAULT);
+    osStartThread(&fault_thread);
     mem_init();
     osStartThread(&main_thread);
-
     // Idle loop.
     osSetThreadPri(NULL, OS_PRIORITY_IDLE);
     for (;;) {}

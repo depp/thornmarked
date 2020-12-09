@@ -13,6 +13,9 @@ enum {
     PRIORITY_IDLE_INIT = 10,
     PRIORITY_MAIN,
     PRIORITY_SCHEDULER,
+
+    // Fault handler thread, created by system_main.
+    PRIORITY_FAULT,
 };
 
 // Create a thread. Wraps a call to osCreateThread, but initializes $gp
@@ -24,6 +27,7 @@ void thread_create(OSThread *thread, void (*func)(void *arg), void *arg,
 //
 // - Initializes LibUltra.
 // - Initializes //base libary: initializes heap and error handler.
+// - Creates fault handler.
 // - Creates VI manager, sets a low-res mode, and blacks the screen.
 // - Runs the main thread.
 noreturn void system_main(void (*func)(void *arg), void *arg, void *stack);

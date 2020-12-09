@@ -1,17 +1,19 @@
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//base:copts.bzl", "COPTS")
+
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "n64",
     srcs = [
         "console.c",
-        "fatal.c",
+        "fault.c",
+        "fault.h",
         "mat4.c",
         "memory.c",
         "os.c",
         "stack_boot.s",
+        "stack_fault.s",
         "stack_idle.s",
         "start.s",
         "thread.c",
