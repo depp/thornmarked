@@ -12,9 +12,6 @@ struct scheduler;
 struct game_system {
     // Platform-agnostic game state.
     struct game_state state;
-
-    // Time subsystem.
-    struct sys_time time;
 };
 
 void game_system_init(struct game_system *restrict sys);

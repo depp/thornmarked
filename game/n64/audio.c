@@ -99,15 +99,23 @@ static ALDMAproc audio_dma_new(void *arg) {
 // Audio Initialization
 // =============================================================================
 
+// Sample index of the start of the current buffer or next buffer.
+static unsigned current_sample;
+
 static u8 audio_heap[AUDIO_HEAP_SIZE]
     __attribute__((section("uninit"), aligned(16)));
 static ALHeap audio_hp;
 static ALGlobals audio_globals;
 static ALSndPlayer audio_sndp;
 
+int audio_samples_per_frame;
+
+unsigned audio_trackstart;
+
+struct audio_trackinfo audio_trackinfo;
+
 struct audio_header {
-    unsigned lead_in;
-    unsigned loop_length;
+    struct audio_trackinfo info;
     ALWaveTable wavetable;
 };
 
@@ -146,7 +154,7 @@ static void audio_track_fixup(union audio_tracktablebuf *p, pak_track asset) {
 
 static union audio_tracktablebuf audio_trackbuf ASSET;
 
-void audio_init(struct game_system *restrict sys) {
+void audio_init(void) {
     pak_track asset = TRACK_RISING_TIDE;
 
     // Mark all DMA buffers as "old" so they get used.
@@ -159,9 +167,9 @@ void audio_init(struct game_system *restrict sys) {
 
     int audio_rate = osAiSetFrequency(AUDIO_SAMPLERATE);
     if (osTvType == OS_TV_PAL) {
-        sys->time.samples_per_frame = (audio_rate + 25) / 50;
+        audio_samples_per_frame = (audio_rate + 25) / 50;
     } else {
-        sys->time.samples_per_frame = (audio_rate * 1001 + 30000) / 60000;
+        audio_samples_per_frame = (audio_rate * 1001 + 30000) / 60000;
     }
 
     alHeapInit(&audio_hp, audio_heap, sizeof(audio_heap));
@@ -190,6 +198,8 @@ void audio_init(struct game_system *restrict sys) {
     pak_load_asset_sync(&audio_trackbuf, sizeof(audio_trackbuf),
                         pak_track_object(asset));
     audio_track_fixup(&audio_trackbuf, asset);
+    audio_trackstart = current_sample;
+    audio_trackinfo = audio_trackbuf.header.info;
 
     static ALSound snd = {
         .envelope = &sndenv,
@@ -204,28 +214,6 @@ void audio_init(struct game_system *restrict sys) {
     alSndpSetPan(&audio_sndp, 64);
     alSndpSetVol(&audio_sndp, 30000);
     alSndpPlay(&audio_sndp);
-}
-
-// =============================================================================
-// Audio Timing Updates
-// =============================================================================
-
-// Update the audio subsystem.
-void audio_update(struct game_system *restrict sys) {
-    unsigned track_offset =
-        sys->time.current_frame_sample - sys->time.track_start;
-    if (track_offset > 60 * 60 * AUDIO_SAMPLERATE) {
-        // Paranoia? If sample goes backwards for some reason?
-        fatal_error("Audio desynchronized");
-    }
-    unsigned end = sys->time.track_loop == 0
-                       ? audio_trackbuf.header.lead_in
-                       : audio_trackbuf.header.loop_length;
-    if (track_offset >= end) {
-        sys->time.track_start += end;
-        sys->time.track_loop++;
-    }
-    sys->time.track_pos = track_offset;
 }
 
 // =============================================================================
@@ -247,8 +235,7 @@ static unsigned audio_buffermask(int i) {
     return 4u << i;
 }
 
-void audio_frame(struct game_system *restrict sys,
-                 struct audio_state *restrict st, struct scheduler *sc,
+void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
                  OSMesgQueue *queue) {
     // Return finished DMA messages.
     {
@@ -312,7 +299,7 @@ void audio_frame(struct game_system *restrict sys,
     task->data.audiobuffer = (struct scheduler_audiobuffer){
         .ptr = buffer,
         .size = 4 * AUDIO_BUFSZ,
-        .sample = sys->time.current_sample,
+        .sample = current_sample,
         .done_queue = queue,
         .done_mesg = event_pack((struct event_data){
             .type = EVENT_AUDIO,
@@ -334,5 +321,5 @@ void audio_frame(struct game_system *restrict sys,
     }
     st->wait =
         audio_taskmask(st->current_task) | audio_buffermask(st->current_buffer);
-    sys->time.current_sample += AUDIO_BUFSZ;
+    current_sample += AUDIO_BUFSZ;
 }

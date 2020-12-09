@@ -6,6 +6,7 @@
 #include "game/core/model.h"
 #include "game/core/monster.h"
 #include "game/core/physics.h"
+#include "game/core/time.h"
 #include "game/core/walk.h"
 
 #include <stdbool.h>
@@ -20,6 +21,7 @@ struct game_state {
     struct sys_model model;
     struct sys_monster monster;
     struct sys_input input;
+    struct game_time time;
 
     bool show_console;
 };

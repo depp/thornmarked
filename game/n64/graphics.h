@@ -43,6 +43,9 @@ struct graphics_state {
     int current_buffer;
 };
 
+// The frame index being rendered, or rendered next.
+extern unsigned graphics_current_frame;
+
 // Render the next graphics frame.
 void graphics_frame(struct game_system *restrict sys,
                     struct graphics_state *restrict st, struct scheduler *sc,

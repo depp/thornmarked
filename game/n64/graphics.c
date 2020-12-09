@@ -10,6 +10,8 @@
 
 const float meter = 64.0f;
 
+unsigned graphics_current_frame = 1;
+
 enum {
     VIDEO_BUFCOUNT = TRIPLE_BUFFER ? 3 : 2,
 };
@@ -101,7 +103,7 @@ void graphics_frame(struct game_system *restrict sys,
     task->runtime = 0;
     task->data.framebuffer = (struct scheduler_framebuffer){
         .ptr = framebuffers[st->current_buffer],
-        .frame = sys->time.current_frame,
+        .frame = graphics_current_frame,
         .done_queue = queue,
         .done_mesg = event_pack((struct event_data){
             .type = EVENT_VIDEO,
@@ -120,5 +122,5 @@ void graphics_frame(struct game_system *restrict sys,
     }
     st->wait = graphics_taskmask(st->current_task) |
                graphics_buffermask(st->current_buffer);
-    sys->time.current_frame++;
+    graphics_current_frame++;
 }

@@ -3,7 +3,8 @@
 
 #include <ultra64.h>
 
-struct game_system;
+#include <stdbool.h>
+
 struct scheduler;
 
 enum {
@@ -19,13 +20,25 @@ struct audio_state {
     int current_buffer;
 };
 
-// Initialize the audio system.
-void audio_init(struct game_system *restrict sys);
+// Length and looping information about a track.
+struct audio_trackinfo {
+    // ASSET DATA, do not modify without updating asset import programs.
+    unsigned lead_in;
+    unsigned loop_length;
+};
 
-// Update the audio subsystem.
-void audio_update(struct game_system *restrict sys);
+// Number of audio samples per video frame, according to the clock settings.
+extern int audio_samples_per_frame;
+
+// Sample position when the track or loop started.
+extern unsigned audio_trackstart;
+
+// Metadata for the currently playing track.
+extern struct audio_trackinfo audio_trackinfo;
+
+// Initialize the audio system.
+void audio_init(void);
 
 // Render the next audio frame.
-void audio_frame(struct game_system *restrict sys,
-                 struct audio_state *restrict st, struct scheduler *sc,
+void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
                  OSMesgQueue *queue);

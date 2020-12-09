@@ -106,7 +106,7 @@ static void main(void *arg) {
         // Render an audio frame, if ready.
         if ((st->audio.busy & st->audio.wait) == 0) {
             while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
-            audio_frame(&game_system, &st->audio, &scheduler, &st->evt_queue);
+            audio_frame(&st->audio, &scheduler, &st->evt_queue);
             ready = true;
         }
 

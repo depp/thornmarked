@@ -21,6 +21,7 @@ cc_library(
         "monster.h",
         "physics.h",
         "random.h",
+        "time.h",
         "walk.h",
     ],
     copts = COPTS,
