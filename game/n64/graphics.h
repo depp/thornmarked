@@ -31,7 +31,7 @@ struct graphics {
     uint16_t *zbuffer;
 
     bool is_pal;
-    Vp viewport;
+    Vp *viewport;
     float aspect;
 };
 

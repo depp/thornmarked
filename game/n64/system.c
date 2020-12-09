@@ -136,12 +136,12 @@ void game_system_render(struct game_system *restrict sys,
         }
         gr->aspect = xaspect / yaspect;
         gSPSegment(dl++, 0, 0);
-        gr->viewport = (Vp){{
+        *gr->viewport = (Vp){{
             .vscale = {(x1 - x0) * 2, (y1 - y0) * 2, G_MAXZ / 2, 0},
             .vtrans = {(x1 + x0) * 2, (y1 + y0) * 2, G_MAXZ / 2, 0},
         }};
-        osWritebackDCache(&gr->viewport, sizeof(gr->viewport));
-        gSPViewport(dl++, &gr->viewport);
+        osWritebackDCache(gr->viewport, sizeof(*gr->viewport));
+        gSPViewport(dl++, gr->viewport);
         gSPDisplayList(dl++, init_dl);
 
         // Clear the zbuffer.

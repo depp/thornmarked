@@ -24,6 +24,7 @@ static u16 zbuffer[SCREEN_WIDTH * SCREEN_HEIGHT]
 static Gfx display_lists[2][1024] __attribute__((section("uninit")));
 static Mtx matrixes[2][64] __attribute__((section("uninit")));
 static struct scheduler_task tasks[2];
+static Vp viewports[2];
 
 enum {
     SP_STACK_SIZE = 1024,
@@ -67,6 +68,7 @@ void graphics_frame(struct game_system *restrict sys,
             .framebuffer = framebuffers[st->current_buffer],
             .zbuffer = zbuffer,
             .is_pal = is_pal,
+            .viewport = &viewports[st->current_task],
         };
         game_system_render(sys, &gr);
         data_ptr = (u64 *)dl_start;
