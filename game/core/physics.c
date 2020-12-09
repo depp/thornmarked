@@ -3,6 +3,7 @@
 #include "base/base.h"
 #include "base/quat.h"
 #include "base/vec2.h"
+#include "game/core/random.h"
 
 #include <math.h>
 
@@ -58,7 +59,17 @@ static void physics_update_pair(struct cp_phys *restrict cx,
     if (overlap <= 0.0f) {
         return;
     }
-    float adj_amount = 0.5f * overlap / dist;
+    float adj_amount;
+    if (dist < 1e-3f) {
+        // If two objects have the same position, push them apart in a random
+        // direction (and don't divide by zero).
+        float hc = atanf(1.0f);
+        float a = rand_frange(&grand, -hc, hc);
+        dpos = (vec2){{cosf(a), sinf(a)}};
+        adj_amount = 0.5f * overlap;
+    } else {
+        adj_amount = 0.5f * overlap / dist;
+    }
     cx->adj = vec2_madd(cx->adj, dpos, adj_amount);
     cy->adj = vec2_madd(cy->adj, dpos, -adj_amount);
     cx->collided = true;
