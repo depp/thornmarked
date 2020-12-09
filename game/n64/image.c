@@ -153,6 +153,8 @@ static Gfx *image_draw(Gfx *dl, Gfx *dl_end, pak_image asset, int x, int y) {
 }
 
 Gfx *image_render(Gfx *dl, Gfx *dl_end) {
-    dl = image_draw(dl, dl_end, IMG_BIG, 160, 32);
+    if (0) {
+        dl = image_draw(dl, dl_end, IMG_BIG, 160, 32);
+    }
     return dl;
 }
