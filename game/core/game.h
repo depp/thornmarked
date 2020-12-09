@@ -21,8 +21,6 @@ struct game_state {
     struct sys_monster monster;
     struct sys_input input;
 
-    unsigned button_state;
-    unsigned prev_button_state;
     bool show_console;
 };
 

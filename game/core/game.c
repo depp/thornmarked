@@ -41,9 +41,6 @@ void game_init(struct game_state *restrict gs) {
     model_init(&gs->model);
     monster_init(&gs->monster);
 
-    gs->button_state = 0;
-    gs->prev_button_state = 0;
-
     spawn_player(gs, (ent_id){0});
     for (int i = 0; i < 5; i++) {
         spawn_monster(gs, (ent_id){i + 1},
@@ -62,9 +59,8 @@ void game_update(struct game_state *restrict gs, float dt) {
     walk_update(&gs->walk, &gs->physics, dt);
     physics_update(&gs->physics, dt);
     camera_update(&gs->camera);
-    unsigned button = gs->button_state & ~gs->prev_button_state;
-    gs->prev_button_state = gs->button_state;
-    if ((button & BUTTON_A) != 0) {
+    if (gs->input.count >= 1 &&
+        (gs->input.input[0].button_press & BUTTON_A) != 0) {
         gs->show_console = !gs->show_console;
     }
 }
