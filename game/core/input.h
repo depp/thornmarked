@@ -1,11 +1,7 @@
 #pragma once
 
 #include "base/vectypes.h"
-
-enum {
-    // Maximum number of supported players.
-    PLAYER_COUNT = 2,
-};
+#include "game/core/entity.h"
 
 // Button definitions.
 enum {
