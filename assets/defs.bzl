@@ -9,6 +9,7 @@ def _asset_header_impl(ctx):
     headers = [
         "data.h",
         "font.h",
+        "image.h",
         "model.h",
         "pak.h",
         "texture.h",

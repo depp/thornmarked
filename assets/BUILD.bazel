@@ -11,6 +11,7 @@ asset_data(
     srcs = [
         "//assets/fonts/grenze_gotisch",
         "//assets/images",
+        "//assets/images:big_images",
         "//assets/models:enemy",
         "//assets/models:fairy2",
         "//assets/models:logo",

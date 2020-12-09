@@ -14,6 +14,13 @@ typedef struct pak_font {
     int id;
 } pak_font;
 
+// Identifier for an image asset.
+typedef struct pak_image {
+    int id;
+} pak_image;
+
+#define IMAGE_NONE ((pak_image){0})
+
 // Identifier for a model asset.
 typedef struct pak_model {
     int id;
