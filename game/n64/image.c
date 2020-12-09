@@ -138,9 +138,9 @@ static Gfx *image_draw(Gfx *dl, Gfx *dl_end, pak_image asset, int x, int y) {
         gDPLoadTextureBlock(dl++, r.pixels, G_IM_FMT_RGBA, G_IM_SIZ_16b, xsz,
                             ysz, 0, G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0,
                             G_TX_NOLOD, G_TX_NOLOD);
-        gSPTextureRectangle(dl++, (x + r.x) << 2, (y + r.y) << 2,
-                            (x + r.x + r.xsz - 1) << 2, (y + r.y + r.ysz) << 2,
-                            0, 0, 0, 4 << 10, 1 << 10);
+        gSPTextureRectangle(
+            dl++, (x + r.x) << 2, (y + r.y) << 2, (x + r.x + r.xsz - 1) << 2,
+            (y + r.y + r.ysz - 1) << 2, 0, 0, 0, 4 << 10, 1 << 10);
     }
     return dl;
 }
