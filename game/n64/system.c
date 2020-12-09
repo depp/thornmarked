@@ -9,11 +9,13 @@
 #include "game/n64/camera.h"
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
+#include "game/n64/input.h"
 #include "game/n64/model.h"
 #include "game/n64/text.h"
 #include "game/n64/texture.h"
 
 void game_system_init(struct game_system *restrict sys) {
+    input_init(&sys->state.input);
     time_init(&sys->time);
     model_render_init();
     texture_init();
@@ -23,6 +25,7 @@ void game_system_init(struct game_system *restrict sys) {
 
 void game_system_update(struct game_system *restrict sys,
                         struct scheduler *sc) {
+    input_update(&sys->state.input);
     float dt = time_update(&sys->time, sc);
     audio_update(sys);
     model_update(&sys->state.model, dt);

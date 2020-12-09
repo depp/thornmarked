@@ -52,16 +52,12 @@ void game_init(struct game_state *restrict gs) {
     }
 }
 
-void game_input(struct game_state *restrict gs,
-                const struct controller_input *restrict input) {
-    struct cp_walk *restrict wp = walk_get(&gs->walk, (ent_id){0});
-    if (wp != NULL) {
-        wp->drive = input->joystick;
-    }
-    gs->button_state = input->buttons;
-}
-
 void game_update(struct game_state *restrict gs, float dt) {
+    struct cp_walk *restrict wp = walk_get(&gs->walk, (ent_id){0});
+    if (wp != NULL && gs->input.count >= 1) {
+        wp->drive = gs->input.input[0].joystick;
+    }
+
     monster_update(&gs->monster, &gs->physics, &gs->walk, dt);
     walk_update(&gs->walk, &gs->physics, dt);
     physics_update(&gs->physics, dt);

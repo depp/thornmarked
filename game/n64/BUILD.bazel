@@ -21,6 +21,8 @@ cc_binary(
         "defs.h",
         "graphics.c",
         "graphics.h",
+        "input.c",
+        "input.h",
         "main.c",
         "model.c",
         "model.h",

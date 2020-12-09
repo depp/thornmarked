@@ -2,6 +2,7 @@
 
 #include "base/vectypes.h"
 #include "game/core/camera.h"
+#include "game/core/input.h"
 #include "game/core/model.h"
 #include "game/core/monster.h"
 #include "game/core/physics.h"
@@ -11,21 +12,22 @@
 
 struct graphics;
 
+// Complete state of the game. The core game does not use globals.
 struct game_state {
     struct sys_phys physics;
     struct sys_walk walk;
     struct sys_camera camera;
     struct sys_model model;
     struct sys_monster monster;
+    struct sys_input input;
 
     unsigned button_state;
     unsigned prev_button_state;
     bool show_console;
 };
 
-struct controller_input;
-
+// Initialize the game state.
 void game_init(struct game_state *restrict gs);
-void game_input(struct game_state *restrict gs,
-                const struct controller_input *restrict input);
+
+// Advance the game state.
 void game_update(struct game_state *restrict gs, float dt);

@@ -6,7 +6,6 @@ cc_library(
     srcs = [
         "camera.c",
         "game.c",
-        "input.h",
         "model.c",
         "monster.c",
         "physics.c",
@@ -17,6 +16,7 @@ cc_library(
         "camera.h",
         "entity.h",
         "game.h",
+        "input.h",
         "model.h",
         "monster.h",
         "physics.h",

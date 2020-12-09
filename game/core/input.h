@@ -2,6 +2,11 @@
 
 #include "base/vectypes.h"
 
+enum {
+    // Maximum number of supported players.
+    PLAYER_COUNT = 2,
+};
+
 // Button definitions.
 enum {
     BUTTON_A = 0x8000,
@@ -28,6 +33,16 @@ enum {
 
 // Controller input.
 struct controller_input {
-    unsigned buttons;
+    unsigned button_state; // Which buttons are currently down.
+    unsigned button_press; // Which buttons were pr
     vec2 joystick;
+};
+
+// Input system.
+struct sys_input {
+    // Number of active inputs.
+    int count;
+
+    // Input state.
+    struct controller_input input[PLAYER_COUNT];
 };
