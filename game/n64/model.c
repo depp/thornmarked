@@ -266,7 +266,7 @@ static const Gfx model_setup_dl[] = {
     gsSPEndDisplayList(),
 };
 
-
+#if 0
 static const Gfx model_vertexcolor_dl[] = {
     gsDPPipeSync(),
     gsDPSetTexturePersp(G_TP_NONE),
@@ -277,6 +277,7 @@ static const Gfx model_vertexcolor_dl[] = {
     gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
     gsSPEndDisplayList(),
 };
+#endif
 
 static const struct model_frame *model_getframe(
     const struct model_header *restrict mdl, int anim_id, float time) {
@@ -354,11 +355,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
             gSPSegment(dl++, 1, K0_TO_PHYS(segment));
         }
         if (!has_setup) {
-            if (model == ID_MODEL_FAIRY) {
-                gSPDisplayList(dl++, model_vertexcolor_dl);
-            } else {
-                gSPDisplayList(dl++, model_setup_dl);
-            }
+            gSPDisplayList(dl++, model_setup_dl);
             has_setup = true;
         }
         Mtx *mtx = gr->mtx_ptr++;
