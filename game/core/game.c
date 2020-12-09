@@ -41,9 +41,10 @@ void game_init(struct game_state *restrict gs) {
     model_init(&gs->model);
     monster_init(&gs->monster);
 
-    spawn_player(gs, (ent_id){0});
+    int id = 0;
+    spawn_player(gs, (ent_id){id++});
     for (int i = 0; i < 5; i++) {
-        spawn_monster(gs, (ent_id){i + 1},
+        spawn_monster(gs, (ent_id){id++},
                       i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY,
                       i & 1 ? IMG_BLUEENEMY : IMG_GREENENEMY);
     }
