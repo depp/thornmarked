@@ -8,14 +8,16 @@
 
 #include <stdbool.h>
 
-static void spawn_player(struct game_state *restrict gs, ent_id ent) {
+static void spawn_player(struct game_state *restrict gs, int player_index,
+                         ent_id ent) {
     struct cp_phys *pp = physics_new(&gs->physics, ent);
     pp->radius = 0.25f;
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = MODEL_FAIRY;
-    mp->texture_id = IMG_FAIRY2;
-    mp->animation_id = 4;
+    mp->texture_id = player_index == 0 ? IMG_FAIRY1 : IMG_FAIRY2;
+    mp->animation_id = 0;
+    player_new(&gs->player, player_index, ent);
 }
 
 static void spawn_monster(struct game_state *restrict gs, ent_id ent,
@@ -40,9 +42,12 @@ void game_init(struct game_state *restrict gs) {
     camera_init(&gs->camera);
     model_init(&gs->model);
     monster_init(&gs->monster);
+    player_init(&gs->player);
 
     int id = 0;
-    spawn_player(gs, (ent_id){id++});
+    for (int i = 0; i < gs->input.count; i++) {
+        spawn_player(gs, i, (ent_id){id++});
+    }
     for (int i = 0; i < 5; i++) {
         spawn_monster(gs, (ent_id){id++},
                       i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY,
@@ -51,11 +56,7 @@ void game_init(struct game_state *restrict gs) {
 }
 
 void game_update(struct game_state *restrict gs, float dt) {
-    struct cp_walk *restrict wp = walk_get(&gs->walk, (ent_id){0});
-    if (wp != NULL && gs->input.count >= 1) {
-        wp->drive = gs->input.input[0].joystick;
-    }
-
+    player_update(gs, dt);
     monster_update(&gs->monster, &gs->physics, &gs->walk, dt);
     walk_update(&gs->walk, &gs->physics, dt);
     physics_update(&gs->physics, dt);
