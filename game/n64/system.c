@@ -9,6 +9,7 @@
 #include "game/n64/camera.h"
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
+#include "game/n64/image.h"
 #include "game/n64/input.h"
 #include "game/n64/model.h"
 #include "game/n64/text.h"
@@ -20,6 +21,7 @@ void game_system_init(struct game_system *restrict sys) {
     time_init();
     model_render_init();
     texture_init();
+    image_init();
     game_init(&sys->state);
     sys->state.show_console = true;
 }
@@ -208,6 +210,9 @@ void game_system_render(struct game_system *restrict sys,
     if (gs->show_console) {
         dl = console_draw_displaylist(&console, dl, gr->dl_end);
     }
+
+    // Render large images.
+    dl = image_render(dl, gr->dl_end);
 
     if (2 > gr->dl_end - dl) {
         fatal_dloverflow();
