@@ -3,6 +3,7 @@ load("//tools/font:defs.bzl", "bitmap_font")
 bitmap_font(
     name = "baksosapi",
     src = "baksosapi.otf",
+    case = "lower",
     charset = "//assets/fonts:charset.txt",
     encoding = "windows-1252",
     font_size = "24",
