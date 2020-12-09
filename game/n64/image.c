@@ -112,11 +112,11 @@ void image_init(void) {
 static const Gfx image_dl[] = {
     gsDPPipeSync(),
     gsDPSetTexturePersp(G_TP_NONE),
-    gsDPSetCycleType(G_CYC_COPY),
-    gsDPSetRenderMode(G_RM_NOOP, G_RM_NOOP2),
-    gsSPClearGeometryMode(G_SHADE | G_SHADING_SMOOTH),
+    gsDPSetCycleType(G_CYC_1CYCLE),
+    gsDPSetRenderMode(G_RM_XLU_SURF, G_RM_XLU_SURF),
+    gsSPGeometryMode(~(unsigned)0, 0),
     gsSPTexture(0x2000, 0x2000, 0, G_TX_RENDERTILE, G_ON),
-    gsDPSetCombineMode(G_CC_DECALRGB, G_CC_DECALRGB),
+    gsDPSetCombineMode(G_CC_DECALRGBA, G_CC_DECALRGBA),
     gsDPSetTexturePersp(G_TP_NONE),
     gsDPSetTextureFilter(G_TF_POINT),
     gsSPEndDisplayList(),
@@ -134,13 +134,12 @@ static Gfx *image_draw(Gfx *dl, Gfx *dl_end, pak_image asset, int x, int y) {
     for (int i = 0; i < img->rect_count; i++) {
         struct image_rect r = img->rect[i];
         unsigned xsz = (r.xsz + 3) & ~3u;
-        unsigned ysz = (r.ysz + 3) & ~3u;
         gDPLoadTextureBlock(dl++, r.pixels, G_IM_FMT_RGBA, G_IM_SIZ_16b, xsz,
-                            ysz, 0, G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0,
+                            r.ysz, 0, G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0,
                             G_TX_NOLOD, G_TX_NOLOD);
-        gSPTextureRectangle(
-            dl++, (x + r.x) << 2, (y + r.y) << 2, (x + r.x + r.xsz - 1) << 2,
-            (y + r.y + r.ysz - 1) << 2, 0, 0, 0, 4 << 10, 1 << 10);
+        gSPTextureRectangle(dl++, (x + r.x) << 2, (y + r.y) << 2,
+                            (x + r.x + xsz) << 2, (y + r.y + r.ysz) << 2, 0,
+                            0, 0, 1 << 10, 1 << 10);
     }
     return dl;
 }
