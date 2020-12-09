@@ -1,0 +1,13 @@
+load("//tools/font:defs.bzl", "bitmap_font")
+
+bitmap_font(
+    name = "baksosapi",
+    src = "baksosapi.otf",
+    charset = "//assets/fonts:charset.txt",
+    encoding = "windows-1252",
+    font_size = "24",
+    format = "ia.8",
+    shadow = "2:2",
+    texsize = "64:64",
+    visibility = ["//assets:__pkg__"],
+)

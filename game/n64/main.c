@@ -95,7 +95,7 @@ static void main(void *arg) {
     osCreateMesgQueue(&st->evt_queue, st->evt_buffer,
                       ARRAY_COUNT(st->evt_buffer));
 
-    font_load(FONT_GG);
+    font_load(FONT_BS);
 
     game_system_init(&game_system);
     scheduler_start(&scheduler, 1);
