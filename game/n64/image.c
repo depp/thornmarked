@@ -134,9 +134,17 @@ static Gfx *image_draw(Gfx *dl, Gfx *dl_end, pak_image asset, int x, int y) {
     for (int i = 0; i < img->rect_count; i++) {
         struct image_rect r = img->rect[i];
         unsigned xsz = (r.xsz + 3) & ~3u;
-        gDPLoadTextureBlock(dl++, r.pixels, G_IM_FMT_RGBA, G_IM_SIZ_16b, xsz,
-                            r.ysz, 0, G_TX_NOMIRROR, G_TX_NOMIRROR, 0, 0,
-                            G_TX_NOLOD, G_TX_NOLOD);
+        gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1,
+                           img->rect[i].pixels);
+        gDPSetTile(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 0, 0, G_TX_LOADTILE, 0,
+                   G_TX_NOMIRROR, 0, G_TX_NOLOD, G_TX_NOMIRROR, 0, G_TX_NOLOD);
+        gDPLoadSync(dl++);
+        gDPLoadBlock(dl++, G_TX_LOADTILE, 0, 0, xsz * r.ysz - 1, 0);
+        gDPPipeSync(dl++);
+        gDPSetTile(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, xsz >> 2, 0, 0, 0, 0,
+                   0, 0, 0, 0, 0);
+        gDPSetTileSize(dl++, 0, 0, 0, (xsz - 1) << G_TEXTURE_IMAGE_FRAC,
+                       (r.ysz - 1) << G_TEXTURE_IMAGE_FRAC);
         gSPTextureRectangle(dl++, (x + r.x) << 2, (y + r.y) << 2,
                             (x + r.x + xsz) << 2, (y + r.y + r.ysz) << 2, 0,
                             0, 0, 1 << 10, 1 << 10);
