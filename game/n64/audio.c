@@ -159,9 +159,9 @@ void audio_init(struct game_system *restrict sys) {
 
     int audio_rate = osAiSetFrequency(AUDIO_SAMPLERATE);
     if (osTvType == OS_TV_PAL) {
-        sys->samples_per_frame = (audio_rate + 25) / 50;
+        sys->time.samples_per_frame = (audio_rate + 25) / 50;
     } else {
-        sys->samples_per_frame = (audio_rate * 1001 + 30000) / 60000;
+        sys->time.samples_per_frame = (audio_rate * 1001 + 30000) / 60000;
     }
 
     alHeapInit(&audio_hp, audio_heap, sizeof(audio_heap));
@@ -212,18 +212,20 @@ void audio_init(struct game_system *restrict sys) {
 
 // Update the audio subsystem.
 void audio_update(struct game_system *restrict sys) {
-    unsigned track_offset = sys->current_frame_sample - sys->track_start;
+    unsigned track_offset =
+        sys->time.current_frame_sample - sys->time.track_start;
     if (track_offset > 60 * 60 * AUDIO_SAMPLERATE) {
         // Paranoia? If sample goes backwards for some reason?
         fatal_error("Audio desynchronized");
     }
-    unsigned end = sys->track_loop == 0 ? audio_trackbuf.header.lead_in
-                                        : audio_trackbuf.header.loop_length;
+    unsigned end = sys->time.track_loop == 0
+                       ? audio_trackbuf.header.lead_in
+                       : audio_trackbuf.header.loop_length;
     if (track_offset >= end) {
-        sys->track_start += end;
-        sys->track_loop++;
+        sys->time.track_start += end;
+        sys->time.track_loop++;
     }
-    sys->track_pos = track_offset;
+    sys->time.track_pos = track_offset;
 }
 
 // =============================================================================
@@ -310,7 +312,7 @@ void audio_frame(struct game_system *restrict sys,
     task->data.audiobuffer = (struct scheduler_audiobuffer){
         .ptr = buffer,
         .size = 4 * AUDIO_BUFSZ,
-        .sample = sys->current_sample,
+        .sample = sys->time.current_sample,
         .done_queue = queue,
         .done_mesg = event_pack((struct event_data){
             .type = EVENT_AUDIO,
@@ -332,5 +334,5 @@ void audio_frame(struct game_system *restrict sys,
     }
     st->wait =
         audio_taskmask(st->current_task) | audio_buffermask(st->current_buffer);
-    sys->current_sample += AUDIO_BUFSZ;
+    sys->time.current_sample += AUDIO_BUFSZ;
 }

@@ -35,6 +35,8 @@ cc_binary(
         "texture.h",
         "texture_dl.c",
         "texture_dl.h",
+        "time.c",
+        "time.h",
     ],
     copts = COPTS,
     deps = [

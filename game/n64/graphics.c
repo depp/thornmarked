@@ -101,7 +101,7 @@ void graphics_frame(struct game_system *restrict sys,
     task->runtime = 0;
     task->data.framebuffer = (struct scheduler_framebuffer){
         .ptr = framebuffers[st->current_buffer],
-        .frame = sys->current_frame,
+        .frame = sys->time.current_frame,
         .done_queue = queue,
         .done_mesg = event_pack((struct event_data){
             .type = EVENT_VIDEO,
@@ -120,5 +120,5 @@ void graphics_frame(struct game_system *restrict sys,
     }
     st->wait = graphics_taskmask(st->current_task) |
                graphics_buffermask(st->current_buffer);
-    sys->current_frame++;
+    sys->time.current_frame++;
 }

@@ -13,49 +13,17 @@
 #include "game/n64/text.h"
 #include "game/n64/texture.h"
 
-enum {
-    // Maximum time to advance during a frame.
-    MAX_DELTA_TIME = OS_CPU_COUNTER / 10,
-};
-
 void game_system_init(struct game_system *restrict sys) {
+    time_init(&sys->time);
     model_render_init();
     texture_init();
     game_init(&sys->state);
-    sys->current_frame = 1;
-    sys->update_time = osGetTime();
     sys->state.show_console = true;
 }
 
 void game_system_update(struct game_system *restrict sys,
                         struct scheduler *sc) {
-    // Update timing information.
-    {
-        struct scheduler_frame fr = scheduler_getframe(sc);
-        sys->time_frame = fr.frame;
-        sys->time_sample = fr.sample;
-
-        // Extrapolate from the reference frame.
-        unsigned frame_delta = sys->current_frame - sys->time_frame;
-        if (frame_delta > 2) {
-            // Ignore impossible values.
-            frame_delta = 2;
-        }
-
-        sys->current_frame_sample = sys->time_sample +
-                                    frame_delta * sys->samples_per_frame +
-                                    (sys->samples_per_frame >> 1);
-    }
-
-    OSTime last_time = sys->update_time;
-    sys->update_time = osGetTime();
-    uint32_t delta_time = sys->update_time - last_time;
-    // Clamp delta time, in case something gets out of hand.
-    if (delta_time > MAX_DELTA_TIME) {
-        delta_time = MAX_DELTA_TIME;
-    }
-    float dt = (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
-
+    float dt = time_update(&sys->time, sc);
     audio_update(sys);
     model_update(&sys->state.model, dt);
     game_update(&sys->state, dt);
@@ -132,20 +100,20 @@ void game_system_render(struct game_system *restrict sys,
                         struct graphics *restrict gr) {
     struct game_state *restrict gs = &sys->state;
     console_init(&console, CONSOLE_TRUNCATE);
-    if (sys->track_loop > 0) {
+    if (sys->time.track_loop > 0) {
         const float to_beats = 138.0f / (60.0f * AUDIO_SAMPLERATE);
-        const float fbeat = to_beats * sys->track_pos;
+        const float fbeat = to_beats * sys->time.track_pos;
         int beat = fbeat;
         const float subbeat = fbeat - beat;
         int measure = (beat >> 2) + 1;
         beat = (beat & 3) + 1;
-        console_printf(&console, "%d:%02d:%d:%04.2f\n", sys->track_loop,
+        console_printf(&console, "%d:%02d:%d:%04.2f\n", sys->time.track_loop,
                        measure, beat, (double)subbeat);
     }
-    console_printf(&console, "Frame: %u\n", sys->current_frame);
+    console_printf(&console, "Frame: %u\n", sys->time.current_frame);
     console_printf(&console, "DFrame: %u\n",
-                   sys->current_frame - sys->time_frame);
-    console_printf(&console, "Sample: %u\n", sys->time_sample);
+                   sys->time.current_frame - sys->time.time_frame);
+    console_printf(&console, "Sample: %u\n", sys->time.time_sample);
 
     texture_startframe();
     Gfx *dl = gr->dl_start;
