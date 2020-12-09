@@ -17,6 +17,7 @@
 void game_system_init(struct game_system *restrict sys) {
     input_init(&sys->state.input);
     time_init(&sys->time);
+    audio_init(sys);
     model_render_init();
     texture_init();
     game_init(&sys->state);

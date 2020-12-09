@@ -98,7 +98,6 @@ static void main(void *arg) {
     font_load(FONT_GG);
 
     game_system_init(&game_system);
-    audio_init(&game_system);
     scheduler_start(&scheduler, 1);
 
     for (;;) {
