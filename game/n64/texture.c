@@ -9,7 +9,7 @@
 
 enum {
     // Number of texture assets which can be loaded at once.
-    TEXTURE_SLOTS = 4,
+    TEXTURE_SLOTS = 8,
 };
 
 // Loaded texture data.
@@ -51,7 +51,8 @@ static int texture_load(pak_texture asset) {
 
 void texture_init(void) {
     texture_load(IMG_GROUND);
-    texture_load(IMG_FAIRY);
+    texture_load(IMG_FAIRY1);
+    texture_load(IMG_FAIRY2);
     texture_load(IMG_BLUEENEMY);
     texture_load(IMG_GREENENEMY);
 }

@@ -52,6 +52,7 @@ textures(
         "BlueEnemy.png",
         "GreenEnemy.png",
         "fairy.png",
+        "fairy2.png",
     ],
     format = "rgba.16",
     mipmap = True,

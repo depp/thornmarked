@@ -14,7 +14,7 @@ static void spawn_player(struct game_state *restrict gs, ent_id ent) {
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = MODEL_FAIRY;
-    mp->texture_id = IMG_FAIRY;
+    mp->texture_id = IMG_FAIRY2;
     mp->animation_id = 4;
 }
 
