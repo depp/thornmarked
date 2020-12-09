@@ -11,6 +11,41 @@
 void console_draw_raw(struct console *cs, uint16_t *restrict framebuffer) {
     struct console_rowptr rows[CON_ROWS];
     int nrows = console_rows(cs, rows);
+    // This border is here because otherwise we might see a previous crash
+    // message underneath, which is confusing. The code is complicated so no
+    // pixel will change color, which would cause flickering.
+    {
+        const unsigned border_color = 0xf801;
+        int rlens[CON_ROWS + 2];
+        rlens[0] = 0;
+        for (int row = 0; row < nrows; row++) {
+            rlens[row + 1] = rows[row].end - rows[row].start;
+        }
+        rlens[nrows + 1] = 0;
+        for (int row = 0; row < nrows; row++) {
+            const int len0 = rlens[row];
+            const int len1 = rlens[row + 1];
+            int len2 = rlens[row + 2];
+            const int x0 = CON_XMARGIN - 1;
+            const int x1 = x0 + len1 * FONT_WIDTH + 1;
+            const int y0 = CON_YMARGIN + row * FONT_HEIGHT - 1;
+            const int y1 = y0 + FONT_HEIGHT + 1;
+            if (len1 > len0) {
+                for (int x = CON_XMARGIN + len0 * FONT_WIDTH; x < x1; x++) {
+                    framebuffer[y0 * CON_WIDTH + x] = border_color;
+                }
+            }
+            for (int y = y0 + 1; y < y1; y++) {
+                framebuffer[y * CON_WIDTH + x0] = border_color;
+                framebuffer[y * CON_WIDTH + x1] = border_color;
+            }
+            if (len1 > len2) {
+                for (int x = CON_XMARGIN + len2 * FONT_WIDTH; x < x1; x++) {
+                    framebuffer[y1 * CON_WIDTH + x] = border_color;
+                }
+            }
+        }
+    }
     for (int row = 0; row < nrows; row++) {
         const uint8_t *ptr = rows[row].start, *end = rows[row].end;
         int cy = CON_YMARGIN + row * FONT_HEIGHT;
@@ -24,6 +59,13 @@ void console_draw_raw(struct console *cs, uint16_t *restrict framebuffer) {
                         FONT_DATA[(c - FONT_START) * FONT_HEIGHT + y];
                     for (int x = 0; x < FONT_WIDTH; x++) {
                         optr[x] = (idata & (1u << x)) != 0 ? 0xffff : 0x0000;
+                    }
+                }
+            } else {
+                for (int y = 0; y < FONT_HEIGHT; y++) {
+                    uint16_t *optr = framebuffer + (cy + y) * CON_WIDTH + cx;
+                    for (int x = 0; x < FONT_WIDTH; x++) {
+                        optr[x] = 0x7bdf;
                     }
                 }
             }
