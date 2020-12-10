@@ -1,7 +1,7 @@
 #include "base/console.h"
-#include "base/console_n64.h"
 #include "base/defs.h"
-#include "base/os.h"
+#include "base/n64/console.h"
+#include "base/n64/os.h"
 #include "experimental/simple/simple.h"
 
 #include "base/base.h"
@@ -34,6 +34,22 @@ static int frame_num;
 static bool cont_read_active;
 static OSContPad controller_state[MAXCONTROLLERS];
 
+struct button {
+    unsigned mask;
+    char name[12];
+};
+
+#define BUTTON(x) \
+    { (x), #x }
+
+static const struct button BUTTONS[] = {
+    BUTTON(A_BUTTON),   BUTTON(B_BUTTON),   BUTTON(L_TRIG),
+    BUTTON(R_TRIG),     BUTTON(Z_TRIG),     BUTTON(START_BUTTON),
+    BUTTON(U_JPAD),     BUTTON(L_JPAD),     BUTTON(R_JPAD),
+    BUTTON(D_JPAD),     BUTTON(U_CBUTTONS), BUTTON(L_CBUTTONS),
+    BUTTON(R_CBUTTONS), BUTTON(D_CBUTTONS),
+};
+
 Gfx *program_render(Gfx *dl, Gfx *dl_end) {
     bool have_cont = true;
     while (osRecvMesg(&cont_queue, NULL, OS_MESG_NOBLOCK) == 0) {
@@ -58,6 +74,18 @@ Gfx *program_render(Gfx *dl, Gfx *dl_end) {
             console_printf(
                 &console, "0x%04x (%+4d, %+4d)\n", controller_state[i].button,
                 controller_state[i].stick_x, controller_state[i].stick_y);
+            console_puts(&console, " ->");
+            if (controller_state[i].button == 0) {
+                console_puts(&console, " (none)");
+            } else {
+                for (size_t j = 0; j < ARRAY_COUNT(BUTTONS); j++) {
+                    if ((controller_state[i].button & BUTTONS[j].mask) != 0) {
+                        console_putc(&console, ' ');
+                        console_puts(&console, BUTTONS[j].name);
+                    }
+                }
+            }
+            console_putc(&console, '\n');
         }
     }
     dl = console_draw_displaylist(&console, dl, dl_end);
