@@ -58,15 +58,15 @@ void material_init(void) {
 }
 
 Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
-                  pak_texture asset_id) {
-    if (asset_id.id == mst->texture_current) {
+                  struct material mat) {
+    if (mat.texture_id.id == mst->texture_current) {
         return dl;
     }
-    if (asset_id.id < 1 || PAK_TEXTURE_COUNT < asset_id.id) {
+    if (mat.texture_id.id < 1 || PAK_TEXTURE_COUNT < mat.texture_id.id) {
         fatal_error("Invalid texture");
     }
-    int slot = texture_to_slot[asset_id.id];
-    if (texture_from_slot[slot] != asset_id.id) {
+    int slot = texture_to_slot[mat.texture_id.id];
+    if (texture_from_slot[slot] != mat.texture_id.id) {
         fatal_error("Texture not loaded");
     }
     gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1,

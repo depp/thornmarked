@@ -195,7 +195,10 @@ void game_system_render(struct game_system *restrict sys,
 
     dl = model_render(dl, gr, &gs->model, &gs->physics);
 
-    dl = material_use(&gr->material, dl, IMG_GROUND);
+    dl = material_use(&gr->material, dl,
+                      (struct material){
+                          .texture_id = IMG_GROUND,
+                      });
     gSPClearGeometryMode(dl++,
                          G_SHADE | G_SHADING_SMOOTH | G_LIGHTING | G_CULL_BACK);
     gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_DECALRGB2);

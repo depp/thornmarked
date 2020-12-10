@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/pak/types.h"
+#include "game/core/material.h"
 
 #include <ultra64.h>
 
@@ -15,4 +16,4 @@ struct material_state {
 
 // Load and use the given texture.
 Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
-                  pak_texture asset_id);
+                  struct material mat);
