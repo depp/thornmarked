@@ -1,4 +1,4 @@
-#include "game/n64/texture.h"
+#include "game/n64/material.h"
 
 #include "assets/pak.h"
 #include "assets/texture.h"
@@ -49,7 +49,7 @@ static int texture_load(pak_texture asset) {
     fatal_error("texture_load: no slots available");
 }
 
-void texture_init(void) {
+void material_init(void) {
     texture_load(IMG_GROUND);
     texture_load(IMG_FAIRY1);
     texture_load(IMG_FAIRY2);
@@ -60,11 +60,11 @@ void texture_init(void) {
 // Current active texture.
 static int texture_current;
 
-void texture_startframe(void) {
+void material_startframe(void) {
     texture_current = 0;
 }
 
-Gfx *texture_use(Gfx *dl, pak_texture asset_id) {
+Gfx *material_use(Gfx *dl, pak_texture asset_id) {
     if (asset_id.id == texture_current) {
         return dl;
     }

@@ -14,7 +14,7 @@
 #include "game/core/physics.h"
 #include "game/n64/defs.h"
 #include "game/n64/graphics.h"
-#include "game/n64/texture.h"
+#include "game/n64/material.h"
 
 enum {
     // Number of model assets which can be loaded at once.
@@ -347,7 +347,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         for (int j = 0; j < MATERIAL_SLOTS; j++) {
             if (mp->material[j].texture_id.id != 0) {
-                dl = texture_use(dl, mp->material[j].texture_id);
+                dl = material_use(dl, mp->material[j].texture_id);
                 if (mdl->display_list[0] != NULL) {
                     gSPDisplayList(dl++, K0_TO_PHYS(mdl->display_list[j]));
                 }

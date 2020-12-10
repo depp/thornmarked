@@ -11,16 +11,16 @@
 #include "game/n64/graphics.h"
 #include "game/n64/image.h"
 #include "game/n64/input.h"
+#include "game/n64/material.h"
 #include "game/n64/model.h"
 #include "game/n64/text.h"
-#include "game/n64/texture.h"
 
 void game_system_init(struct game_system *restrict sys) {
     audio_init();
     input_init(&sys->state.input);
     time_init();
     model_render_init();
-    texture_init();
+    material_init();
     image_init();
     game_init(&sys->state);
     sys->state.show_console = true;
@@ -116,7 +116,7 @@ void game_system_render(struct game_system *restrict sys,
                        (double)subbeat);
     }
 
-    texture_startframe();
+    material_startframe();
     Gfx *dl = gr->dl_start;
     const bool full = true;
     const bool clear_z = true;
@@ -196,7 +196,7 @@ void game_system_render(struct game_system *restrict sys,
 
     dl = model_render(dl, gr, &gs->model, &gs->physics);
 
-    dl = texture_use(dl, IMG_GROUND);
+    dl = material_use(dl, IMG_GROUND);
     gSPClearGeometryMode(dl++,
                          G_SHADE | G_SHADING_SMOOTH | G_LIGHTING | G_CULL_BACK);
     gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_DECALRGB2);
