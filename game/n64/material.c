@@ -57,21 +57,26 @@ void material_init(void) {
     texture_load(IMG_GREENENEMY);
 }
 
-Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
-                  struct material mat) {
-    if (mat.texture_id.id == mst->texture_id.id) {
-        return dl;
-    }
-    if (mat.texture_id.id < 1 || PAK_TEXTURE_COUNT < mat.texture_id.id) {
+static Gfx *texture_use(Gfx *dl, pak_texture texture_id) {
+    if (texture_id.id < 1 || PAK_TEXTURE_COUNT < texture_id.id) {
         fatal_error("Invalid texture");
     }
-    int slot = texture_to_slot[mat.texture_id.id];
-    if (texture_from_slot[slot] != mat.texture_id.id) {
+    int slot = texture_to_slot[texture_id.id];
+    if (texture_from_slot[slot] != texture_id.id) {
         fatal_error("Texture not loaded");
     }
     gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1,
                        texture_data[slot]);
     gSPDisplayList(dl++, texture_dl);
+    return dl;
+}
+
+Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
+                  struct material mat) {
+    if (mat.texture_id.id == mst->texture_id.id) {
+        return dl;
+    }
+    dl = texture_use(dl, mat.texture_id);
     mst->texture_id = mat.texture_id;
     return dl;
 }
