@@ -101,16 +101,28 @@ Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
         gDPPipeSync(dl++);
         switch (rdp_mode) {
         case RDP_FLAT:
+            gDPSetCycleType(dl++, G_CYC_1CYCLE);
+            gDPSetRenderMode(dl++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
             gDPSetCombineMode(dl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
+            gDPSetTexturePersp(dl++, G_TP_NONE);
             break;
         case RDP_SHADE:
+            gDPSetCycleType(dl++, G_CYC_1CYCLE);
+            gDPSetRenderMode(dl++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
             gDPSetCombineMode(dl++, G_CC_SHADE, G_CC_SHADE);
+            gDPSetTexturePersp(dl++, G_TP_NONE);
             break;
         case RDP_MIPMAP_FLAT:
+            gDPSetCycleType(dl++, G_CYC_2CYCLE);
+            gDPSetRenderMode(dl++, G_RM_PASS, G_RM_ZB_OPA_SURF2);
             gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_PASS2);
+            gDPSetTexturePersp(dl++, G_TP_PERSP);
             break;
         case RDP_MIPMAP_SHADE:
+            gDPSetCycleType(dl++, G_CYC_2CYCLE);
+            gDPSetRenderMode(dl++, G_RM_PASS, G_RM_ZB_OPA_SURF2);
             gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_MODULATERGB2);
+            gDPSetTexturePersp(dl++, G_TP_PERSP);
             break;
         default:
             fatal_error("Unknown RDP mode\nMode: %d", rdp_mode);
