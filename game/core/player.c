@@ -46,7 +46,7 @@ struct cp_player *player_new(struct sys_player *restrict msys, int player_index,
 void player_update(struct game_state *restrict gs, float dt) {
     (void)dt;
     const float idle_speed = 2.0f;
-    const float attack_speed = 3.0f;
+    const float attack_speed = 4.0f;
     for (int i = 0; i < PLAYER_COUNT; i++) {
         struct cp_player *restrict pl = &gs->player.players[i];
         if (!pl->active) {
@@ -66,19 +66,18 @@ void player_update(struct game_state *restrict gs, float dt) {
         }
 
         // Read button inputs.
-        const unsigned press = gs->input.input[i].button_press;
-        switch (press & (BUTTON_A | BUTTON_B)) {
-        case 0:
-            break;
+        const unsigned action_mask = BUTTON_A | BUTTON_B;
+        unsigned action = gs->input.input[i].button_press & action_mask;
+        // Action fails if multiple buttons are pressed.
+        if ((gs->input.input[i].button_state & action_mask) != action) {
+            action = -1;
+        }
+        switch (action) {
         case BUTTON_A:
             if (pl->state == PSTATE_INIT) {
                 pl->state = PSTATE_ATTACK;
                 pl->state_time = 0.0f;
             }
-            break;
-        case BUTTON_B:
-            break;
-        default:
             break;
         }
 
