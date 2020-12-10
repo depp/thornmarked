@@ -13,6 +13,9 @@ struct material_state {
     // Current active texture.
     pak_texture texture_id;
 
+    // Current RSP geometry mode.
+    unsigned rsp_mode;
+
     // Current RDP mode.
     int rdp_mode;
 };

@@ -60,10 +60,6 @@ static const Gfx init_dl[] = {
     gsSPEndDisplayList(),
 };
 
-static const Lights1 lights =
-    gdSPDefLights1(16, 16, 64,                               // Ambient
-                   255 - 16, 255 - 16, 255 - 64, 0, 0, 100); // Sun
-
 // The identity matrix.
 static const Mtx identity = {{
     {1 << 16, 0, 1, 0},
@@ -185,23 +181,13 @@ void game_system_render(struct game_system *restrict sys,
 
     // Render game.
     gDPSetDepthImage(dl++, gr->zbuffer);
-    gSPSetGeometryMode(dl++, G_ZBUFFER);
-    gDPSetRenderMode(dl++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
-
-    dl = camera_render(&gs->camera, gr, dl);
-
     gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
-    gSPSetLights1(dl++, lights);
-
+    dl = camera_render(&gs->camera, gr, dl);
     dl = model_render(dl, gr, &gs->model, &gs->physics);
-
     dl = material_use(&gr->material, dl,
                       (struct material){
                           .texture_id = IMG_GROUND,
                       });
-    gSPClearGeometryMode(dl++,
-                         G_SHADE | G_SHADING_SMOOTH | G_LIGHTING | G_CULL_BACK);
-    gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_DECALRGB2);
     gSPDisplayList(dl++, ground_dl);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 

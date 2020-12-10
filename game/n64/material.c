@@ -82,9 +82,21 @@ enum {
 
 Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
                   struct material mat) {
-    int rdp_mode;
+    // Set the RSP mode first.
+    unsigned rsp_mode = G_ZBUFFER;
+    if ((mat.flags & MAT_CULL_BACK) != 0) {
+        rsp_mode |= G_CULL_BACK;
+    }
+    if ((mat.flags & MAT_VERTEX_COLOR) != 0) {
+        rsp_mode |= G_SHADE | G_SHADING_SMOOTH;
+    }
+    if (rsp_mode != mst->rsp_mode) {
+        gSPGeometryMode(dl++, ~rsp_mode, rsp_mode);
+        mst->rsp_mode = rsp_mode;
+    }
 
     // Load texture.
+    int rdp_mode;
     if (mat.texture_id.id == 0) {
         rdp_mode = (mat.flags & MAT_VERTEX_COLOR) != 0 ? RDP_SHADE : RDP_FLAT;
     } else {

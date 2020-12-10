@@ -266,25 +266,6 @@ void model_render_init(void) {
     model_load(MODEL_GREENENEMY);
 }
 
-static const Gfx model_setup_dl[] = {
-    gsDPPipeSync(),
-    gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
-    gsSPEndDisplayList(),
-};
-
-#if 0
-static const Gfx model_vertexcolor_dl[] = {
-    gsDPPipeSync(),
-    gsDPSetTexturePersp(G_TP_NONE),
-    gsDPSetCycleType(G_CYC_1CYCLE),
-    gsDPSetRenderMode(G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF),
-    gsSPTexture(0, 0, 0, 0, G_OFF),
-    gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
-    gsDPSetCombineMode(G_CC_SHADE, G_CC_SHADE),
-    gsSPEndDisplayList(),
-};
-#endif
-
 static const struct model_frame *model_getframe(
     const struct model_header *restrict mdl, int anim_id, float time) {
     if (anim_id < 1 || mdl->animation_count < anim_id) {
@@ -305,7 +286,6 @@ static const struct model_frame *model_getframe(
 Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   struct sys_model *restrict msys,
                   struct sys_phys *restrict psys) {
-    bool has_setup = false;
     void *current_segment = 0;
     float scale = 0.5f;
     for (int i = 0; i < msys->count; i++) {
@@ -329,10 +309,6 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
         }
         if (segment != current_segment) {
             gSPSegment(dl++, 1, K0_TO_PHYS(segment));
-        }
-        if (!has_setup) {
-            gSPDisplayList(dl++, model_setup_dl);
-            has_setup = true;
         }
         Mtx *mtx = gr->mtx_ptr++;
         {
