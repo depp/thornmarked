@@ -21,7 +21,7 @@ static void spawn_player(struct game_state *restrict gs, int player_index,
         .texture_id = texture,
     };
     mp->material[1] = (struct material){
-        .flags = MAT_ENABLED | MAT_CULL_BACK | MAT_VERTEX_COLOR,
+        .flags = MAT_ENABLED | MAT_VERTEX_COLOR,
         .texture_id = texture,
     };
     mp->animation_id = 4;
