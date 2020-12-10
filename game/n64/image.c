@@ -141,13 +141,13 @@ static Gfx *image_draw(Gfx *dl, Gfx *dl_end, pak_image asset, int x, int y) {
         gDPLoadSync(dl++);
         gDPLoadBlock(dl++, G_TX_LOADTILE, 0, 0, xsz * r.ysz - 1, 0);
         gDPPipeSync(dl++);
-        gDPSetTile(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, xsz >> 2, 0, 0, 0, 0,
-                   0, 0, 0, 0, 0);
+        gDPSetTile(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, xsz >> 2, 0, 0, 0, 0, 0,
+                   0, 0, 0, 0);
         gDPSetTileSize(dl++, 0, 0, 0, (xsz - 1) << G_TEXTURE_IMAGE_FRAC,
                        (r.ysz - 1) << G_TEXTURE_IMAGE_FRAC);
         gSPTextureRectangle(dl++, (x + r.x) << 2, (y + r.y) << 2,
-                            (x + r.x + xsz) << 2, (y + r.y + r.ysz) << 2, 0,
-                            0, 0, 1 << 10, 1 << 10);
+                            (x + r.x + xsz) << 2, (y + r.y + r.ysz) << 2, 0, 0,
+                            0, 1 << 10, 1 << 10);
     }
     return dl;
 }
