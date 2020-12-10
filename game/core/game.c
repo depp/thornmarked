@@ -16,7 +16,7 @@ static void spawn_player(struct game_state *restrict gs, int player_index,
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = MODEL_FAIRY;
     mp->texture_id = player_index == 0 ? IMG_FAIRY1 : IMG_FAIRY2;
-    mp->animation_id = 0;
+    mp->animation_id = 4;
     player_new(&gs->player, player_index, ent);
 }
 

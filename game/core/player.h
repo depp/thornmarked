@@ -10,6 +10,8 @@ struct game_state;
 struct cp_player {
     ent_id ent;
     bool active;
+    int state;
+    float state_time;
 };
 
 // The player system.

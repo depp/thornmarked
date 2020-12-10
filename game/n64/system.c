@@ -30,7 +30,6 @@ void game_system_update(struct game_system *restrict sys,
                         struct scheduler *sc) {
     input_update(&sys->state.input);
     float dt = time_update(&sys->state.time, sc);
-    model_update(&sys->state.model, dt);
     game_update(&sys->state, dt);
 }
 

@@ -296,35 +296,6 @@ static const struct model_frame *model_getframe(
     return &anim->frame[anim->frame_count - 1];
 }
 
-void model_update(struct sys_model *restrict msys, float dt) {
-    for (int i = 0; i < msys->count; i++) {
-        struct cp_model *restrict mp = &msys->models[i];
-        if (mp->model_id.id == 0 || mp->animation_id == 0) {
-            // No model or not animated.
-            continue;
-        }
-        int slot = model_to_slot[mp->model_id.id];
-        if (model_from_slot[slot] != mp->model_id.id) {
-            // Model not loaded.
-            continue;
-        }
-        const struct model_header *restrict mdl = &model_data[slot].header;
-        if (mp->animation_id < 1 || mdl->animation_count < mp->animation_id) {
-            // No such animation.
-            continue;
-        }
-        const struct model_animation *restrict anim =
-            &mdl->animation[mp->animation_id - 1];
-        mp->animation_time += dt * 60.0f;
-        if (mp->animation_time >= anim->duration) {
-            mp->animation_time -= anim->duration;
-            if (mp->animation_time >= anim->duration) {
-                mp->animation_time = 0.0f;
-            }
-        }
-    }
-}
-
 Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   struct sys_model *restrict msys,
                   struct sys_phys *restrict psys) {
