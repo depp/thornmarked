@@ -2,14 +2,15 @@
 
 #include "base/pak/types.h"
 #include "game/core/entity.h"
+#include "game/core/material.h"
 
 // Model component. Used for entities that have a 3D model.
 struct cp_model {
     ent_id ent;
     // The model asset index. 0 means "no model".
     pak_model model_id;
-    // The texture to render the model with.
-    pak_texture texture_id;
+    // The material to use for each slot in the model.
+    struct material material[MAT_SLOT_COUNT];
     // 1-based index of the animation to play. 0 means no animation.
     int animation_id;
     // Current time in the animation, in seconds.

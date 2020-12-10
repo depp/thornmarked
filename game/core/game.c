@@ -14,8 +14,16 @@ static void spawn_player(struct game_state *restrict gs, int player_index,
     pp->radius = 0.25f;
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
+    pak_texture texture = player_index == 0 ? IMG_FAIRY1 : IMG_FAIRY2;
     mp->model_id = MODEL_FAIRY;
-    mp->texture_id = player_index == 0 ? IMG_FAIRY1 : IMG_FAIRY2;
+    mp->material[0] = (struct material){
+        .flags = MAT_ENABLED | MAT_CULL_BACK | MAT_VERTEX_COLOR,
+        .texture_id = texture,
+    };
+    mp->material[1] = (struct material){
+        .flags = MAT_ENABLED | MAT_CULL_BACK | MAT_VERTEX_COLOR,
+        .texture_id = texture,
+    };
     mp->animation_id = 4;
     player_new(&gs->player, player_index, ent);
 }
@@ -31,7 +39,10 @@ static void spawn_monster(struct game_state *restrict gs, ent_id ent,
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = model;
-    mp->texture_id = texture;
+    mp->material[0] = (struct material){
+        .flags = MAT_ENABLED | MAT_CULL_BACK | MAT_VERTEX_COLOR,
+        .texture_id = texture,
+    };
     monster_new(&gs->monster, ent);
 }
 

@@ -31,6 +31,8 @@ enum {
     MATERIAL_SLOTS = 4,
 };
 
+static_assert((int)MAT_SLOT_COUNT == (int)MATERIAL_SLOTS);
+
 // =============================================================================
 // Models
 // =============================================================================
@@ -311,14 +313,13 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
         struct cp_model *restrict mp = &msys->models[i];
         struct cp_phys *restrict cp = physics_get(psys, mp->ent);
         int model = mp->model_id.id;
-        if (model == 0 || mp->texture_id.id == 0 || cp == NULL) {
+        if (model == 0 || cp == NULL) {
             continue;
         }
         int slot = model_to_slot[model];
         if (model_from_slot[slot] != model) {
             fatal_error("Model not loaded");
         }
-        dl = texture_use(dl, mp->texture_id);
         const struct model_header *restrict mdl = &model_data[slot].header;
         void *segment = mdl->vertex_data;
         const struct model_frame *frame =
@@ -344,8 +345,13 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
         }
         gSPMatrix(dl++, K0_TO_PHYS(mtx),
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-        if (mdl->display_list[0] != NULL) {
-            gSPDisplayList(dl++, K0_TO_PHYS(mdl->display_list[0]));
+        for (int j = 0; j < MATERIAL_SLOTS; j++) {
+            if (mp->material[j].texture_id.id != 0) {
+                dl = texture_use(dl, mp->material[j].texture_id);
+                if (mdl->display_list[0] != NULL) {
+                    gSPDisplayList(dl++, K0_TO_PHYS(mdl->display_list[j]));
+                }
+            }
         }
     }
     return dl;

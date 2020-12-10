@@ -18,6 +18,7 @@ cc_library(
         "entity.h",
         "game.h",
         "input.h",
+        "material.h",
         "model.h",
         "monster.h",
         "physics.h",
