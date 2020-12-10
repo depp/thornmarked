@@ -59,7 +59,7 @@ void material_init(void) {
 
 Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
                   struct material mat) {
-    if (mat.texture_id.id == mst->texture_current) {
+    if (mat.texture_id.id == mst->texture_id.id) {
         return dl;
     }
     if (mat.texture_id.id < 1 || PAK_TEXTURE_COUNT < mat.texture_id.id) {
@@ -72,5 +72,6 @@ Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
     gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1,
                        texture_data[slot]);
     gSPDisplayList(dl++, texture_dl);
+    mst->texture_id = mat.texture_id;
     return dl;
 }

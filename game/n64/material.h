@@ -11,7 +11,7 @@ void material_init(void);
 // Information about the current material.
 struct material_state {
     // Current active texture.
-    int texture_current;
+    pak_texture texture_id;
 };
 
 // Load and use the given texture.
