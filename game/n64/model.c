@@ -26,6 +26,9 @@ enum {
     // Number of buckets in frame hash table. Must be a power of two, must be
     // larger than FRAME_SLOTS by some margin.
     FRAME_BUCKETS = 16,
+
+    // Number of materials per model.
+    MATERIAL_SLOTS = 4,
 };
 
 // =============================================================================
@@ -49,7 +52,7 @@ struct model_animation {
 // Header for the model data.
 struct model_header {
     Vtx *vertex_data;
-    Gfx *display_list;
+    Gfx *display_list[MATERIAL_SLOTS];
     int animation_count;
     unsigned frame_size;
     struct model_animation animation[];
@@ -80,7 +83,9 @@ static void model_fixup(union model_data *p, pak_model asset) {
     const unsigned max_vtx_offset =
         vtx_obj.size < hdr->frame_size ? 0 : vtx_obj.size - hdr->frame_size;
     hdr->vertex_data = pointer_fixup(hdr->vertex_data, base, size);
-    hdr->display_list = pointer_fixup(hdr->display_list, base, size);
+    for (int i = 0; i < MATERIAL_SLOTS; i++) {
+        hdr->display_list[i] = pointer_fixup(hdr->display_list[i], base, size);
+    }
     for (int i = 0; i < hdr->animation_count; i++) {
         struct model_animation *restrict anim = &hdr->animation[i];
         if (anim->frame_count > 0) {
@@ -339,7 +344,9 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
         }
         gSPMatrix(dl++, K0_TO_PHYS(mtx),
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-        gSPDisplayList(dl++, K0_TO_PHYS(model_data[slot].header.display_list));
+        if (mdl->display_list[0] != NULL) {
+            gSPDisplayList(dl++, K0_TO_PHYS(mdl->display_list[0]));
+        }
     }
     return dl;
 }
