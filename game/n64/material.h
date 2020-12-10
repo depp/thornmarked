@@ -7,8 +7,12 @@
 // Initialize the texture system.
 void material_init(void);
 
-// Reset the texture state for a new frame.
-void material_startframe(void);
+// Information about the current material.
+struct material_state {
+    // Current active texture.
+    int texture_current;
+};
 
 // Load and use the given texture.
-Gfx *material_use(Gfx *dl, pak_texture asset_id);
+Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
+                  pak_texture asset_id);

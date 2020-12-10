@@ -57,15 +57,9 @@ void material_init(void) {
     texture_load(IMG_GREENENEMY);
 }
 
-// Current active texture.
-static int texture_current;
-
-void material_startframe(void) {
-    texture_current = 0;
-}
-
-Gfx *material_use(Gfx *dl, pak_texture asset_id) {
-    if (asset_id.id == texture_current) {
+Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
+                  pak_texture asset_id) {
+    if (asset_id.id == mst->texture_current) {
         return dl;
     }
     if (asset_id.id < 1 || PAK_TEXTURE_COUNT < asset_id.id) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "game/n64/material.h"
+
 #include <ultra64.h>
 
 #include <stdbool.h>
@@ -33,6 +35,8 @@ struct graphics {
     bool is_pal;
     Vp *viewport;
     float aspect;
+
+    struct material_state material;
 };
 
 // Graphics task state.
