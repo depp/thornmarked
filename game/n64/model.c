@@ -269,7 +269,6 @@ void model_render_init(void) {
 static const Gfx model_setup_dl[] = {
     gsDPPipeSync(),
     gsSPGeometryMode(G_LIGHTING, G_CULL_BACK | G_SHADE | G_SHADING_SMOOTH),
-    gsDPSetCombineMode(G_CC_TRILERP, G_CC_MODULATERGB2),
     gsSPEndDisplayList(),
 };
 
@@ -346,7 +345,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
         gSPMatrix(dl++, K0_TO_PHYS(mtx),
                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         for (int j = 0; j < MATERIAL_SLOTS; j++) {
-            if (mp->material[j].texture_id.id != 0) {
+            if ((mp->material[j].flags & MAT_ENABLED) != 0) {
                 dl = material_use(&gr->material, dl, mp->material[j]);
                 if (mdl->display_list[0] != NULL) {
                     gSPDisplayList(dl++, K0_TO_PHYS(mdl->display_list[j]));

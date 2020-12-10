@@ -12,6 +12,9 @@ void material_init(void);
 struct material_state {
     // Current active texture.
     pak_texture texture_id;
+
+    // Current RDP mode.
+    int rdp_mode;
 };
 
 // Load and use the given texture.

@@ -41,7 +41,7 @@ static void spawn_monster(struct game_state *restrict gs, ent_id ent,
     mp->model_id = model;
     mp->material[0] = (struct material){
         .flags = MAT_ENABLED | MAT_CULL_BACK | MAT_VERTEX_COLOR,
-        .texture_id = texture,
+        .texture_id = ent.id == 2 ? TEXTURE_NONE : texture,
     };
     monster_new(&gs->monster, ent);
 }

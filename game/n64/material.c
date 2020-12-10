@@ -71,12 +71,52 @@ static Gfx *texture_use(Gfx *dl, pak_texture texture_id) {
     return dl;
 }
 
+// RDP modes.
+enum {
+    RDP_NONE,
+    RDP_FLAT,
+    RDP_SHADE,
+    RDP_MIPMAP_FLAT,
+    RDP_MIPMAP_SHADE,
+};
+
 Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
                   struct material mat) {
-    if (mat.texture_id.id == mst->texture_id.id) {
-        return dl;
+    int rdp_mode;
+
+    // Load texture.
+    if (mat.texture_id.id == 0) {
+        rdp_mode = (mat.flags & MAT_VERTEX_COLOR) != 0 ? RDP_SHADE : RDP_FLAT;
+    } else {
+        if (mat.texture_id.id != mst->texture_id.id) {
+            dl = texture_use(dl, mat.texture_id);
+            mst->texture_id = mat.texture_id;
+        }
+        rdp_mode = (mat.flags & MAT_VERTEX_COLOR) != 0 ? RDP_MIPMAP_SHADE
+                                                       : RDP_MIPMAP_FLAT;
     }
-    dl = texture_use(dl, mat.texture_id);
-    mst->texture_id = mat.texture_id;
+
+    // Set the RDP mode.
+    if (rdp_mode != mst->rdp_mode) {
+        gDPPipeSync(dl++);
+        switch (rdp_mode) {
+        case RDP_FLAT:
+            gDPSetCombineMode(dl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
+            break;
+        case RDP_SHADE:
+            gDPSetCombineMode(dl++, G_CC_SHADE, G_CC_SHADE);
+            break;
+        case RDP_MIPMAP_FLAT:
+            gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_PASS2);
+            break;
+        case RDP_MIPMAP_SHADE:
+            gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_MODULATERGB2);
+            break;
+        default:
+            fatal_error("Unknown RDP mode\nMode: %d", rdp_mode);
+        }
+        mst->rdp_mode = rdp_mode;
+    }
+
     return dl;
 }
