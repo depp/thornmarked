@@ -314,7 +314,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
         {
             mat4 mat;
             mat4_translate_rotate_scale(
-                &mat, vec3_vec2(vec2_scale(cp->pos, meter), meter),
+                &mat, vec3_vec2(vec2_scale(cp->pos, meter), meter * cp->height),
                 cp->orientation, 1.0f);
             mat4_tofixed(mtx, &mat);
         }

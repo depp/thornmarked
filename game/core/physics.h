@@ -19,6 +19,7 @@ struct cp_phys {
     ent_id ent;
     ent_team team;
     vec2 pos;         // Position: updated by physics.
+    float height;     // Z position, must be set as input.
     vec2 vel;         // Velocity: must be set as an input.
     float max_vel;    // Maximum velocity after collision response.
     quat orientation; // Orientation: must be set as an input.

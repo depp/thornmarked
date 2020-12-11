@@ -17,7 +17,7 @@ void camera_update(struct sys_camera *restrict csys) {
     // Viewpoint: for every 1 meter of camera elevation, move this many meters
     // away from the subject. So, 0 = view down from above, 1 = 45 degree angle,
     // etc.
-    const float viewpoint = 1.6f;
+    const float viewpoint = 1.7f;
     // Distance from subject.
     const float distance = 20.0f;
 
