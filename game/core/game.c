@@ -40,11 +40,12 @@ static void spawn_monster(struct game_state *restrict gs, pak_model model,
         fatal_error("spawn_monster: no entity");
     }
     struct cp_phys *pp = physics_new(&gs->physics, ent);
+    const float radius = 0.75f, wall = 4.0f, r = wall - radius;
     pp->pos = (vec2){{
-        rand_frange(&grand, -2.0f, 2.0f),
-        rand_frange(&grand, -2.0f, 2.0f),
+        rand_frange(&grand, -r, r),
+        rand_frange(&grand, -r, r),
     }};
-    pp->radius = 0.75f;
+    pp->radius = radius;
     pp->team = TEAM_MONSTER;
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
