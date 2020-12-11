@@ -287,6 +287,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   struct sys_model *restrict msys,
                   struct sys_phys *restrict psys) {
     void *current_segment = 0;
+    unsigned mat_flags = G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH;
     for (int i = 0; i < msys->count; i++) {
         struct cp_model *restrict mp = &msys->models[i];
         struct cp_phys *restrict cp = physics_get(psys, mp->ent);
@@ -317,8 +318,8 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                 cp->orientation, 1.0f);
             mat4_tofixed(mtx, &mat);
         }
-        gSPMatrix(dl++, K0_TO_PHYS(mtx),
-                  G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+        gSPMatrix(dl++, K0_TO_PHYS(mtx), mat_flags);
+        mat_flags &= ~G_MTX_PUSH;
         for (int j = 0; j < MATERIAL_SLOTS; j++) {
             if ((mp->material[j].flags & MAT_ENABLED) != 0) {
                 dl = material_use(&gr->material, dl, mp->material[j]);
@@ -327,6 +328,9 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                 }
             }
         }
+    }
+    if ((mat_flags & G_MTX_PUSH) == 0) {
+        gSPPopMatrix(dl++, G_MTX_MODELVIEW);
     }
     return dl;
 }

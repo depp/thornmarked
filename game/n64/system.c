@@ -45,11 +45,20 @@ enum {
     ((((r)&31u) << 11) | (((g)&31u) << 6) | (((b)&31u) << 1) | 1)
 #define RGB16_32(r, g, b) ((RGB16(r, g, b) << 16) | RGB16(r, g, b))
 
+// The identity matrix.
+static const Mtx identity = {{
+    {1 << 16, 0, 1, 0},
+    {0, 1 << 16, 0, 1},
+    {0, 0, 0, 0},
+    {0, 0, 0, 0},
+}};
+
 // Initialization display list, invoked at the beginning of each frame.
 static const Gfx init_dl[] = {
     // Initialize the RSP.
     gsSPGeometryMode(~(u32)0, 0),
     gsSPTexture(0, 0, 0, 0, G_OFF),
+    gsSPMatrix(&identity, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH),
 
     // Initialize the RDP.
     gsDPPipeSync(),
@@ -61,14 +70,6 @@ static const Gfx init_dl[] = {
 
     gsSPEndDisplayList(),
 };
-
-// The identity matrix.
-static const Mtx identity = {{
-    {1 << 16, 0, 1, 0},
-    {0, 1 << 16, 0, 1},
-    {0, 0, 0, 0},
-    {0, 0, 0, 0},
-}};
 
 // Vertex data for the ground.
 #define X0 (-7)
@@ -92,7 +93,6 @@ static const Vtx ground_vtx[] = {
 
 // Display list to draw the ground, once the texture is loaded.
 static const Gfx ground_dl[] = {
-    gsSPMatrix(&identity, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH),
     gsSPVertex(ground_vtx, 4, 0),
     gsSP2Triangles(0, 1, 2, 0, 2, 1, 3, 0),
     gsSPEndDisplayList(),
