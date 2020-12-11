@@ -43,7 +43,7 @@ static unsigned graphics_buffermask(int i) {
 }
 
 // Render the next graphics frame.
-void graphics_frame(struct game_system *restrict sys,
+void graphics_frame(struct game_state *restrict gs,
                     struct graphics_state *restrict st, struct scheduler *sc,
                     OSMesgQueue *queue) {
     const bool is_pal = osTvType == OS_TV_PAL;
@@ -70,7 +70,7 @@ void graphics_frame(struct game_system *restrict sys,
             .is_pal = is_pal,
             .viewport = &viewports[st->current_task],
         };
-        game_system_render(sys, &gr);
+        game_system_render(gs, &gr);
         data_ptr = (u64 *)dl_start;
         data_size = sizeof(*dl_start) * (gr.dl_ptr - dl_start);
         osWritebackDCache(data_ptr, data_size);

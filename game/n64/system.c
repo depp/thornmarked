@@ -17,23 +17,22 @@
 #include "game/n64/text.h"
 #include "game/n64/texture.h"
 
-void game_system_init(struct game_system *restrict sys) {
+void game_system_init(struct game_state *restrict gs) {
     audio_init();
-    input_init(&sys->state.input);
+    input_init(&gs->input);
     time_init();
     model_render_init();
     particle_render_init();
     texture_init();
     image_init();
-    game_init(&sys->state);
-    sys->state.show_console = true;
+    game_init(gs);
+    gs->show_console = true;
 }
 
-void game_system_update(struct game_system *restrict sys,
-                        struct scheduler *sc) {
-    input_update(&sys->state.input);
-    float dt = time_update(&sys->state.time, sc);
-    game_update(&sys->state, dt);
+void game_system_update(struct game_state *restrict gs, struct scheduler *sc) {
+    input_update(&gs->input);
+    float dt = time_update(&gs->time, sc);
+    game_update(gs, dt);
 }
 
 enum {
@@ -99,20 +98,18 @@ static const Gfx ground_dl[] = {
     gsSPEndDisplayList(),
 };
 
-void game_system_render(struct game_system *restrict sys,
+void game_system_render(struct game_state *restrict gs,
                         struct graphics *restrict gr) {
-    struct game_state *restrict gs = &sys->state;
     console_init(&console, CONSOLE_TRUNCATE);
-    if (sys->state.time.track_loop > 0) {
+    if (gs->time.track_loop > 0) {
         const float to_beats = 138.0f / (60.0f * AUDIO_SAMPLERATE);
-        const float fbeat = to_beats * sys->state.time.track_pos;
+        const float fbeat = to_beats * gs->time.track_pos;
         int beat = fbeat;
         const float subbeat = fbeat - beat;
         int measure = (beat >> 2) + 1;
         beat = (beat & 3) + 1;
-        console_printf(&console, "%d:%02d:%d:%04.2f\n",
-                       sys->state.time.track_loop, measure, beat,
-                       (double)subbeat);
+        console_printf(&console, "%d:%02d:%d:%04.2f\n", gs->time.track_loop,
+                       measure, beat, (double)subbeat);
     }
 
     Gfx *dl = gr->dl_start;

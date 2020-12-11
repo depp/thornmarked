@@ -79,7 +79,7 @@ static int process_event(struct main_state *restrict st, int flags) {
 }
 
 static struct main_state main_state;
-static struct game_system game_system;
+static struct game_state game_state;
 
 static void main(void *arg) {
     (void)arg;
@@ -97,7 +97,7 @@ static void main(void *arg) {
 
     font_load(FONT_BS);
 
-    game_system_init(&game_system);
+    game_system_init(&game_state);
     scheduler_start(&scheduler, 1);
 
     for (;;) {
@@ -113,8 +113,8 @@ static void main(void *arg) {
         // Render a graphics frame, if ready.
         if ((st->graphics.busy & st->graphics.wait) == 0) {
             while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
-            game_system_update(&game_system, &scheduler);
-            graphics_frame(&game_system, &st->graphics, &scheduler,
+            game_system_update(&game_state, &scheduler);
+            graphics_frame(&game_state, &st->graphics, &scheduler,
                            &st->evt_queue);
             ready = true;
         }

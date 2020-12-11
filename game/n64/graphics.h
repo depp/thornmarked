@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 
-struct game_system;
+struct game_state;
 struct scheduler;
 
 enum {
@@ -51,6 +51,6 @@ struct graphics_state {
 extern unsigned graphics_current_frame;
 
 // Render the next graphics frame.
-void graphics_frame(struct game_system *restrict sys,
+void graphics_frame(struct game_state *restrict gs,
                     struct graphics_state *restrict st, struct scheduler *sc,
                     OSMesgQueue *queue);

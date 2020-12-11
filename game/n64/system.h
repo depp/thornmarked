@@ -8,15 +8,9 @@
 struct graphics;
 struct scheduler;
 
-// The entire game state, including platform-specific details.
-struct game_system {
-    // Platform-agnostic game state.
-    struct game_state state;
-};
+void game_system_init(struct game_state *restrict gs);
 
-void game_system_init(struct game_system *restrict sys);
+void game_system_update(struct game_state *restrict gs, struct scheduler *sc);
 
-void game_system_update(struct game_system *restrict sys, struct scheduler *sc);
-
-void game_system_render(struct game_system *restrict sys,
+void game_system_render(struct game_state *restrict gs,
                         struct graphics *restrict gr);
