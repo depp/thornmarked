@@ -17,6 +17,9 @@ struct graphics;
 
 // Complete state of the game. The core game does not use globals.
 struct game_state {
+    // Entity freelist.
+    struct sys_ent ent;
+
     // Entity components.
     struct sys_phys physics;
     struct sys_walk walk;

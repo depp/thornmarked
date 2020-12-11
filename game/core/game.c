@@ -8,8 +8,11 @@
 
 #include <stdbool.h>
 
-static void spawn_player(struct game_state *restrict gs, int player_index,
-                         ent_id ent) {
+static void spawn_player(struct game_state *restrict gs, int player_index) {
+    ent_id ent = entity_newid(&gs->ent);
+    if (ent.id == 0) {
+        fatal_error("spawn_player: no entity");
+    }
     struct cp_phys *pp = physics_new(&gs->physics, ent);
     pp->radius = 0.5f;
     pp->team = TEAM_PLAYER;
@@ -29,8 +32,12 @@ static void spawn_player(struct game_state *restrict gs, int player_index,
     player_new(&gs->player, player_index, ent);
 }
 
-static void spawn_monster(struct game_state *restrict gs, ent_id ent,
-                          pak_model model, pak_texture texture) {
+static void spawn_monster(struct game_state *restrict gs, pak_model model,
+                          pak_texture texture) {
+    ent_id ent = entity_newid(&gs->ent);
+    if (ent.id == 0) {
+        fatal_error("spawn_monster: no entity");
+    }
     struct cp_phys *pp = physics_new(&gs->physics, ent);
     pp->pos = (vec2){{
         rand_frange(&grand, -2.0f, 2.0f),
@@ -50,6 +57,7 @@ static void spawn_monster(struct game_state *restrict gs, ent_id ent,
 
 void game_init(struct game_state *restrict gs) {
     rand_init(&grand, 0x01234567, 0x243F6A88); // Pi fractional digits.
+    entity_init(&gs->ent);
     physics_init(&gs->physics);
     walk_init(&gs->walk);
     camera_init(&gs->camera);
@@ -58,13 +66,11 @@ void game_init(struct game_state *restrict gs) {
     player_init(&gs->player);
     particle_init(&gs->particle);
 
-    int id = 1;
     for (int i = 0; i < gs->input.count; i++) {
-        spawn_player(gs, i, (ent_id){id++});
+        spawn_player(gs, i);
     }
     for (int i = 0; i < 5; i++) {
-        spawn_monster(gs, (ent_id){id++},
-                      i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY,
+        spawn_monster(gs, i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY,
                       i & 1 ? IMG_BLUEENEMY : IMG_GREENENEMY);
     }
 
@@ -101,6 +107,7 @@ void game_update(struct game_state *restrict gs, float dt) {
 }
 
 void entity_destroy(struct game_state *restrict gs, ent_id ent) {
+    entity_freeid(&gs->ent, ent);
     {
         struct cp_phys *pp = physics_get(&gs->physics, ent);
         if (pp != NULL) {
