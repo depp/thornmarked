@@ -20,3 +20,13 @@ typedef struct quat {
 typedef struct mat4 {
     float v[16];
 } mat4;
+
+// 2D integer vector.
+typedef struct ivec2 {
+    int v[2];
+} ivec2;
+
+// 3D integer vector.
+typedef struct ivec3 {
+    int v[3];
+} ivec3;
