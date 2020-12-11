@@ -100,7 +100,6 @@ static const Gfx ground_dl[] = {
 
 void game_system_render(struct game_state *restrict gs,
                         struct graphics *restrict gr) {
-    console_init(&console, CONSOLE_TRUNCATE);
     if (gs->time.track_loop > 0) {
         const float to_beats = 138.0f / (60.0f * AUDIO_SAMPLERATE);
         const float fbeat = to_beats * gs->time.track_pos;

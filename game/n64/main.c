@@ -1,6 +1,7 @@
 #include "assets/font.h"
 #include "assets/pak.h"
 #include "base/base.h"
+#include "base/console.h"
 #include "base/n64/os.h"
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
@@ -113,6 +114,7 @@ static void main(void *arg) {
         // Render a graphics frame, if ready.
         if ((st->graphics.busy & st->graphics.wait) == 0) {
             while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
+            console_init(&console, CONSOLE_TRUNCATE);
             game_system_update(&game_state, &scheduler);
             graphics_frame(&game_state, &st->graphics, &scheduler,
                            &st->evt_queue);
