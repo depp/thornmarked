@@ -16,6 +16,7 @@ textures(
         "star_09.png",
     ],
     format = "ci.4",
+    gamma = "1.0",
     mipmap = True,
     native = True,
 )
