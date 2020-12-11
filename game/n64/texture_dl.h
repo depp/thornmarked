@@ -3,5 +3,5 @@
 
 #include <ultra64.h>
 
-// 32x32 mipmapped texture display list.
-extern const Gfx texture_dl[];
+// Display lists for loading textures.
+extern const Gfx *const texture_dls[3];

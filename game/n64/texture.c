@@ -12,8 +12,14 @@ enum {
     TEXTURE_SLOTS = 8,
 };
 
+struct texture_slot {
+    int display_list;
+    unsigned pad;
+    uint8_t data[4 * 1024];
+};
+
 // Loaded texture data.
-static uint8_t texture_data[TEXTURE_SLOTS][4 * 1024] ASSET;
+static struct texture_slot texture_data[TEXTURE_SLOTS] ASSET;
 
 // Map from texture asset ID to slot number. If the slot maps back to the same
 // texture asset, then this texture is loaded, otherwise it is not loaded.
@@ -25,7 +31,7 @@ static int texture_from_slot[TEXTURE_SLOTS];
 // Load a texture into the given slot. Ignores any texture in the slot, and does
 // not check if the texture is already loaded into another slot.
 static void texture_load_slot(pak_texture asset, int slot) {
-    pak_load_asset_sync(texture_data[slot], sizeof(texture_data[slot]),
+    pak_load_asset_sync(&texture_data[slot], sizeof(texture_data[slot]),
                         pak_texture_object(asset));
     texture_to_slot[asset.id] = slot;
     texture_from_slot[slot] = asset.id;
@@ -66,8 +72,15 @@ Gfx *texture_use(Gfx *dl, pak_texture texture_id) {
     if (texture_from_slot[slot] != texture_id.id) {
         fatal_error("Texture not loaded");
     }
-    gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1,
-                       texture_data[slot]);
-    gSPDisplayList(dl++, texture_dl);
+    const struct texture_slot *tex = &texture_data[slot];
+    gDPSetTextureImage(dl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, tex->data);
+    const Gfx *tex_dl = NULL;
+    if ((size_t)tex->display_list < ARRAY_COUNT(texture_dls)) {
+        tex_dl = texture_dls[tex->display_list];
+    }
+    if (tex_dl == NULL) {
+        fatal_error("Unknown texture type\nType: %d", tex->display_list);
+    }
+    gSPDisplayList(dl++, K0_TO_PHYS(tex_dl));
     return dl;
 }
