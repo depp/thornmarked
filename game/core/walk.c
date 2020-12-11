@@ -93,5 +93,6 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
 
         // Update orientation.
         pp->orientation = quat_rotate_z(wp->face_angle);
+        pp->forward = vec2_vec3(quat_x(pp->orientation));
     }
 }

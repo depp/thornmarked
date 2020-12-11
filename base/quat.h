@@ -32,3 +32,6 @@ quat quat_mul(quat x, quat y);
 
 // Transform a vector using a quaternion.
 vec3 quat_transform(quat q, vec3 v);
+
+// Get the vector (1,0,0) transformed by the quaternion.
+vec3 quat_x(quat q);

@@ -83,3 +83,12 @@ vec3 quat_transform(quat q, vec3 v) {
             v.v[2] * (1 - 2 * x * x - 2 * y * y),
     }};
 }
+
+vec3 quat_x(quat q) {
+    const float w = q.v[0], x = q.v[1], y = q.v[2], z = q.v[3];
+    return (vec3){{
+        1 - 2 * y * y - 2 * z * z,
+        2 * x * y + 2 * w * z,
+        2 * z * x - 2 * w * y,
+    }};
+}

@@ -13,6 +13,11 @@
 // vec2: 2D vector
 // =============================================================================
 
+// Convert a vec3 to a vec2, discarding the Z coordinate.
+inline vec2 vec2_vec3(vec3 v) {
+    return (vec2){{v.v[0], v.v[1]}};
+}
+
 // Test if two vectors are equal.
 inline bool vec2_eq(vec2 x, vec2 y) {
     return x.v[0] == y.v[0] && x.v[1] == y.v[1];

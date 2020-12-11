@@ -1,6 +1,8 @@
 #include "game/core/player.h"
 
 #include "base/base.h"
+#include "base/vec2.h"
+#include "base/vec3.h"
 #include "game/core/game.h"
 
 #include <stddef.h>
@@ -52,6 +54,7 @@ void player_update(struct game_state *restrict gs, float dt) {
         if (!pl->active) {
             continue;
         }
+        struct cp_phys *restrict pp = physics_require(&gs->physics, pl->ent);
 
         // Advance player state.
         switch (pl->state) {
@@ -77,6 +80,10 @@ void player_update(struct game_state *restrict gs, float dt) {
             if (pl->state == PSTATE_INIT) {
                 pl->state = PSTATE_ATTACK;
                 pl->state_time = 0.0f;
+                vec3 ppos =
+                    vec3_vec2(vec2_madd(pp->pos, pp->forward, 1.0f), 2.0f);
+                particle_create(&gs->particle, ppos, 1.0f,
+                                (color){{255, 0, 0, 255}});
             }
             break;
         }

@@ -19,7 +19,13 @@ void physics_init(struct sys_phys *restrict psys) {
     };
 }
 
+noreturn void physics_missing(ent_id ent) {
+    fatal_error("Missing physics component\nEntity: %d", ent.id);
+}
+
 struct cp_phys *physics_get(struct sys_phys *restrict psys, ent_id ent);
+
+struct cp_phys *physics_require(struct sys_phys *restrict psys, ent_id ent);
 
 struct cp_phys *physics_new(struct sys_phys *restrict psys, ent_id ent) {
     int index = psys->entities[ent.id];
