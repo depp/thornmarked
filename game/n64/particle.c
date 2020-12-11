@@ -9,6 +9,7 @@
 #include "game/core/camera.h"
 #include "game/n64/graphics.h"
 #include "game/n64/material.h"
+#include "game/n64/palette.h"
 
 // Particle vertex buffers.
 static Vtx *particle_vert[2];
@@ -17,13 +18,14 @@ void particle_render_init(void) {
     size_t sz = sizeof(Vtx) * MAX_PARTICLE_COUNT * 4;
     particle_vert[0] = mem_alloc(sz);
     particle_vert[1] = mem_alloc(sz);
+    short t = 1 << 11;
     for (int i = 0; i < 2; i++) {
         for (Vtx *vp = particle_vert[i], *ve = vp + MAX_PARTICLE_COUNT * 4;
              vp != ve; vp += 4) {
-            vp[0] = (Vtx){{.tc = {0 << 12, 1 << 12}}};
-            vp[1] = (Vtx){{.tc = {1 << 12, 1 << 12}}};
-            vp[2] = (Vtx){{.tc = {0 << 12, 0 << 12}}};
-            vp[3] = (Vtx){{.tc = {1 << 12, 0 << 12}}};
+            vp[0] = (Vtx){{.tc = {0, t}}};
+            vp[1] = (Vtx){{.tc = {t, t}}};
+            vp[2] = (Vtx){{.tc = {0, 0}}};
+            vp[3] = (Vtx){{.tc = {t, 0}}};
         }
     }
 }
@@ -39,6 +41,8 @@ Gfx *particle_render(Gfx *dl, struct graphics *restrict gr,
                           .flags = MAT_PARTICLE,
                           .texture_id = IMG_STAR1,
                       });
+    gDPLoadTLUT_pal16(dl++, 0, K0_TO_PHYS(palette_data));
+    gDPSetTextureLUT(dl++, G_TT_IA16);
     gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
     Vtx *vstart = particle_vert[gr->current_task];
     Vtx *restrict vp = vstart;
@@ -61,5 +65,6 @@ Gfx *particle_render(Gfx *dl, struct graphics *restrict gr,
         vp += 4;
     }
     osWritebackDCache(vstart, sizeof(*vp) * (vp - vstart));
+    gDPSetTextureLUT(dl++, G_TT_NONE);
     return dl;
 }

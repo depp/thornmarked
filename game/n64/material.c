@@ -13,7 +13,7 @@ enum {
     RDP_PARTICLE,
 };
 
-#define CC_PARTICLE 0, 0, 0, SHADE, COMBINED, 0, SHADE, 0
+#define CC_PARTICLE 1, SHADE, COMBINED, SHADE, COMBINED, 0, SHADE, 0
 
 Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
                   struct material mat) {

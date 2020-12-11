@@ -2,6 +2,22 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//base:copts.bzl", "COPTS")
 load("//n64:defs.bzl", "n64_rom")
 
+cc_binary(
+    name = "palette_gen",
+    srcs = ["palette_gen.c"],
+    copts = COPTS,
+    deps = [
+        "//base:tool",
+    ],
+)
+
+genrule(
+    name = "palette_data",
+    outs = ["palette_data.h"],
+    cmd = "$(execpath :palette_gen) $@",
+    tools = [":palette_gen"],
+)
+
 filegroup(
     name = "n64",
     srcs = [
@@ -30,6 +46,8 @@ cc_binary(
         "material.h",
         "model.c",
         "model.h",
+        "palette.c",
+        "palette.h",
         "particle.c",
         "particle.h",
         "stack.s",
@@ -43,6 +61,7 @@ cc_binary(
         "texture.h",
         "time.c",
         "time.h",
+        ":palette_data",
     ],
     copts = COPTS,
     deps = [
