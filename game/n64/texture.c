@@ -5,7 +5,7 @@
 #include "base/base.h"
 #include "base/pak/pak.h"
 #include "game/n64/defs.h"
-#include "game/n64/texture_dl.h"
+#include "game/n64/texture_dl/dl.h"
 
 enum {
     // Number of texture assets which can be loaded at once.
