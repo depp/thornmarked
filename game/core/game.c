@@ -14,7 +14,7 @@ static void spawn_player(struct game_state *restrict gs, int player_index) {
         fatal_error("spawn_player: no entity");
     }
     struct cp_phys *pp = physics_new(&gs->physics, ent);
-    pp->radius = 0.5f;
+    pp->radius = 0.75f;
     pp->height = -1.0f;
     pp->team = TEAM_PLAYER;
     walk_new(&gs->walk, ent);
@@ -44,7 +44,7 @@ static void spawn_monster(struct game_state *restrict gs, pak_model model,
         rand_frange(&grand, -2.0f, 2.0f),
         rand_frange(&grand, -2.0f, 2.0f),
     }};
-    pp->radius = 0.5f;
+    pp->radius = 0.75f;
     pp->team = TEAM_MONSTER;
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
