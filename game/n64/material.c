@@ -13,7 +13,7 @@ enum {
     RDP_PARTICLE,
 };
 
-#define CC_PARTICLE 0, 0, 0, PRIMITIVE, 0, 0, 0, COMBINED
+#define CC_PARTICLE 0, 0, 0, SHADE, COMBINED, 0, SHADE, 0
 
 Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
                   struct material mat) {
@@ -24,6 +24,9 @@ Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
     }
     if ((mat.flags & MAT_VERTEX_COLOR) != 0) {
         rsp_mode |= G_SHADE | G_SHADING_SMOOTH;
+    }
+    if ((mat.flags & MAT_PARTICLE) != 0) {
+        rsp_mode |= G_SHADE;
     }
     if (rsp_mode != mst->rsp_mode) {
         gSPGeometryMode(dl++, ~rsp_mode, rsp_mode);

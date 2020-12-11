@@ -30,3 +30,9 @@ typedef struct ivec2 {
 typedef struct ivec3 {
     int v[3];
 } ivec3;
+
+// RGBA color.
+typedef union color {
+    unsigned char v[4];
+    unsigned u;
+} color;

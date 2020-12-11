@@ -55,8 +55,9 @@ Gfx *particle_render(Gfx *dl, struct graphics *restrict gr,
             vp[2].v.ob[i] = pt.v[i] - x.v[i] + y.v[i];
             vp[3].v.ob[i] = pt.v[i] + x.v[i] + y.v[i];
         }
+        *(color *)vp[0].v.cn = pp->color;
         gSPVertex(dl++, K0_TO_PHYS(vp), 4, 0);
-        gSP2Triangles(dl++, 0, 1, 2, 0, 2, 1, 3, 0);
+        gSP2Triangles(dl++, 0, 1, 3, 0, 0, 3, 2, 0);
         vp += 4;
     }
     osWritebackDCache(vstart, sizeof(*vp) * (vp - vstart));

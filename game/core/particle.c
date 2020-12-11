@@ -8,7 +8,8 @@ void particle_init(struct sys_particle *restrict psys) {
     };
 }
 
-void particle_create(struct sys_particle *restrict psys, vec3 pos, float size) {
+void particle_create(struct sys_particle *restrict psys, vec3 pos, float size,
+                     color pcolor) {
     // Drop the particle if there are too many.
     if (psys->count >= MAX_PARTICLE_COUNT) {
         return;
@@ -18,6 +19,7 @@ void particle_create(struct sys_particle *restrict psys, vec3 pos, float size) {
     *pp = (struct particle){
         .pos = pos,
         .size = size,
+        .color = pcolor,
     };
 }
 
