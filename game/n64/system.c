@@ -189,7 +189,7 @@ void game_system_render(struct game_state *restrict gs,
                           .texture_id = IMG_GROUND,
                       });
     gSPDisplayList(dl++, ground_dl);
-    dl = particle_render(dl, gr, &gs->particle);
+    dl = particle_render(dl, gr, &gs->particle, &gs->camera);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 
     dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Music");

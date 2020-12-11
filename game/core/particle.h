@@ -2,6 +2,11 @@
 
 #include "base/vectypes.h"
 
+// Maximum number of particles.
+enum {
+    MAX_PARTICLE_COUNT = 32,
+};
+
 // A simple particle. This is not a component and cannot be attached to an
 // entity.
 struct particle {

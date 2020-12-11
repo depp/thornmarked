@@ -21,6 +21,9 @@ enum {
 extern const float meter;
 
 struct graphics {
+    // Current task number, 0 or 1.
+    int current_task;
+
     Gfx *dl_ptr;
     Gfx *dl_start;
     Gfx *dl_end;

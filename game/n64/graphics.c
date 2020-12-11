@@ -59,6 +59,7 @@ void graphics_frame(struct game_state *restrict gs,
         Mtx *mtx_end = matrixes[st->current_task] +
                        ARRAY_COUNT(matrixes[st->current_task]);
         struct graphics gr = {
+            .current_task = st->current_task,
             .dl_ptr = dl_start,
             .dl_start = dl_start,
             .dl_end = dl_end,
