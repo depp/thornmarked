@@ -18,10 +18,15 @@ void particle_render_init(void) {}
 
 Gfx *particle_render(Gfx *dl, struct graphics *restrict gr,
                      struct sys_particle *restrict psys) {
+    if (psys->count == 0) {
+        return dl;
+    }
     dl = material_use(&gr->material, dl,
                       (struct material){
+                          .flags = MAT_PARTICLE,
                           .texture_id = IMG_STAR1,
                       });
+    gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
     for (int i = 0; i < psys->count; i++) {
         struct particle *restrict pp = &psys->particle[i];
         Mtx *mtx = gr->mtx_ptr++;

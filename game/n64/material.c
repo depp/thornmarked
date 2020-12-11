@@ -10,6 +10,7 @@ enum {
     RDP_SHADE,
     RDP_MIPMAP_FLAT,
     RDP_MIPMAP_SHADE,
+    RDP_PARTICLE,
 };
 
 Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
@@ -30,12 +31,15 @@ Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
     // Load texture.
     int rdp_mode;
     if (mat.texture_id.id == 0) {
-        rdp_mode = (mat.flags & MAT_VERTEX_COLOR) != 0 ? RDP_SHADE : RDP_FLAT;
         if (mst->texture_active) {
             gSPTexture(dl++, 0, 0, 0, 0, G_OFF);
             mst->texture_active = false;
         }
-
+        if ((mat.flags & MAT_VERTEX_COLOR) != 0) {
+            rdp_mode = RDP_SHADE;
+        } else {
+            rdp_mode = RDP_FLAT;
+        }
     } else {
         if (mat.texture_id.id != mst->texture_id.id) {
             dl = texture_use(dl, mat.texture_id);
@@ -45,8 +49,13 @@ Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
             gSPTexture(dl++, 0x8000, 0x8000, 5, 0, G_ON);
             mst->texture_active = true;
         }
-        rdp_mode = (mat.flags & MAT_VERTEX_COLOR) != 0 ? RDP_MIPMAP_SHADE
-                                                       : RDP_MIPMAP_FLAT;
+        if ((mat.flags & MAT_VERTEX_COLOR) != 0) {
+            rdp_mode = RDP_MIPMAP_SHADE;
+        } else if ((mat.flags & MAT_PARTICLE)) {
+            rdp_mode = RDP_PARTICLE;
+        } else {
+            rdp_mode = RDP_MIPMAP_FLAT;
+        }
     }
 
     // Set the RDP mode.
@@ -68,13 +77,19 @@ Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
         case RDP_MIPMAP_FLAT:
             gDPSetCycleType(dl++, G_CYC_2CYCLE);
             gDPSetRenderMode(dl++, G_RM_PASS, G_RM_ZB_OPA_SURF2);
-            gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_PASS2);
+            gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_MODULATERGB_PRIM2);
             gDPSetTexturePersp(dl++, G_TP_PERSP);
             break;
         case RDP_MIPMAP_SHADE:
             gDPSetCycleType(dl++, G_CYC_2CYCLE);
             gDPSetRenderMode(dl++, G_RM_PASS, G_RM_ZB_OPA_SURF2);
             gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_MODULATERGB2);
+            gDPSetTexturePersp(dl++, G_TP_PERSP);
+            break;
+        case RDP_PARTICLE:
+            gDPSetCycleType(dl++, G_CYC_2CYCLE);
+            gDPSetRenderMode(dl++, G_RM_PASS, G_RM_ZB_XLU_SURF2);
+            gDPSetCombineMode(dl++, G_CC_TRILERP, G_CC_MODULATERGBA_PRIM2);
             gDPSetTexturePersp(dl++, G_TP_PERSP);
             break;
         default:

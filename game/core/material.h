@@ -11,6 +11,7 @@ enum {
     MAT_ENABLED = 01,
     MAT_CULL_BACK = 02,
     MAT_VERTEX_COLOR = 04,
+    MAT_PARTICLE = 010, // Blend mode: add.
 };
 
 // A rendering material.
