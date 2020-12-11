@@ -76,7 +76,7 @@ static const Mtx identity = {{
 #define Y0 (-4)
 #define X1 7
 #define Y1 12
-#define V (1 << 6)
+#define V (1 << 7)
 #define T (1 << 11)
 static const Vtx ground_vtx[] = {
     {{.ob = {X0 * V, Y0 *V, 0}, .tc = {X0 * T, -Y0 *T}}},

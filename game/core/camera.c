@@ -16,7 +16,7 @@ void camera_update(struct sys_camera *restrict csys) {
     // etc.
     const float viewpoint = 1.6f;
     // Distance from subject.
-    const float distance = 10.0f;
+    const float distance = 20.0f;
 
     // Calculate camera horizontal and vertical position and direction.
     const float cmag = sqrtf(1.0f + viewpoint * viewpoint);

@@ -33,7 +33,7 @@ Gfx *particle_render(Gfx *dl, struct graphics *restrict gr,
         {
             mat4 mat;
             mat4_translate_rotate_scale(&mat, vec3_scale(pp->pos, meter),
-                                        quat_identity(), 0.5f);
+                                        quat_identity(), 1.0f);
             mat4_tofixed(mtx, &mat);
         }
         gSPMatrix(dl++, K0_TO_PHYS(mtx),

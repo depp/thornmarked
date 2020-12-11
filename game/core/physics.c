@@ -81,7 +81,7 @@ static void physics_update_pair(struct cp_phys *restrict cx,
 
 // Update an object with respect to static collisions.
 static void physics_update_static(struct cp_phys *restrict cx) {
-    const float wall = 2.0f - cx->radius;
+    const float wall = 4.0f - cx->radius;
     for (int i = 0; i < 2; i++) {
         if (cx->pos.v[i] > wall) {
             cx->pos.v[i] = wall;

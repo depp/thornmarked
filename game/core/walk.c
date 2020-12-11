@@ -52,7 +52,7 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
         }
 
         // Update velocity.
-        float speed = 5.0f;
+        float speed = 10.0f;
         float drive_mag = vec2_length(wp->drive);
         if (drive_mag > 1.0f) {
             speed /= drive_mag;

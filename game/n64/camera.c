@@ -9,7 +9,7 @@ Gfx *camera_render(struct sys_camera *restrict csys,
     int persp_norm;
     Mtx *projection = gr->mtx_ptr++;
     {
-        const float far = 20.0f * meter;
+        const float far = 40.0f * meter;
         const float near = far * (1.0f / 16.0f);
         if (near + far < 2.0f) {
             persp_norm = 0xffff;

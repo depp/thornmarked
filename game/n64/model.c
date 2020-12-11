@@ -287,7 +287,6 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
                   struct sys_model *restrict msys,
                   struct sys_phys *restrict psys) {
     void *current_segment = 0;
-    float scale = 0.5f;
     for (int i = 0; i < msys->count; i++) {
         struct cp_model *restrict mp = &msys->models[i];
         struct cp_phys *restrict cp = physics_get(psys, mp->ent);
@@ -315,7 +314,7 @@ Gfx *model_render(Gfx *dl, struct graphics *restrict gr,
             mat4 mat;
             mat4_translate_rotate_scale(
                 &mat, vec3_vec2(vec2_scale(cp->pos, meter), meter),
-                cp->orientation, scale);
+                cp->orientation, 1.0f);
             mat4_tofixed(mtx, &mat);
         }
         gSPMatrix(dl++, K0_TO_PHYS(mtx),
