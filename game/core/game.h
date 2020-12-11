@@ -34,6 +34,11 @@ struct game_state {
     struct game_time time;
 
     bool show_console;
+
+    // Monster spawn state.
+    int spawn_active; // True if spawn_time is counting down.
+    float spawn_time; // Time remaining until spawn.
+    int spawn_type; // Type of monsters to spawn.
 };
 
 // Initialize the game state.

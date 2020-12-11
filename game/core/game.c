@@ -69,10 +69,6 @@ void game_init(struct game_state *restrict gs) {
     for (int i = 0; i < gs->input.count; i++) {
         spawn_player(gs, i);
     }
-    for (int i = 0; i < 5; i++) {
-        spawn_monster(gs, i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY,
-                      i & 1 ? IMG_BLUEENEMY : IMG_GREENENEMY);
-    }
 
     static const vec3 particle_pos[4] = {
         {{-1.0f, -1.0f, 1.0f}},
@@ -92,6 +88,11 @@ void game_init(struct game_state *restrict gs) {
     }
 }
 
+enum {
+    // Number of monsters to spawn.
+    MONSTER_SPAWN_COUNT = 5,
+};
+
 void game_update(struct game_state *restrict gs, float dt) {
     particle_update(&gs->particle, dt);
     player_update(gs, dt);
@@ -100,8 +101,30 @@ void game_update(struct game_state *restrict gs, float dt) {
     physics_update(&gs->physics, dt);
     camera_update(&gs->camera);
     model_update(&gs->model);
+
+    if (gs->spawn_active) {
+        gs->spawn_time -= dt;
+        if (gs->spawn_time < 0.0f) {
+            gs->spawn_active = false;
+            gs->spawn_time = 0.0f;
+            int n = MONSTER_SPAWN_COUNT - gs->monster.count;
+            if (n > 0) {
+                pak_texture texture =
+                    gs->spawn_type ? IMG_BLUEENEMY : IMG_GREENENEMY;
+                pak_model model =
+                    gs->spawn_type ? MODEL_BLUEENEMY : MODEL_GREENENEMY;
+                for (int i = 0; i < n; i++) {
+                    spawn_monster(gs, model, texture);
+                }
+            }
+        }
+    } else if (gs->monster.count < MONSTER_SPAWN_COUNT) {
+        gs->spawn_active = true;
+        gs->spawn_time = 3.0f;
+    }
+
     if (gs->input.count >= 1 &&
-        (gs->input.input[0].button_press & BUTTON_A) != 0) {
+        (gs->input.input[0].button_press & BUTTON_START) != 0) {
         gs->show_console = !gs->show_console;
     }
 }
