@@ -1,4 +1,4 @@
-image IMG_BIG images/big_image.texture
+image IMG_LOGO images/Logo.texture
 
 # texture IMG_GROUND images/Marble012.texture
 texture IMG_GROUND images/Ground023.texture

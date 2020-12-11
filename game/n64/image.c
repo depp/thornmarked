@@ -106,7 +106,7 @@ void image_init(void) {
             .end = heap_base + IMAGE_HEAPSIZE,
         };
     }
-    image_load(IMG_BIG);
+    image_load(IMG_LOGO);
 }
 
 static const Gfx image_dl[] = {
@@ -153,8 +153,6 @@ static Gfx *image_draw(Gfx *dl, Gfx *dl_end, pak_image asset, int x, int y) {
 }
 
 Gfx *image_render(Gfx *dl, Gfx *dl_end) {
-    if (0) {
-        dl = image_draw(dl, dl_end, IMG_BIG, 160, 32);
-    }
+    dl = image_draw(dl, dl_end, IMG_LOGO, 160, 32);
     return dl;
 }

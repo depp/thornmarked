@@ -17,7 +17,7 @@ textures(
 textures(
     name = "big_images",
     srcs = [
-        "big_image.png",
+        "Logo.png",
     ],
     anchor = "0.5:0",
     format = "rgba.16",
