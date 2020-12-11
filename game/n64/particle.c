@@ -65,6 +65,9 @@ Gfx *particle_render(Gfx *dl, struct graphics *restrict gr,
         vp += 4;
     }
     osWritebackDCache(vstart, sizeof(*vp) * (vp - vstart));
+    gDPPipeSync(dl++);
     gDPSetTextureLUT(dl++, G_TT_NONE);
+    gDPSetRenderMode(dl++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
+    gDPSetAlphaCompare(dl++, G_AC_NONE);
     return dl;
 }
