@@ -69,23 +69,6 @@ void game_init(struct game_state *restrict gs) {
     for (int i = 0; i < gs->input.count; i++) {
         spawn_player(gs, i);
     }
-
-    static const vec3 particle_pos[4] = {
-        {{-1.0f, -1.0f, 1.0f}},
-        {{+1.0f, -1.0f, 1.0f}},
-        {{-1.0f, +1.0f, 1.0f}},
-        {{+1.0f, +1.0f, 1.0f}},
-    };
-    static const color particle_color[4] = {
-        {{255, 0, 0, 255}},
-        {{255, 255, 0, 255}},
-        {{0, 255, 0, 255}},
-        {{255, 0, 255, 255}},
-    };
-    for (int i = 0; i < 4; i++) {
-        particle_create(&gs->particle, particle_pos[i], (float)(i + 1),
-                        particle_color[i]);
-    }
 }
 
 enum {
