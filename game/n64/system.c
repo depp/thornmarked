@@ -193,7 +193,7 @@ void game_system_render(struct game_state *restrict gs,
     dl = particle_render(dl, gr, &gs->particle, &gs->camera);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 
-    dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Music");
+    dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Monsters!");
 
     // Render debugging text overlay.
     if (gs->show_console) {
