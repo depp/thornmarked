@@ -44,8 +44,21 @@ struct cp_walk *walk_new(struct sys_walk *restrict wsys, ent_id ent) {
 // Update walkers.
 void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
                  float dt) {
-    for (int i = 0; i < wsys->count; i++) {
-        struct cp_walk *wp = &wsys->components[i];
+    struct cp_walk *wstart = wsys->components, *wend = wstart + wsys->count;
+    for (struct cp_walk *wp = wstart; wp != wend; wp++) {
+        // Clean up destroyed entities.
+        if (wp->ent.id == 0) {
+            do {
+                wend--;
+            } while (wp != wend && wend->ent.id == 0);
+            if (wp == wend) {
+                break;
+            }
+            *wp = *wend;
+            wsys->entities[wp->ent.id] = wp - wstart;
+        }
+
+        // Process remaining entities.
         struct cp_phys *pp = physics_get(psys, wp->ent);
         if (pp == NULL) {
             continue;
@@ -95,4 +108,5 @@ void walk_update(struct sys_walk *restrict wsys, struct sys_phys *restrict psys,
         pp->orientation = quat_rotate_z(wp->face_angle);
         pp->forward = vec2_vec3(quat_x(pp->orientation));
     }
+    wsys->count = wend - wstart;
 }

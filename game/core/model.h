@@ -37,3 +37,6 @@ inline struct cp_model *model_get(struct sys_model *restrict msys, ent_id ent) {
 // Create a new model component for the given entity. Overwrite any existing
 // model component.
 struct cp_model *model_new(struct sys_model *restrict msys, ent_id ent);
+
+// Update the model system.
+void model_update(struct sys_model *restrict msys);

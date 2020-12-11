@@ -27,6 +27,30 @@ struct cp_phys *physics_get(struct sys_phys *restrict psys, ent_id ent);
 
 struct cp_phys *physics_require(struct sys_phys *restrict psys, ent_id ent);
 
+struct cp_phys *physics_find(struct sys_phys *restrict psys, ent_id self,
+                             vec2 pos, float radius) {
+    float best_distance = radius;
+    struct cp_phys *best = NULL;
+    struct cp_phys *restrict parr = psys->physics;
+    for (int i = 0; i < psys->count; i++) {
+        if (parr[i].ent.id == self.id) {
+            continue;
+        }
+        const float r = best_distance + parr[i].radius;
+        vec2 v = parr[i].pos;
+        if ((v.v[0] < pos.v[0] - r || pos.v[0] + r < v.v[0]) ||
+            (v.v[1] < pos.v[1] - r || pos.v[1] + r < v.v[1])) {
+            continue;
+        }
+        float distance2 = vec2_distance2(pos, parr[i].pos);
+        if (distance2 < r * r) {
+            best_distance = sqrt(distance2);
+            best = &parr[i];
+        }
+    }
+    return best;
+}
+
 struct cp_phys *physics_new(struct sys_phys *restrict psys, ent_id ent) {
     int index = psys->entities[ent.id];
     struct cp_phys *pp = &psys->physics[index];
@@ -125,10 +149,29 @@ void physics_update(struct sys_phys *restrict psys, float dt) {
     if (dt < 1e-4f) {
         return;
     }
+    struct cp_phys *restrict cps = psys->physics;
+
+    // Clean up destroyed entities.
+    {
+        struct cp_phys *cpend = cps + psys->count;
+        for (struct cp_phys *cp = cps; cp != cpend; cp++) {
+            if (cp->ent.id == 0) {
+                do {
+                    cpend--;
+                } while (cp != cpend && cpend->ent.id == 0);
+                if (cp == cpend) {
+                    break;
+                }
+                *cp = *cpend;
+                psys->entities[cp->ent.id] = cp - cps;
+            }
+        }
+        psys->count = cpend - cps;
+    }
+
     const float invdt = 1.0f / dt;
 
     // Move forwards.
-    struct cp_phys *restrict cps = psys->physics;
     for (int i = 0; i < psys->count; i++) {
         cps[i].pos = vec2_madd(cps[i].pos, cps[i].vel, dt);
         cps[i].adj = (vec2){{0.0f, 0.0f}};

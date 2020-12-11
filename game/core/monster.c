@@ -40,8 +40,18 @@ void monster_update(struct sys_monster *restrict msys,
                     struct sys_phys *restrict psys,
                     struct sys_walk *restrict wsys, float dt) {
     (void)psys;
-    for (struct cp_monster *mp = msys->monsters, *me = mp + msys->count;
-         mp != me; mp++) {
+    struct cp_monster *mstart = msys->monsters, *mend = mstart + msys->count;
+    for (struct cp_monster *mp = mstart; mp != mend; mp++) {
+        if (mp->ent.id == 0) {
+            do {
+                mend--;
+            } while (mp != mend && mend->ent.id == 0);
+            if (mp == mend) {
+                break;
+            }
+            *mp = *mend;
+            msys->entities[mp->ent.id] = mp - mstart;
+        }
         mp->timer -= dt;
         if (mp->timer <= 0.0f) {
             mp->timer = rand_frange(&grand, 1.0f, 2.0f);
@@ -52,4 +62,5 @@ void monster_update(struct sys_monster *restrict msys,
             }
         }
     }
+    msys->count = mend - mstart;
 }

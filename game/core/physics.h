@@ -6,10 +6,18 @@
 #include <stdbool.h>
 #include <stdnoreturn.h>
 
+// Which team an entity is on.
+typedef enum {
+    TEAM_NONE,
+    TEAM_PLAYER,
+    TEAM_MONSTER,
+} ent_team;
+
 // Physical object component. Used for entities with a physical presence in the
 // game world.
 struct cp_phys {
     ent_id ent;
+    ent_team team;
     vec2 pos;         // Position: updated by physics.
     vec2 vel;         // Velocity: must be set as an input.
     float max_vel;    // Maximum velocity after collision response.
@@ -54,6 +62,11 @@ inline struct cp_phys *physics_require(struct sys_phys *restrict psys,
     }
     return pp;
 }
+
+// Find the closest physics object to the given point, other than self. If no
+// such object is within the given radius, return NULL>
+struct cp_phys *physics_find(struct sys_phys *restrict psys, ent_id self,
+                             vec2 pos, float radius);
 
 // Create new physics component. Overwrite any existing physics component.
 struct cp_phys *physics_new(struct sys_phys *restrict psys, ent_id ent);

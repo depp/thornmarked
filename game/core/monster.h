@@ -26,7 +26,7 @@ inline struct cp_monster *monster_get(struct sys_monster *restrict msys,
                                       ent_id ent) {
     int index = msys->entities[ent.id];
     struct cp_monster *p = &msys->monsters[index];
-    return p->ent.id == ent.id && index < msys->count ? p : 0;
+    return p->ent.id == ent.id && 0 < ent.id && index < msys->count ? p : 0;
 }
 
 // Create new monster component attached to the given entity. Overwrites any

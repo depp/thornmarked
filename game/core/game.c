@@ -12,6 +12,7 @@ static void spawn_player(struct game_state *restrict gs, int player_index,
                          ent_id ent) {
     struct cp_phys *pp = physics_new(&gs->physics, ent);
     pp->radius = 0.5f;
+    pp->team = TEAM_PLAYER;
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
     pak_texture texture = player_index == 0 ? IMG_FAIRY1 : IMG_FAIRY2;
@@ -36,6 +37,7 @@ static void spawn_monster(struct game_state *restrict gs, ent_id ent,
         rand_frange(&grand, -2.0f, 2.0f),
     }};
     pp->radius = 0.5f;
+    pp->team = TEAM_MONSTER;
     walk_new(&gs->walk, ent);
     struct cp_model *mp = model_new(&gs->model, ent);
     mp->model_id = model;
@@ -56,7 +58,7 @@ void game_init(struct game_state *restrict gs) {
     player_init(&gs->player);
     particle_init(&gs->particle);
 
-    int id = 0;
+    int id = 1;
     for (int i = 0; i < gs->input.count; i++) {
         spawn_player(gs, i, (ent_id){id++});
     }
@@ -91,8 +93,42 @@ void game_update(struct game_state *restrict gs, float dt) {
     walk_update(&gs->walk, &gs->physics, dt);
     physics_update(&gs->physics, dt);
     camera_update(&gs->camera);
+    model_update(&gs->model);
     if (gs->input.count >= 1 &&
         (gs->input.input[0].button_press & BUTTON_A) != 0) {
         gs->show_console = !gs->show_console;
+    }
+}
+
+void entity_destroy(struct game_state *restrict gs, ent_id ent) {
+    {
+        struct cp_phys *pp = physics_get(&gs->physics, ent);
+        if (pp != NULL) {
+            pp->ent = ENTITY_DESTROY;
+        }
+    }
+    {
+        struct cp_walk *wp = walk_get(&gs->walk, ent);
+        if (wp != NULL) {
+            wp->ent = ENTITY_DESTROY;
+        }
+    }
+    {
+        struct cp_model *mp = model_get(&gs->model, ent);
+        if (mp != NULL) {
+            mp->ent = ENTITY_DESTROY;
+        }
+    }
+    {
+        struct cp_monster *mp = monster_get(&gs->monster, ent);
+        if (mp != NULL) {
+            mp->ent = ENTITY_DESTROY;
+        }
+    }
+    {
+        struct cp_player *pl = player_get(&gs->player, ent);
+        if (pl != NULL) {
+            pl->ent = ENTITY_DESTROY;
+        }
     }
 }

@@ -33,3 +33,21 @@ struct cp_model *model_new(struct sys_model *restrict msys, ent_id ent) {
     };
     return mp;
 }
+
+void model_update(struct sys_model *restrict msys) {
+    // Clean up destroyed entities.
+    struct cp_model *mstart = msys->models, *mend = mstart + msys->count;
+    for (struct cp_model *mp = mstart; mp != mend; mp++) {
+        if (mp->ent.id == 0) {
+            do {
+                mend--;
+            } while (mp != mend && mend->ent.id == 0);
+            if (mp == mend) {
+                break;
+            }
+            *mp = *mend;
+            msys->entities[mp->ent.id] = mp - mstart;
+        }
+    }
+    msys->count = mend - mstart;
+}

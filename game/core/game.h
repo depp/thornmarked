@@ -17,13 +17,16 @@ struct graphics;
 
 // Complete state of the game. The core game does not use globals.
 struct game_state {
+    // Entity components.
     struct sys_phys physics;
     struct sys_walk walk;
-    struct sys_camera camera;
     struct sys_model model;
     struct sys_monster monster;
-    struct sys_input input;
     struct sys_player player;
+
+    // Other systems.
+    struct sys_input input;
+    struct sys_camera camera;
     struct sys_particle particle;
     struct game_time time;
 
@@ -35,3 +38,6 @@ void game_init(struct game_state *restrict gs);
 
 // Advance the game state.
 void game_update(struct game_state *restrict gs, float dt);
+
+// Destroy the named entity.
+void entity_destroy(struct game_state *restrict gs, ent_id ent);
