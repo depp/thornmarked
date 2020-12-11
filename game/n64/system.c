@@ -107,8 +107,8 @@ void game_system_render(struct game_state *restrict gs,
         const float subbeat = fbeat - beat;
         int measure = (beat >> 2) + 1;
         beat = (beat & 3) + 1;
-        console_printf(&console, "%d:%02d:%d:%04.2f\n", gs->time.track_loop,
-                       measure, beat, (double)subbeat);
+        cprintf("%d:%02d:%d:%04.2f\n", gs->time.track_loop, measure, beat,
+                (double)subbeat);
     }
 
     Gfx *dl = gr->dl_start;

@@ -52,3 +52,7 @@ noreturn void console_vfatal(struct console *cs, const char *fmt, va_list ap);
 
 // The main debugging console.
 extern struct console console;
+
+// Print to the main console. This should only be done from the main thread,
+// whatever thread that is.
+void cprintf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
