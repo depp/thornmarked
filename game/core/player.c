@@ -91,9 +91,9 @@ void player_update(struct game_state *restrict gs, float dt) {
             if (pl->state == PSTATE_INIT) {
                 pl->state = PSTATE_ATTACK;
                 pl->state_time = 0.0f;
-                vec2 ppos = vec2_madd(pp->pos, pp->forward, 1.0f);
+                vec2 ppos = vec2_madd(pp->pos, pp->forward, 0.5f);
                 struct cp_phys *target =
-                    physics_find(&gs->physics, pl->ent, ppos, 0.5f);
+                    physics_find(&gs->physics, pl->ent, ppos, 1.0f);
                 if (target != NULL && target->team == TEAM_MONSTER) {
                     entity_destroy(gs, target->ent);
                     particle_create(&gs->particle,
