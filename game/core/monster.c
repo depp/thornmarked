@@ -27,8 +27,9 @@ struct cp_monster *monster_new(struct sys_monster *restrict msys, ent_id ent) {
         if (index >= MONSTER_COUNT) {
             fatal_error("Too many monsters");
         }
-        p = &msys->monsters[index];
         msys->count = index + 1;
+        p = &msys->monsters[index];
+        msys->entities[ent.id] = index;
     }
     *p = (struct cp_monster){
         .ent = ent,
