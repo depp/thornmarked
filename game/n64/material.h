@@ -5,10 +5,15 @@
 
 #include <ultra64.h>
 
+#include <stdbool.h>
+
 // Information about the current material.
 struct material_state {
     // Current active texture.
     pak_texture texture_id;
+
+    // True if the texture is enabled on the RSP side.
+    bool texture_active;
 
     // Current RSP geometry mode.
     unsigned rsp_mode;

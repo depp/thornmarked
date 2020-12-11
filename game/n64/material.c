@@ -31,10 +31,19 @@ Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
     int rdp_mode;
     if (mat.texture_id.id == 0) {
         rdp_mode = (mat.flags & MAT_VERTEX_COLOR) != 0 ? RDP_SHADE : RDP_FLAT;
+        if (mst->texture_active) {
+            gSPTexture(dl++, 0, 0, 0, 0, G_OFF);
+            mst->texture_active = false;
+        }
+
     } else {
         if (mat.texture_id.id != mst->texture_id.id) {
             dl = texture_use(dl, mat.texture_id);
             mst->texture_id = mat.texture_id;
+        }
+        if (!mst->texture_active) {
+            gSPTexture(dl++, 0x8000, 0x8000, 5, 0, G_ON);
+            mst->texture_active = true;
         }
         rdp_mode = (mat.flags & MAT_VERTEX_COLOR) != 0 ? RDP_MIPMAP_SHADE
                                                        : RDP_MIPMAP_FLAT;

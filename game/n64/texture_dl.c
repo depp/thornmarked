@@ -2,7 +2,6 @@
 
 const Gfx texture_dl[] = {
     gsDPPipeSync(),
-    gsSPTexture(0x8000, 0x8000, 5, 0, G_ON),
     gsDPSetTextureDetail(G_TD_CLAMP),
     gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
     gsDPSetTextureLOD(G_TL_LOD),
