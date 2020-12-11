@@ -20,3 +20,11 @@ float vec3_dot(vec3 x, vec3 y);
 vec3 vec3_normalize(vec3 x);
 vec3 vec3_mix(vec3 x, vec3 y, float a);
 vec3 vec3_madd(vec3 x, vec3 y, float a);
+
+vec3 vec3_cross(vec3 x, vec3 y) {
+    return (vec3){{
+        x.v[1] * y.v[2] - x.v[2] * y.v[1],
+        x.v[2] * y.v[0] - x.v[0] * y.v[2],
+        x.v[0] * y.v[1] - x.v[1] * y.v[0],
+    }};
+}

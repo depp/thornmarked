@@ -9,6 +9,12 @@ struct sys_camera {
 
     // Camera focal length, 1.0 = 90 degree FOV.
     float focal;
+
+    // Unit vectors describing the camera's point of view. Calculated by the
+    // camera system.
+    vec3 right;
+    vec3 up;
+    vec3 forward;
 };
 
 // Initialize the camera system.

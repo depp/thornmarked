@@ -127,3 +127,6 @@ inline vec3 vec3_madd(vec3 x, vec3 y, float a) {
         x.v[2] + a * y.v[2],
     }};
 }
+
+// Compete the cross product of x and y.
+vec3 vec3_cross(vec3 x, vec3 y);

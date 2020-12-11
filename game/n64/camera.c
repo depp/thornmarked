@@ -2,6 +2,7 @@
 
 #include "base/mat4.h"
 #include "base/n64/mat4.h"
+#include "base/vec3.h"
 #include "game/n64/graphics.h"
 
 Gfx *camera_render(struct sys_camera *restrict csys,
@@ -24,12 +25,27 @@ Gfx *camera_render(struct sys_camera *restrict csys,
         mat4_tofixed(projection, &mat);
     }
     Mtx *camera = gr->mtx_ptr++;
-    guLookAt(camera, //
-             meter * csys->pos.v[0], meter * csys->pos.v[1],
-             meter * csys->pos.v[2], //
-             meter * csys->look_at.v[0], meter * csys->look_at.v[1],
-             meter * csys->look_at.v[2], //
-             0.0f, 0.0f, 1.0f);
+    {
+        mat4 mat = (mat4){{
+            [0] = csys->right.v[0],
+            [1] = csys->up.v[0],
+            [2] = -csys->forward.v[0],
+
+            [4] = csys->right.v[1],
+            [5] = csys->up.v[1],
+            [6] = -csys->forward.v[1],
+
+            [8] = csys->right.v[2],
+            [9] = csys->up.v[2],
+            [10] = -csys->forward.v[2],
+
+            [12] = -meter * vec3_dot(csys->pos, csys->right),
+            [13] = -meter * vec3_dot(csys->pos, csys->up),
+            [14] = meter * vec3_dot(csys->pos, csys->forward),
+            [15] = 1.0f,
+        }};
+        mat4_tofixed(camera, &mat);
+    }
     gSPMatrix(dl++, K0_TO_PHYS(projection),
               G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPPerspNormalize(dl++, persp_norm);

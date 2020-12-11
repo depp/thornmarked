@@ -1,5 +1,8 @@
 #include "game/core/camera.h"
 
+#include "base/base.h"
+#include "base/vec3.h"
+
 #include <math.h>
 #include <stdbool.h>
 
@@ -32,4 +35,9 @@ void camera_update(struct sys_camera *restrict csys) {
         csys->look_at.v[1] + choriz,
         csys->look_at.v[2] + cvert,
     }};
+
+    vec3 up = (vec3){{0.0f, 0.0f, 1.0f}};
+    csys->forward = vec3_normalize(vec3_sub(csys->look_at, csys->pos));
+    csys->right = vec3_normalize(vec3_cross(csys->forward, up));
+    csys->up = vec3_normalize(vec3_cross(csys->right, csys->forward));
 }
