@@ -25,8 +25,8 @@ int main(int argc, char **argv) {
     } else {
         out = stdout;
     }
-    const double intensity = 2.0;
-    const double alpha = 1 / 2.0;
+    const double intensity = 1.5;
+    const double alpha = 1;
     for (int i = 0; i < 16; i++) {
         int ii, ia;
         if (i == 0) {
