@@ -7,6 +7,9 @@ texture IMG_FAIRY2 models/fairy2.texture
 texture IMG_BLUEENEMY models/BlueEnemy.texture
 texture IMG_GREENENEMY models/GreenEnemy.texture
 
+texture IMG_STAR1 particle/star_01.texture
+texture IMG_STAR2 particle/star_02.texture
+
 # font FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
 font FONT_BS fonts/baksosapi/baksosapi.font
 

@@ -1,0 +1,21 @@
+load("//assets/images:defs.bzl", "textures")
+
+package(default_visibility = ["//assets:__pkg__"])
+
+textures(
+    name = "particle",
+    srcs = [
+        "star_01.png",
+        "star_02.png",
+        "star_03.png",
+        "star_04.png",
+        "star_05.png",
+        "star_06.png",
+        "star_07.png",
+        "star_08.png",
+        "star_09.png",
+    ],
+    format = "rgba.16",
+    mipmap = True,
+    native = True,
+)

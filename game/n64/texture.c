@@ -55,6 +55,7 @@ void texture_init(void) {
     texture_load(IMG_FAIRY2);
     texture_load(IMG_BLUEENEMY);
     texture_load(IMG_GREENENEMY);
+    texture_load(IMG_STAR1);
 }
 
 Gfx *texture_use(Gfx *dl, pak_texture texture_id) {

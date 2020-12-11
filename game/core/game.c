@@ -54,6 +54,7 @@ void game_init(struct game_state *restrict gs) {
     model_init(&gs->model);
     monster_init(&gs->monster);
     player_init(&gs->player);
+    particle_init(&gs->particle);
 
     int id = 0;
     for (int i = 0; i < gs->input.count; i++) {
@@ -63,6 +64,16 @@ void game_init(struct game_state *restrict gs) {
         spawn_monster(gs, (ent_id){id++},
                       i & 1 ? MODEL_BLUEENEMY : MODEL_GREENENEMY,
                       i & 1 ? IMG_BLUEENEMY : IMG_GREENENEMY);
+    }
+
+    static const vec3 particle_pos[4] = {
+        {{-1.0f, -1.0f, 1.0f}},
+        {{+1.0f, -1.0f, 1.0f}},
+        {{-1.0f, +1.0f, 1.0f}},
+        {{+1.0f, +1.0f, 1.0f}},
+    };
+    for (int i = 0; i < 4; i++) {
+        particle_create(&gs->particle, particle_pos[i]);
     }
 }
 

@@ -30,6 +30,8 @@ cc_binary(
         "material.h",
         "model.c",
         "model.h",
+        "particle.c",
+        "particle.h",
         "stack.s",
         "system.c",
         "system.h",

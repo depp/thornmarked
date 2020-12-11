@@ -5,6 +5,7 @@
 #include "game/core/input.h"
 #include "game/core/model.h"
 #include "game/core/monster.h"
+#include "game/core/particle.h"
 #include "game/core/physics.h"
 #include "game/core/player.h"
 #include "game/core/time.h"
@@ -23,6 +24,7 @@ struct game_state {
     struct sys_monster monster;
     struct sys_input input;
     struct sys_player player;
+    struct sys_particle particle;
     struct game_time time;
 
     bool show_console;

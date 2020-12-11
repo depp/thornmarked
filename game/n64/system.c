@@ -13,6 +13,7 @@
 #include "game/n64/input.h"
 #include "game/n64/material.h"
 #include "game/n64/model.h"
+#include "game/n64/particle.h"
 #include "game/n64/text.h"
 #include "game/n64/texture.h"
 
@@ -21,6 +22,7 @@ void game_system_init(struct game_system *restrict sys) {
     input_init(&sys->state.input);
     time_init();
     model_render_init();
+    particle_render_init();
     texture_init();
     image_init();
     game_init(&sys->state);
@@ -190,6 +192,7 @@ void game_system_render(struct game_system *restrict sys,
                           .texture_id = IMG_GROUND,
                       });
     gSPDisplayList(dl++, ground_dl);
+    dl = particle_render(dl, gr, &gs->particle);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 
     dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Music");
