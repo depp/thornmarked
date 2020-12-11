@@ -5,9 +5,6 @@
 
 #include <ultra64.h>
 
-// Initialize the texture system.
-void material_init(void);
-
 // Information about the current material.
 struct material_state {
     // Current active texture.

@@ -37,6 +37,8 @@ cc_binary(
         "task.h",
         "text.c",
         "text.h",
+        "texture.c",
+        "texture.h",
         "texture_dl.c",
         "texture_dl.h",
         "time.c",

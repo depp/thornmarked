@@ -14,13 +14,14 @@
 #include "game/n64/material.h"
 #include "game/n64/model.h"
 #include "game/n64/text.h"
+#include "game/n64/texture.h"
 
 void game_system_init(struct game_system *restrict sys) {
     audio_init();
     input_init(&sys->state.input);
     time_init();
     model_render_init();
-    material_init();
+    texture_init();
     image_init();
     game_init(&sys->state);
     sys->state.show_console = true;
