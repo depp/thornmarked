@@ -18,3 +18,13 @@ void particle_create(struct sys_particle *restrict psys, vec3 pos) {
         .pos = pos,
     };
 }
+
+void particle_update(struct sys_particle *restrict psys, float dt) {
+    for (int i = 0; i < psys->count; i++) {
+        struct particle *restrict pp = &psys->particle[i];
+        pp->size -= dt;
+        if (pp->size < 0.0f) {
+            pp->size = 1.0f;
+        }
+    }
+}

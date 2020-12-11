@@ -11,6 +11,7 @@ enum {
 // entity.
 struct particle {
     vec3 pos;
+    float size;
 };
 
 // Particle system.
@@ -24,3 +25,6 @@ void particle_init(struct sys_particle *restrict psys);
 
 // Create a new particle at the given position.
 void particle_create(struct sys_particle *restrict psys, vec3 pos);
+
+// Update the particle system.
+void particle_update(struct sys_particle *restrict psys, float dt);

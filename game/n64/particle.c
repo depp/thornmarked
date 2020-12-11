@@ -47,8 +47,8 @@ Gfx *particle_render(Gfx *dl, struct graphics *restrict gr,
     for (int i = 0; i < psys->count; i++) {
         struct particle *restrict pp = &psys->particle[i];
         ivec3 pt = ivec3_vec3(vec3_scale(pp->pos, meter));
-        ivec3 x = ivec3_vec3(xx);
-        ivec3 y = ivec3_vec3(yy);
+        ivec3 x = ivec3_vec3(vec3_scale(xx, pp->size));
+        ivec3 y = ivec3_vec3(vec3_scale(yy, pp->size));
         for (int i = 0; i < 3; i++) {
             vp[0].v.ob[i] = pt.v[i] - x.v[i] - y.v[i];
             vp[1].v.ob[i] = pt.v[i] + x.v[i] - y.v[i];

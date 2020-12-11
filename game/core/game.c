@@ -78,6 +78,7 @@ void game_init(struct game_state *restrict gs) {
 }
 
 void game_update(struct game_state *restrict gs, float dt) {
+    particle_update(&gs->particle, dt);
     player_update(gs, dt);
     monster_update(&gs->monster, &gs->physics, &gs->walk, dt);
     walk_update(&gs->walk, &gs->physics, dt);
