@@ -24,7 +24,7 @@ struct sys_particle {
 void particle_init(struct sys_particle *restrict psys);
 
 // Create a new particle at the given position.
-void particle_create(struct sys_particle *restrict psys, vec3 pos);
+void particle_create(struct sys_particle *restrict psys, vec3 pos, float size);
 
 // Update the particle system.
 void particle_update(struct sys_particle *restrict psys, float dt);

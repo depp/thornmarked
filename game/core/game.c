@@ -73,7 +73,7 @@ void game_init(struct game_state *restrict gs) {
         {{+1.0f, +1.0f, 1.0f}},
     };
     for (int i = 0; i < 4; i++) {
-        particle_create(&gs->particle, particle_pos[i]);
+        particle_create(&gs->particle, particle_pos[i], (float)(i + 1));
     }
 }
 
