@@ -1,4 +1,5 @@
 image IMG_LOGO images/Logo.texture
+image IMG_POINT images/Point.texture
 
 # texture IMG_GROUND images/Marble012.texture
 texture IMG_GROUND images/Ground023.texture

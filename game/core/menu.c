@@ -39,10 +39,16 @@ void menu_init(struct sys_menu *restrict msys) {
     };
 
     {
-        struct menu_image *imp = &msys->image[msys->image_count++];
+        struct menu_image *imp;
+        imp = &msys->image[msys->image_count++];
         *imp = (struct menu_image){
             .pos = (point){0, -34},
             .image = IMG_LOGO,
+        };
+        imp = &msys->image[msys->image_count++];
+        *imp = (struct menu_image){
+            .pos = (point){0, -0},
+            .image = IMG_POINT,
         };
     }
     menu_addtext(msys, (point){0, -60}, "Press {ST} {A} {B} {CL} {Z}");

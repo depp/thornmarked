@@ -25,6 +25,16 @@ textures(
     strips = True,
 )
 
+textures(
+    name = "point",
+    srcs = [
+        "Point.png",
+    ],
+    anchor = "0.5:0.5",
+    format = "rgba.16",
+    strips = True,
+)
+
 sprite_font(
     name = "buttons",
     src = "Buttons_Small.png",

@@ -83,6 +83,7 @@ static void image_load(pak_image asset) {
 void image_init(void) {
     mem_zone_init(&image_state.heap, IMAGE_HEAPSIZE, "image");
     image_load(IMG_LOGO);
+    image_load(IMG_POINT);
 }
 
 static const Gfx image_dl[] = {
