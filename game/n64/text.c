@@ -114,12 +114,17 @@ static struct text_glyph *text_to_glyphs(const struct font_header *restrict fn,
 static void text_place(const struct font_header *restrict fn,
                        struct text_glyph *restrict glyphs, int count, int x,
                        int y) {
+    int xpos = x, ypos = y;
     for (int i = 0; i < count; i++) {
         int glyph = glyphs[i].glyph;
         const struct font_glyph *restrict gi = &fn->glyphs[glyph];
-        glyphs[i].x = x;
-        glyphs[i].y = y;
-        x += gi->advance;
+        glyphs[i].x = xpos;
+        glyphs[i].y = ypos;
+        xpos += gi->advance;
+    }
+    int xoff = -((xpos - x) >> 1);
+    for (int i = 0; i < count; i++) {
+        glyphs[i].x += xoff;
     }
 }
 
