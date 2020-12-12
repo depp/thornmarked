@@ -67,7 +67,7 @@ void game_init(struct game_state *restrict gs) {
     monster_init(&gs->monster);
     player_init(&gs->player);
     particle_init(&gs->particle);
-    menu_init(&gs->menu);
+    menu_init(gs);
 
     for (int i = 0; i < gs->input.count; i++) {
         spawn_player(gs, i);
@@ -80,6 +80,7 @@ enum {
 };
 
 void game_update(struct game_state *restrict gs, float dt) {
+    menu_update(gs, dt);
     particle_update(&gs->particle, dt);
     player_update(gs, dt);
     monster_update(&gs->monster, &gs->physics, &gs->walk, dt);

@@ -3,6 +3,14 @@
 #include "base/pak/types.h"
 #include "base/vectypes.h"
 
+struct game_state;
+
+// All possible menus.
+typedef enum menu_id {
+    MENU_NONE,
+    MENU_START,
+} menu_id;
+
 // Coordinates of an on-screen point. The center of the screen is (0, 0). X is
 // right, Y is up.
 typedef struct point {
@@ -41,7 +49,16 @@ struct sys_menu {
     // Text to display.
     struct menu_text *text;
     int text_count;
+
+    // Menu animation time.
+    float time;
+
+    // Current active menu.
+    menu_id id;
 };
 
 // Initialize the menu system.
-void menu_init(struct sys_menu *restrict msys);
+void menu_init(struct game_state *restrict gs);
+
+// Update the menu system.
+void menu_update(struct game_state *restrict gs, float dt);
