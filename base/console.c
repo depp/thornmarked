@@ -413,7 +413,12 @@ parse_width:
     } break;
     case 's':
         cptr = va_arg(*ap, const char *);
-        cend = cptr + strlen(cptr);
+        if (cptr == NULL) {
+            cptr = "(null)";
+            cend = cptr + 6;
+        } else {
+            cend = cptr + strlen(cptr);
+        }
         break;
     case 'e':
     case 'E':
