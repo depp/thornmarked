@@ -59,6 +59,8 @@ void test_main(void) {
     test_printf("u = 4000000000", "u = %u", 4000000000u);
     test_printf("s = abc", "s = %s", "abc");
     test_printf("s = 000", "s = %s", "000");
+    test_printf("s = abcd", "s = %.4s", "abcd9");
+    test_printf("s = abcd1", "s = %.*s", (int)5, "abcd1234");
     test_printf("right [   abc]", "right [%6s]", "abc");
     test_printf("left [abc   ]", "left [%-6s]", "abc");
     test_printf("i = 000123", "i = %06d", 123);

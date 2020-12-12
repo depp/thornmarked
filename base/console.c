@@ -291,6 +291,7 @@ parse_width:
             if (precision < 0) {
                 flags &= ~FMT_HASPRECISION;
             }
+            ptr++;
         } else if ('0' <= c && c <= '9') {
             do {
                 precision = 10 * precision + (c - '0');
@@ -418,6 +419,12 @@ parse_width:
             cend = cptr + 6;
         } else {
             cend = cptr + strlen(cptr);
+        }
+        if ((flags & FMT_HASPRECISION) != 0) {
+            ptrdiff_t len = cend - cptr;
+            if (len > precision) {
+                cend = cptr + precision;
+            }
         }
         break;
     case 'e':
