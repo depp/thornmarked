@@ -25,6 +25,7 @@ static void menu_addtext(struct sys_menu *restrict msys, point pos,
         fatal_error("menu_addtext: text too long\nlength: %zu", len);
     }
     txp->pos = pos;
+    txp->color = (color){{111, 82, 179, 255}};
     memcpy(txp->text, text, len + 1);
     msys->text_count = index + 1;
 }

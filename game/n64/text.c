@@ -92,12 +92,13 @@ struct text_glyph {
     short x, y;
     unsigned short glyph;
     unsigned short texture;
+    color color;
 };
 
 static struct text_glyph *text_to_glyphs(const struct font_header *restrict fn,
                                          struct text_glyph *gptr,
                                          struct text_glyph *gend,
-                                         const char *text) {
+                                         const char *text, color color) {
     while (*text != '\0') {
         if (gptr == gend) {
             fatal_error("String too long\nLength: %zu\nString: %s",
@@ -105,6 +106,7 @@ static struct text_glyph *text_to_glyphs(const struct font_header *restrict fn,
         }
         unsigned cp = (unsigned char)*text++;
         gptr->glyph = fn->charmap[cp];
+        gptr->color = color;
         gptr++;
     }
     return gptr;
@@ -207,7 +209,7 @@ Gfx *text_render(Gfx *dl, struct graphics *restrict gr,
     for (int i = 0; i < msys->text_count; i++) {
         struct menu_text *restrict txp = &msys->text[i];
         struct text_glyph *gline = gptr;
-        gptr = text_to_glyphs(fn, gptr, gend, txp->text);
+        gptr = text_to_glyphs(fn, gptr, gend, txp->text, txp->color);
         if (gptr != gline) {
             text_place(fn, gline, gptr - gline, x0 + txp->pos.x,
                        y0 - txp->pos.y);
@@ -237,6 +239,7 @@ Gfx *text_render(Gfx *dl, struct graphics *restrict gr,
     gDPSetCombineMode(dl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
 
     int current_texture = -1;
+    *dl++ = (Gfx){.words = {G_SETPRIMCOLOR << 24, glyph_buffer[1][0].color.u}};
     for (int i = 0; i < scount; i++) {
         struct text_glyph *restrict g = &glyph_buffer[1][i];
         const struct font_glyph *restrict gi = &fn->glyphs[g->glyph];

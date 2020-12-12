@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/pak/types.h"
+#include "base/vectypes.h"
 
 // Coordinates of an on-screen point. The center of the screen is (0, 0). X is
 // right, Y is up.
@@ -21,6 +22,9 @@ struct menu_image {
 struct menu_text {
     // Position of text (pen position).
     point pos;
+
+    // Color to draw the text.
+    color color;
 
     // Text to display, nul-terminated.
     char text[64];
