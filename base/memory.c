@@ -5,6 +5,31 @@ static noreturn void malloc_fail(size_t size) {
     fatal_error("Out of memory\nSize: %zu", size);
 }
 
+void mem_zone_init(struct mem_zone *restrict z, size_t size, const char *name) {
+    uintptr_t base = (uintptr_t)mem_alloc(size);
+    *z = (struct mem_zone){
+        .pos = base,
+        .start = base,
+        .end = base + size,
+        .name = name,
+    };
+}
+
+void *mem_zone_alloc(struct mem_zone *restrict z, size_t size) {
+    if (size == 0) {
+        return NULL;
+    }
+    size = (size + 15) & ~(size_t)15;
+    size_t rem = z->end - z->pos;
+    if (rem < size) {
+        fatal_error("mem_zone_alloc failed\nsize = %zu\nzone = %s", size,
+                    z->name);
+    }
+    uintptr_t ptr = z->pos;
+    z->pos = ptr + size;
+    return (void *)ptr;
+}
+
 #if _ULTRA64
 
 #include <string.h>

@@ -4,6 +4,7 @@
 #include "assets/pak.h"
 #include "base/base.h"
 #include "base/fixup.h"
+#include "base/memory.h"
 #include "base/pak/pak.h"
 #include "game/core/menu.h"
 #include "game/n64/graphics.h"
@@ -28,28 +29,9 @@ struct image_header {
     struct image_rect rect[];
 };
 
-// Heap for allocating images.
-struct image_heap {
-    uintptr_t pos;
-    uintptr_t start;
-    uintptr_t end;
-};
-
-// Allocate storage for an image.
-static void *image_alloc(struct image_heap *restrict hp, size_t size) {
-    size = (size + 15) & ~(size_t)15;
-    size_t rem = hp->end - hp->pos;
-    if (rem < size) {
-        fatal_error("image_alloc failed");
-    }
-    uintptr_t ptr = hp->pos;
-    hp->pos = ptr + size;
-    return (void *)ptr;
-}
-
 // Image system state.
 struct image_state {
-    struct image_heap heap;
+    struct mem_zone heap;
     struct image_header *image[IMAGE_SLOTS];
     int image_from_slot[IMAGE_SLOTS];
     int image_to_slot[PAK_IMAGE_COUNT + 1];
@@ -68,7 +50,7 @@ static void image_load_slot(struct image_state *restrict ist, pak_image asset,
                             int slot) {
     int obj = pak_image_object(asset);
     size_t obj_size = pak_objects[obj].size;
-    struct image_header *restrict img = image_alloc(&ist->heap, obj_size);
+    struct image_header *restrict img = mem_zone_alloc(&ist->heap, obj_size);
     pak_load_asset_sync(img, obj_size, obj);
     image_fixup(img, obj_size);
     ist->image[slot] = img;
@@ -99,15 +81,7 @@ static void image_load(pak_image asset) {
 }
 
 void image_init(void) {
-    {
-        struct image_state *restrict ist = &image_state;
-        uintptr_t heap_base = (uintptr_t)mem_alloc(IMAGE_HEAPSIZE);
-        ist->heap = (struct image_heap){
-            .pos = heap_base,
-            .start = heap_base,
-            .end = heap_base + IMAGE_HEAPSIZE,
-        };
-    }
+    mem_zone_init(&image_state.heap, IMAGE_HEAPSIZE, "image");
     image_load(IMG_LOGO);
 }
 
