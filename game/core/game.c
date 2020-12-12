@@ -67,6 +67,7 @@ void game_init(struct game_state *restrict gs) {
     monster_init(&gs->monster);
     player_init(&gs->player);
     particle_init(&gs->particle);
+    menu_init(&gs->menu);
 
     for (int i = 0; i < gs->input.count; i++) {
         spawn_player(gs, i);

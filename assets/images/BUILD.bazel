@@ -19,7 +19,7 @@ textures(
     srcs = [
         "Logo.png",
     ],
-    anchor = "0.5:0",
+    anchor = "0.5:1",
     format = "rgba.16",
     strips = True,
 )

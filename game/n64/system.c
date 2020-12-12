@@ -25,6 +25,7 @@ void game_system_init(struct game_state *restrict gs) {
     particle_render_init();
     texture_init();
     image_init();
+    text_init();
     game_init(gs);
     gs->show_console = true;
 }
@@ -119,7 +120,7 @@ void game_system_render(struct game_state *restrict gs,
     const bool clear_cfb = true;
     const bool clear_border = true;
 
-    const int xsize = SCREEN_WIDTH, ysize = gr->is_pal ? 288 : 240;
+    const int xsize = gr->width, ysize = gr->height;
     {
         int x0 = 0, y0 = 0, x1 = xsize, y1 = ysize;
         float xaspect = 4.0f, yaspect = 3.0f;
@@ -193,15 +194,14 @@ void game_system_render(struct game_state *restrict gs,
     dl = particle_render(dl, gr, &gs->particle, &gs->camera);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 
-    dl = text_render(dl, gr->dl_end, 20, ysize - 18, "Monsters!");
+    // Render menu images and text.
+    dl = image_render(dl, gr, &gs->menu);
+    dl = text_render(dl, gr, &gs->menu);
 
     // Render debugging text overlay.
     if (gs->show_console) {
         dl = console_draw_displaylist(&console, dl, gr->dl_end);
     }
-
-    // Render large images.
-    dl = image_render(dl, gr->dl_end);
 
     if (2 > gr->dl_end - dl) {
         fatal_dloverflow();

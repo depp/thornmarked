@@ -3,11 +3,14 @@
 
 #include "game/n64/text.h"
 
+#include "assets/font.h"
 #include "assets/pak.h"
 #include "base/base.h"
 #include "base/fixup.h"
 #include "base/pak/pak.h"
+#include "game/core/menu.h"
 #include "game/n64/defs.h"
+#include "game/n64/graphics.h"
 
 #include <ultra64.h>
 
@@ -73,7 +76,7 @@ static void font_fixup(union font_buffer *p) {
 
 static union font_buffer font_buffer ASSET;
 
-void font_load(pak_font asset_id) {
+static void font_load(pak_font asset_id) {
     // Load from cartridge memory.
     pak_load_asset_sync(font_buffer.data, sizeof(font_buffer.data),
                         pak_font_object(asset_id));
@@ -160,6 +163,10 @@ static int text_to_sprite(const struct font_header *restrict fn,
 // glyphs converted to sprites + textures + coordinates.
 static struct text_glyph glyph_buffer[2][256];
 
+void text_init(void) {
+    font_load(FONT_BS);
+}
+
 static Gfx *text_use_texture(Gfx *dl, const struct font_texture *restrict tex) {
     switch (tex->pix_size) {
     case G_IM_SIZ_4b:
@@ -180,24 +187,38 @@ static Gfx *text_use_texture(Gfx *dl, const struct font_texture *restrict tex) {
     return dl;
 }
 
-Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text) {
-    const struct font_header *restrict fn = &font_buffer.header;
-
-    struct text_glyph *gend =
-        text_to_glyphs(fn, glyph_buffer[0],
-                       glyph_buffer[0] + ARRAY_COUNT(glyph_buffer[0]), text);
-    int gcount = gend - glyph_buffer[0];
-    if (gcount == 0) {
+Gfx *text_render(Gfx *dl, struct graphics *restrict gr,
+                 struct sys_menu *restrict msys) {
+    if (msys->text_count == 0) {
         return dl;
     }
-    text_place(fn, glyph_buffer[0], gcount, x, y);
-    int scount = text_to_sprite(fn, glyph_buffer[1], glyph_buffer[0], gcount);
+
+    const struct font_header *restrict fn = &font_buffer.header;
+    const int x0 = gr->width >> 1, y0 = gr->height >> 1;
+
+    struct text_glyph *gstart = glyph_buffer[0],
+                      *gend = gstart + ARRAY_COUNT(glyph_buffer[0]),
+                      *gptr = gstart;
+    for (int i = 0; i < msys->text_count; i++) {
+        struct menu_text *restrict txp = &msys->text[i];
+        struct text_glyph *gline = gptr;
+        gptr = text_to_glyphs(fn, gptr, gend, txp->text);
+        if (gptr != gline) {
+            text_place(fn, gline, gptr - gline, x0 + txp->pos.x,
+                       y0 - txp->pos.y);
+        }
+    }
+    if (gstart == gend) {
+        return dl;
+    }
+
+    int scount = text_to_sprite(fn, glyph_buffer[1], gstart, gptr - gstart);
     if (scount == 0) {
         return dl;
     }
 
     int ncommands = 7 + 7 * MAX_FONT_TEXTURES + 3 * scount;
-    if (ncommands > dl_end - dl) {
+    if (ncommands > gr->dl_end - dl) {
         fatal_dloverflow();
     }
 

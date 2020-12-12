@@ -5,8 +5,12 @@
 
 #include <PR/gbi.h>
 
-// Load the font with the given asset ID.
-void font_load(pak_font asset_id);
+struct graphics;
+struct sys_menu;
+
+// Initialize text rendering system.
+void text_init(void);
 
 // Create a display list to draw the given text.
-Gfx *text_render(Gfx *dl, Gfx *dl_end, int x, int y, const char *text);
+Gfx *text_render(Gfx *dl, struct graphics *restrict gr,
+                 struct sys_menu *restrict msys);

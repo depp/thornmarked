@@ -10,11 +10,13 @@ struct game_state;
 struct scheduler;
 
 enum {
-    // Size of the framebuffer, in pixels. Note that this is the size of the
-    // buffer itself, not the size of what is displayed on-screen, i.e., this is
-    // the size of the PAL buffer and NTSC modes use only a part of it.
+    // Size of the framebuffer, in pixels. Note that the buffer always has the
+    // size of the PAL framebuffer, and only a portion of it is used on non-PAL
+    // systems.
     SCREEN_WIDTH = 320,
-    SCREEN_HEIGHT = 288,
+    SCREEN_HEIGHT_PAL = 288,
+    SCREEN_HEIGHT_NONPAL = 240,
+    SCREEN_HEIGHT_BUFFER = SCREEN_HEIGHT_PAL,
 };
 
 // How long a "meter" is in game units.
@@ -23,6 +25,10 @@ extern const float meter;
 struct graphics {
     // Current task number, 0 or 1.
     int current_task;
+
+    // Framebuffer size (portion displayed on screen, which depends on region).
+    int width;
+    int height;
 
     Gfx *dl_ptr;
     Gfx *dl_start;

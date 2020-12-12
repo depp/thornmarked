@@ -16,9 +16,9 @@ enum {
     VIDEO_BUFCOUNT = TRIPLE_BUFFER ? 3 : 2,
 };
 
-static u16 framebuffers[VIDEO_BUFCOUNT][SCREEN_WIDTH * SCREEN_HEIGHT]
+static u16 framebuffers[VIDEO_BUFCOUNT][SCREEN_WIDTH * SCREEN_HEIGHT_BUFFER]
     __attribute__((section("uninit.cfb"), aligned(16)));
-static u16 zbuffer[SCREEN_WIDTH * SCREEN_HEIGHT]
+static u16 zbuffer[SCREEN_WIDTH * SCREEN_HEIGHT_BUFFER]
     __attribute__((section("uninit.zb"), aligned(16)));
 
 static Gfx display_lists[2][1024] __attribute__((section("uninit")));
@@ -60,6 +60,8 @@ void graphics_frame(struct game_state *restrict gs,
                        ARRAY_COUNT(matrixes[st->current_task]);
         struct graphics gr = {
             .current_task = st->current_task,
+            .width = SCREEN_WIDTH,
+            .height = is_pal ? SCREEN_HEIGHT_PAL : SCREEN_HEIGHT_NONPAL,
             .dl_ptr = dl_start,
             .dl_start = dl_start,
             .dl_end = dl_end,

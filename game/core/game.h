@@ -3,6 +3,7 @@
 #include "base/vectypes.h"
 #include "game/core/camera.h"
 #include "game/core/input.h"
+#include "game/core/menu.h"
 #include "game/core/model.h"
 #include "game/core/monster.h"
 #include "game/core/particle.h"
@@ -31,6 +32,7 @@ struct game_state {
     struct sys_input input;
     struct sys_camera camera;
     struct sys_particle particle;
+    struct sys_menu menu;
     struct game_time time;
 
     bool show_console;

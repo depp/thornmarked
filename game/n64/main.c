@@ -1,4 +1,3 @@
-#include "assets/font.h"
 #include "assets/pak.h"
 #include "base/base.h"
 #include "base/console.h"
@@ -32,10 +31,6 @@ static void main(void *arg);
 void boot(void) {
     system_main(main, NULL, _main_thread_stack);
 }
-
-enum {
-    RDP_OUTPUT_LEN = 64 * 1024,
-};
 
 // Info for the pak objects, to be loaded from cartridge.
 struct pak_object pak_objects[(PAK_SIZE + 1) & ~1]
@@ -95,8 +90,6 @@ static void main(void *arg) {
     // Set up message queues.
     osCreateMesgQueue(&st->evt_queue, st->evt_buffer,
                       ARRAY_COUNT(st->evt_buffer));
-
-    font_load(FONT_BS);
 
     game_system_init(&game_state);
     scheduler_start(&scheduler, 1);

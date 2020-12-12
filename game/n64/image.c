@@ -5,6 +5,8 @@
 #include "base/base.h"
 #include "base/fixup.h"
 #include "base/pak/pak.h"
+#include "game/core/menu.h"
+#include "game/n64/graphics.h"
 
 enum {
     // Maximum number of images which can be loaded at once.
@@ -152,7 +154,14 @@ static Gfx *image_draw(Gfx *dl, Gfx *dl_end, pak_image asset, int x, int y) {
     return dl;
 }
 
-Gfx *image_render(Gfx *dl, Gfx *dl_end) {
-    dl = image_draw(dl, dl_end, IMG_LOGO, 160, 32);
+Gfx *image_render(Gfx *dl, struct graphics *restrict gr,
+                  struct sys_menu *restrict msys) {
+    // Coordinates of screen center.
+    const int x0 = gr->width >> 1, y0 = gr->height >> 1;
+    for (int i = 0; i < msys->image_count; i++) {
+        const struct menu_image *restrict imp = &msys->image[i];
+        dl = image_draw(dl, gr->dl_end, imp->image, x0 + imp->pos.x,
+                        y0 - imp->pos.y);
+    }
     return dl;
 }
