@@ -1,4 +1,5 @@
 load(":defs.bzl", "textures")
+load("//tools/font:defs.bzl", "sprite_font")
 
 package(default_visibility = ["//assets:__pkg__"])
 
@@ -22,4 +23,14 @@ textures(
     anchor = "0.5:1",
     format = "rgba.16",
     strips = True,
+)
+
+sprite_font(
+    name = "buttons",
+    src = "Buttons_Small.png",
+    format = "ia.8",
+    sprite_grid = 4,
+    sprite_y = 8,
+    texsize = "64:64",
+    visibility = ["//assets:__pkg__"],
 )

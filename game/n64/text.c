@@ -7,6 +7,7 @@
 #include "assets/pak.h"
 #include "base/base.h"
 #include "base/fixup.h"
+#include "base/memory.h"
 #include "base/pak/pak.h"
 #include "game/core/menu.h"
 #include "game/n64/defs.h"
@@ -14,16 +15,80 @@
 
 #include <ultra64.h>
 
+#include <stdalign.h>
 #include <stdint.h>
 #include <string.h>
 
 enum {
-    // Maximum number of textures per font.
+    // Maximum total number of font textures.
     MAX_FONT_TEXTURES = 8,
 
-    // Maximum size in bytes of font asset.
-    FONT_BUFFER_SIZE = 32 * 1024,
+    // Memory available for fonts.
+    FONT_HEAP_SIZE = 32 * 1024,
 };
+
+// =============================================================================
+// Special Sprites
+// =============================================================================
+
+union font_sprite_name {
+    char text[4];
+    unsigned u;
+};
+
+struct font_sprite_info {
+    union font_sprite_name name;
+    color color;
+};
+
+#define BLUE 80, 120, 200
+#define GREEN 80, 170, 80
+#define YELLOW 220, 200, 100
+#define RED 250, 100, 100
+#define GRAY 150, 150, 150
+// clang-format off
+const struct font_sprite_info font_sprite_info[] = {
+    {{"A"}, {{BLUE}}}, 
+    {{"B"}, {{GREEN}}}, 
+    {{"CU"}, {{YELLOW}}},
+    {{"CD"}, {{YELLOW}}},
+    {{"Z"}, {{GRAY}}},
+    {{"ST"}, {{RED}}},
+    {{"CL"}, {{YELLOW}}},
+    {{"CR"}, {{YELLOW}}},
+    {{"L"}, {{GRAY}}},
+    {{"R"}, {{GRAY}}},
+};
+// clang-format on
+#undef BLUE
+#undef GREEN
+#undef YELLOW
+#undef RED
+#undef GRAY
+
+struct font_sprite {
+    int schar;
+    color color;
+};
+
+static struct font_sprite font_get_sprite(const char *name, size_t namelen) {
+    if (namelen <= 4) {
+        union font_sprite_name nm = {{0}};
+        for (size_t i = 0; i < namelen; i++) {
+            nm.text[i] = name[i];
+        }
+        for (size_t i = 0; i < ARRAY_COUNT(font_sprite_info); i++) {
+            const struct font_sprite_info *sp = &font_sprite_info[i];
+            if (sp->name.u == nm.u) {
+                return (struct font_sprite){
+                    .schar = 'A' + i,
+                    .color = sp->color,
+                };
+            }
+        }
+    }
+    fatal_error("Unknown text sprite\nSprite: '%.*s'", (int)namelen, name);
+}
 
 // =============================================================================
 // Font Loading
@@ -40,7 +105,7 @@ struct font_glyph {
 struct font_header {
     uint16_t glyph_count;
     uint16_t texture_count;
-    struct font_texture *textures;
+    struct font_texture *textures; // Not used at runtime, use font_textures.
     uint8_t charmap[256];
     struct font_glyph glyphs[];
 };
@@ -53,34 +118,69 @@ struct font_texture {
     void *pixels;
 };
 
-union font_buffer {
-    struct font_header header;
-    uint8_t data[FONT_BUFFER_SIZE];
+struct font_texture_slot {
+    struct font_texture texture;
+    struct font_glyph *glyphs;
 };
 
+// All textures loaded. Slot 0 is invalid, used for invisible glyphs.
+static struct font_texture_slot font_textures[MAX_FONT_TEXTURES];
+
 // Fix internal pointers in font after loading.
-static void font_fixup(union font_buffer *p) {
-    const uintptr_t base = (uintptr_t)p;
-    const size_t size = sizeof(union font_buffer);
-    struct font_header *restrict hdr = &p->header;
-    hdr->textures = pointer_fixup(hdr->textures, base, size);
-    if (hdr->texture_count > MAX_FONT_TEXTURES) {
-        fatal_error("Font has too many textures\n\nTextures: %d",
-                    hdr->texture_count);
+static void font_fixup(struct font_header *restrict fn, size_t size,
+                       int first_texture) {
+    const uintptr_t base = (uintptr_t)fn;
+    const struct font_texture *restrict texarr =
+        pointer_fixup(fn->textures, base, size);
+    for (int i = 0; i < fn->texture_count; i++) {
+        struct font_texture tex = texarr[i];
+        tex.pixels = pointer_fixup(tex.pixels, base, size);
+        font_textures[first_texture + i] = (struct font_texture_slot){
+            .texture = tex,
+            .glyphs = fn->glyphs,
+        };
     }
-    for (int i = 0; i < hdr->texture_count; i++) {
-        struct font_texture *restrict tex = &hdr->textures[i];
-        tex->pixels = pointer_fixup(tex->pixels, base, size);
+    for (int i = 0; i < fn->glyph_count; i++) {
+        struct font_glyph *gi = &fn->glyphs[i];
+        if (gi->size[0] == 0 || gi->size[1] == 0) {
+            gi->texindex = 0;
+        } else {
+            gi->texindex += first_texture;
+        }
     }
 }
 
-static union font_buffer font_buffer ASSET;
+// Memory for loading fonts.
+static struct mem_zone font_heap;
+
+// Pointer to font data for each font asset.
+static struct font_header *font_slots[PAK_FONT_COUNT + 1];
+
+// Number of textures loaded. Includes the empty slot, 0.
+static int font_texture_count = 1;
 
 static void font_load(pak_font asset_id) {
     // Load from cartridge memory.
-    pak_load_asset_sync(font_buffer.data, sizeof(font_buffer.data),
-                        pak_font_object(asset_id));
-    font_fixup(&font_buffer);
+    int obj = pak_font_object(asset_id);
+    size_t size = pak_objects[obj].size;
+    struct font_header *fn = mem_zone_alloc(&font_heap, size);
+    pak_load_asset_sync(fn, size, obj);
+    int first = font_texture_count;
+    if (fn->texture_count > MAX_FONT_TEXTURES - first) {
+        fatal_error("Too many font textures\nLoaded: %d\nNew: %d", first,
+                    fn->texture_count);
+    }
+    font_fixup(fn, size, first);
+    font_slots[asset_id.id] = fn;
+    font_texture_count = first + fn->texture_count;
+}
+
+static const struct font_header *font_get(pak_font asset_id) {
+    struct font_header *fn = font_slots[asset_id.id];
+    if (fn == NULL) {
+        fatal_error("Font not loaded\nFont: %d", asset_id.id);
+    }
+    return fn;
 }
 
 // =============================================================================
@@ -90,21 +190,57 @@ static void font_load(pak_font asset_id) {
 // A glyph and its position on-screen.
 struct text_glyph {
     short x, y;
+    unsigned short src; // Texture or font.
     unsigned short glyph;
-    unsigned short texture;
     color color;
 };
 
-static struct text_glyph *text_to_glyphs(const struct font_header *restrict fn,
+static noreturn void text_badstring(const char *text, const char *tptr) {
+    fatal_error("Bad text\nOffset: %d\nText: \"%s\"", (int)(tptr - text), text);
+}
+
+// Convert a string to glyphs. Sets the source to the font ID.
+static struct text_glyph *text_to_glyphs(pak_font font_id, pak_font sprite_id,
                                          struct text_glyph *gptr,
                                          struct text_glyph *gend,
                                          const char *text, color color) {
-    while (*text != '\0') {
+    const char *tptr = text;
+    const struct font_header *restrict fn = font_get(font_id);
+    const struct font_header *restrict bfn = font_get(sprite_id);
+    while (*tptr != '\0') {
         if (gptr == gend) {
-            fatal_error("String too long\nLength: %zu\nString: %s",
+            fatal_error("Text too long\nLength: %zu\nText: \"%s\"",
                         strlen(text), text);
         }
-        unsigned cp = (unsigned char)*text++;
+        unsigned cp = (unsigned char)*tptr++;
+        if (cp == '{') {
+            if (*tptr == '{') {
+                tptr++;
+            } else {
+                const char *name = tptr;
+                while (*tptr != '}' && *tptr != '\0') {
+                    tptr++;
+                }
+                if (*tptr == 0) {
+                    text_badstring(text, tptr);
+                }
+                struct font_sprite sp = font_get_sprite(name, tptr - name);
+                gptr->src = sprite_id.id;
+                gptr->glyph = bfn->charmap[sp.schar];
+                gptr->color = sp.color;
+                gptr->color.u |= (color.u & 0xff);
+                gptr++;
+                tptr++;
+                continue;
+            }
+        } else if (cp == '}') {
+            if (*tptr == '}') {
+                tptr++;
+            } else {
+                text_badstring(text, tptr);
+            }
+        }
+        gptr->src = font_id.id;
         gptr->glyph = fn->charmap[cp];
         gptr->color = color;
         gptr++;
@@ -112,16 +248,18 @@ static struct text_glyph *text_to_glyphs(const struct font_header *restrict fn,
     return gptr;
 }
 
-// Calculate the pen coordinates for glyphs.
-static void text_place(const struct font_header *restrict fn,
-                       struct text_glyph *restrict glyphs, int count, int x,
+// Calculate the pen coordinates for glyphs. Converts source from font ID to
+// texture index.
+static void text_place(struct text_glyph *restrict glyphs, int count, int x,
                        int y) {
     int xpos = x, ypos = y;
     for (int i = 0; i < count; i++) {
         int glyph = glyphs[i].glyph;
-        const struct font_glyph *restrict gi = &fn->glyphs[glyph];
-        glyphs[i].x = xpos;
-        glyphs[i].y = ypos;
+        const struct font_glyph *restrict gi =
+            &font_slots[glyphs[i].src]->glyphs[glyph];
+        glyphs[i].x = xpos + gi->offset[0];
+        glyphs[i].y = ypos + gi->offset[1];
+        glyphs[i].src = gi->texindex;
         xpos += gi->advance;
     }
     int xoff = -((xpos - x) >> 1);
@@ -130,35 +268,25 @@ static void text_place(const struct font_header *restrict fn,
     }
 }
 
-// Calculate the location of glyph sprite images, removing empty glyphs and
-// sorting by texture index. Returns the output number of glyphs.
-static int text_to_sprite(const struct font_header *restrict fn,
-                          struct text_glyph *restrict out_glyphs,
-                          struct text_glyph *restrict in_glyphs, int count) {
-    const int NO_TEXTURE = 0xffff;
+// Sorts glyphs by texture index, removing empty glyphs. Returns the output
+// number of glyphs.
+static int text_sort(struct text_glyph *restrict out_glyphs,
+                     struct text_glyph *restrict in_glyphs, int count) {
     // Bucket sort by texture.
-    int tex_count[MAX_FONT_TEXTURES] = {0};
+    int tex_offset[MAX_FONT_TEXTURES] = {0};
     for (int i = 0; i < count; i++) {
-        int glyph = in_glyphs[i].glyph;
-        const struct font_glyph *restrict gi = &fn->glyphs[glyph];
-        if (gi->size[0] > 0 && gi->size[1] > 0) {
-            tex_count[gi->texindex]++;
-            in_glyphs[i].x += gi->offset[0];
-            in_glyphs[i].y += gi->offset[1];
-            in_glyphs[i].texture = gi->texindex;
-        } else {
-            in_glyphs[i].texture = NO_TEXTURE;
-        }
+        tex_offset[in_glyphs[i].src]++;
     }
-    int tex_offset[MAX_FONT_TEXTURES];
+    tex_offset[0] = 0; // Don't draw invisible glyphs.
     int pos = 0;
     for (int i = 0; i < MAX_FONT_TEXTURES; i++) {
+        int count = tex_offset[i];
         tex_offset[i] = pos;
-        pos += tex_count[i];
+        pos += count;
     }
     for (int i = 0; i < count; i++) {
-        int tex = in_glyphs[i].texture;
-        if (tex < MAX_FONT_TEXTURES) {
+        int tex = in_glyphs[i].src;
+        if (tex != 0) {
             int gpos = tex_offset[tex]++;
             out_glyphs[gpos] = in_glyphs[i];
         }
@@ -171,6 +299,8 @@ static int text_to_sprite(const struct font_header *restrict fn,
 static struct text_glyph glyph_buffer[2][256];
 
 void text_init(void) {
+    mem_zone_init(&font_heap, FONT_HEAP_SIZE, "font");
+    font_load(FONT_BUTTONS);
     font_load(FONT_BS);
 }
 
@@ -200,7 +330,6 @@ Gfx *text_render(Gfx *dl, struct graphics *restrict gr,
         return dl;
     }
 
-    const struct font_header *restrict fn = &font_buffer.header;
     const int x0 = gr->width >> 1, y0 = gr->height >> 1;
 
     struct text_glyph *gstart = glyph_buffer[0],
@@ -208,23 +337,26 @@ Gfx *text_render(Gfx *dl, struct graphics *restrict gr,
                       *gptr = gstart;
     for (int i = 0; i < msys->text_count; i++) {
         struct menu_text *restrict txp = &msys->text[i];
+        if (txp->font.id == 0) {
+            continue;
+        }
         struct text_glyph *gline = gptr;
-        gptr = text_to_glyphs(fn, gptr, gend, txp->text, txp->color);
+        gptr = text_to_glyphs(txp->font, FONT_BUTTONS, gptr, gend, txp->text,
+                              txp->color);
         if (gptr != gline) {
-            text_place(fn, gline, gptr - gline, x0 + txp->pos.x,
-                       y0 - txp->pos.y);
+            text_place(gline, gptr - gline, x0 + txp->pos.x, y0 - txp->pos.y);
         }
     }
     if (gstart == gend) {
         return dl;
     }
 
-    int scount = text_to_sprite(fn, glyph_buffer[1], gstart, gptr - gstart);
+    int scount = text_sort(glyph_buffer[1], gstart, gptr - gstart);
     if (scount == 0) {
         return dl;
     }
 
-    int ncommands = 7 + 7 * MAX_FONT_TEXTURES + 3 * scount;
+    int ncommands = 7 + 7 * MAX_FONT_TEXTURES + 4 * scount;
     if (ncommands > gr->dl_end - dl) {
         fatal_dloverflow();
     }
@@ -239,17 +371,24 @@ Gfx *text_render(Gfx *dl, struct graphics *restrict gr,
     gDPSetCombineMode(dl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
 
     int current_texture = -1;
-    *dl++ = (Gfx){.words = {G_SETPRIMCOLOR << 24, glyph_buffer[1][0].color.u}};
+    const struct font_glyph *restrict tglyphs = NULL;
+    unsigned current_color = glyph_buffer[1][0].color.u;
+    *dl++ = (Gfx){.words = {G_SETPRIMCOLOR << 24, current_color}};
     for (int i = 0; i < scount; i++) {
         struct text_glyph *restrict g = &glyph_buffer[1][i];
-        const struct font_glyph *restrict gi = &fn->glyphs[g->glyph];
-        if (g->texture != current_texture) {
+        if (g->src != current_texture) {
             // 7 commands.
-            const struct font_texture *tex = &fn->textures[g->texture];
-            dl = text_use_texture(dl, tex);
-            current_texture = g->texture;
+            const struct font_texture_slot *tex = &font_textures[g->src];
+            current_texture = g->src;
+            dl = text_use_texture(dl, &tex->texture);
+            tglyphs = tex->glyphs;
         }
+        const struct font_glyph *gi = &tglyphs[g->glyph];
 
+        if (g->color.u != current_color) {
+            current_color = g->color.u;
+            *dl++ = (Gfx){.words = {G_SETPRIMCOLOR << 24, current_color}};
+        }
         // 3 commands.
         gSPTextureRectangle(dl++, g->x << 2, g->y << 2,
                             (g->x + gi->size[0]) << 2,

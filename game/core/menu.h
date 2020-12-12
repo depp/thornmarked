@@ -20,6 +20,8 @@ struct menu_image {
 
 // Text to display in the menu.
 struct menu_text {
+    pak_font font;
+
     // Position of text (pen position).
     point pos;
 

@@ -1,5 +1,6 @@
 #include "game/core/menu.h"
 
+#include "assets/font.h"
 #include "assets/image.h"
 #include "base/base.h"
 
@@ -24,6 +25,7 @@ static void menu_addtext(struct sys_menu *restrict msys, point pos,
     if (len >= sizeof(txp->text)) {
         fatal_error("menu_addtext: text too long\nlength: %zu", len);
     }
+    txp->font = FONT_BS;
     txp->pos = pos;
     txp->color = (color){{111, 82, 179, 255}};
     memcpy(txp->text, text, len + 1);
@@ -43,5 +45,5 @@ void menu_init(struct sys_menu *restrict msys) {
             .image = IMG_LOGO,
         };
     }
-    menu_addtext(msys, (point){0, -60}, "Press Start");
+    menu_addtext(msys, (point){0, -60}, "Press {ST} {A} {B} {CL} {Z}");
 }

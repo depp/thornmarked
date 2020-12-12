@@ -9,7 +9,7 @@ genrule(
     cmd = (
         "$(location //tools/font) " +
         "-font=$(location ter-u12n.bdf) " +
-        "-size=12 " +
+        "-font-size=12 " +
         "-out-fallback=$@"
     ),
     tools = [
