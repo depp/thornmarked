@@ -37,5 +37,8 @@ struct cp_player *player_get(struct sys_player *restrict psys, ent_id ent);
 struct cp_player *player_new(struct sys_player *restrict msys, int player_index,
                              ent_id ent);
 
+// Spawn a player entity.
+void player_spawn(struct game_state *restrict gs, int player_index);
+
 // Update players.
 void player_update(struct game_state *restrict gs, float dt);

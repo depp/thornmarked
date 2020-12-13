@@ -1,5 +1,7 @@
 #include "game/core/player.h"
 
+#include "assets/model.h"
+#include "assets/texture.h"
 #include "base/base.h"
 #include "base/vec2.h"
 #include "base/vec3.h"
@@ -54,6 +56,31 @@ struct cp_player *player_new(struct sys_player *restrict msys, int player_index,
         .ent = ent,
     };
     return pl;
+}
+
+void player_spawn(struct game_state *restrict gs, int player_index) {
+    ent_id ent = entity_newid(&gs->ent);
+    if (ent.id == 0) {
+        fatal_error("player_spawn: no entity");
+    }
+    struct cp_phys *pp = physics_new(&gs->physics, ent);
+    pp->radius = 0.75f;
+    pp->height = -1.0f;
+    pp->team = TEAM_PLAYER;
+    walk_new(&gs->walk, ent);
+    struct cp_model *mp = model_new(&gs->model, ent);
+    pak_texture texture = player_index == 0 ? IMG_FAIRY1 : IMG_FAIRY2;
+    mp->model_id = MODEL_FAIRY;
+    mp->material[0] = (struct material){
+        .flags = MAT_ENABLED | MAT_CULL_BACK | MAT_VERTEX_COLOR,
+        .texture_id = texture,
+    };
+    mp->material[1] = (struct material){
+        .flags = MAT_ENABLED | MAT_VERTEX_COLOR,
+        .texture_id = texture,
+    };
+    mp->animation_id = 4;
+    player_new(&gs->player, player_index, ent);
 }
 
 void player_update(struct game_state *restrict gs, float dt) {

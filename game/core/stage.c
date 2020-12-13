@@ -4,7 +4,6 @@
 #include "assets/texture.h"
 #include "base/base.h"
 #include "game/core/game.h"
-#include "game/core/spawn.h"
 
 enum {
     // Number of monsters to spawn.
@@ -24,7 +23,7 @@ void stage_start(struct game_state *restrict gs, int player_count) {
         .active = true,
     };
     for (int i = 0; i < player_count; i++) {
-        spawn_player(gs, i);
+        player_spawn(gs, i);
     }
 }
 
