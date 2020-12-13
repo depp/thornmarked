@@ -15,13 +15,9 @@ void sfx_init(struct sys_sfx *restrict ssys) {
     };
 }
 
-static int n = 0;
-
 void sfx_update(struct sys_sfx *restrict ssys, float dt) {
     ssys->timer -= dt;
-    cprintf("timer = %f; n=%d\n", (double)ssys->timer, n);
     if (ssys->timer < 0.0f) {
-        n++;
         sfx_play(ssys, &(struct sfx_src){
                            .track_id = SFX_CLANG,
                            .volume = 1.0,

@@ -12,6 +12,8 @@
 #include "game/n64/system.h"
 #include "game/n64/task.h"
 
+#include <stdalign.h>
+
 enum {
     AUDIO_SFX_SLOTS = 16,
 
@@ -155,9 +157,15 @@ static void audio_track_fixup(union audio_tracktablebuf *p, pak_track asset) {
 
 static union audio_tracktablebuf audio_trackbuf ASSET;
 
+struct sfx_slot {
+    alignas(16) union audio_tracktablebuf buf;
+    ALSound sound;
+    ALEnvelope envelope;
+    ALSndId id;
+};
+
 static int audio_sfxcount;
-static union audio_tracktablebuf audio_sfxbuf[AUDIO_SFX_SLOTS] ASSET;
-static ALSound audio_sfxsound[AUDIO_SFX_SLOTS];
+static struct sfx_slot audio_sfxbuf[AUDIO_SFX_SLOTS] ASSET;
 static int audio_track_to_slot[PAK_TRACK_COUNT + 1];
 static int audio_track_from_slot[AUDIO_SFX_SLOTS];
 
@@ -168,18 +176,29 @@ static ALEnvelope sndenv = {
 };
 
 static void sfx_load_slot(pak_track asset_id, int slot) {
-    pak_load_asset_sync(&audio_sfxbuf[slot], sizeof(audio_sfxbuf[slot]),
-                        pak_track_object(asset_id));
-    audio_track_fixup(&audio_sfxbuf[slot], asset_id);
+    int obj = pak_track_object(asset_id);
+    int frames = pak_objects[obj + 1].size / 9;
+    int samples = frames * 16;
+    int microsec = (int64_t)samples * 1000000 / AUDIO_SAMPLERATE;
+    pak_load_asset_sync(&audio_sfxbuf[slot].buf, sizeof(audio_sfxbuf[slot].buf),
+                        obj);
+    audio_track_fixup(&audio_sfxbuf[slot].buf, asset_id);
     audio_track_to_slot[asset_id.id] = slot;
     audio_track_from_slot[slot] = asset_id.id;
-    audio_sfxsound[slot] = (ALSound){
-        .envelope = &sndenv,
-        .wavetable = &audio_sfxbuf[slot].header.wavetable,
+    audio_sfxbuf[slot].sound = (ALSound){
+        .envelope = &audio_sfxbuf[slot].envelope,
+        .wavetable = &audio_sfxbuf[slot].buf.header.wavetable,
         .samplePan = AL_PAN_CENTER,
         .sampleVolume = AL_VOL_FULL,
         .flags = 1,
     };
+    audio_sfxbuf[slot].envelope = (ALEnvelope){
+        .attackVolume = 127,
+        .decayVolume = 127,
+        .decayTime = microsec,
+        .releaseTime = 5000,
+    };
+    // audio_sfxbuf[slot].samples = samples;
 }
 
 static void sfx_load(pak_track asset_id) {
@@ -197,6 +216,13 @@ static void sfx_load(pak_track asset_id) {
     audio_sfxcount = slot + 1;
     sfx_load_slot(asset_id, slot);
 }
+
+struct audio_voice {
+    ALSndId id;
+};
+
+static int audio_voice_count = 0;
+static struct audio_voice audio_voices[AUDIO_MAX_VOICES - 1];
 
 void audio_init(void) {
     sfx_load(SFX_CLANG);
@@ -249,12 +275,14 @@ void audio_init(void) {
         .sampleVolume = AL_VOL_FULL,
         .flags = 1,
     };
-    ALSndId sndid = alSndpAllocate(&audio_sndp, &snd);
-    alSndpSetSound(&audio_sndp, sndid);
-    alSndpSetPitch(&audio_sndp, 1.0f);
-    alSndpSetPan(&audio_sndp, 64);
-    alSndpSetVol(&audio_sndp, 30000);
-    // alSndpPlay(&audio_sndp);
+    {
+        ALSndId sndid = alSndpAllocate(&audio_sndp, &snd);
+        alSndpSetSound(&audio_sndp, sndid);
+        alSndpSetPitch(&audio_sndp, 1.0f);
+        alSndpSetPan(&audio_sndp, 64);
+        alSndpSetVol(&audio_sndp, 30000);
+        // alSndpPlay(&audio_sndp);
+    }
 }
 
 // =============================================================================
@@ -277,7 +305,8 @@ static unsigned audio_buffermask(int i) {
 }
 
 static void audio_startsfx(struct sfx_src *restrict sp) {
-    if (sp->track_id.id == 0) {
+    // -1 for music track.
+    if (sp->track_id.id == 0 || audio_voice_count > AUDIO_MAX_VOICES - 1) {
         return;
     }
     if (sp->track_id.id < 1 || PAK_TRACK_COUNT < sp->track_id.id) {
@@ -289,15 +318,19 @@ static void audio_startsfx(struct sfx_src *restrict sp) {
                     sp->track_id.id);
         return;
     }
-    ALSndId sndid = alSndpAllocate(&audio_sndp, &audio_sfxsound[slot]);
+    ALSndId sndid = alSndpAllocate(&audio_sndp, &audio_sfxbuf[slot].sound);
     if (sndid < 0) {
-        fatal_error("could ont allocate sound");
+        return;
     }
+    int voice = audio_voice_count++;
     alSndpSetSound(&audio_sndp, sndid);
     alSndpSetPitch(&audio_sndp, 1.0f);
     alSndpSetPan(&audio_sndp, 64);
     alSndpSetVol(&audio_sndp, 30000);
     alSndpPlay(&audio_sndp);
+    audio_voices[voice] = (struct audio_voice){
+        .id = sndid,
+    };
 }
 
 void audio_frame(struct game_state *restrict gs,
@@ -338,6 +371,19 @@ void audio_frame(struct game_state *restrict gs,
         alAudioFrame(al_start, &cmdlen, (s16 *)K0_TO_PHYS(buffer), AUDIO_BUFSZ);
     if (al_end - al_start > AUDIO_CLIST_SIZE) {
         fatal_error("Audio command list overrun\nsize=%td", al_end - al_start);
+    }
+
+    // Clear up sound effects.
+    for (int i = 0; i < audio_voice_count;) {
+        alSndpSetSound(&audio_sndp, audio_voices[i].id);
+        int state = alSndpGetState(&audio_sndp);
+        if (state == AL_STOPPED) {
+            alSndpDeallocate(&audio_sndp, audio_voices[i].id);
+            audio_voice_count--;
+            audio_voices[i] = audio_voices[audio_voice_count];
+        } else {
+            i++;
+        }
     }
 
     // Create and sumbit the task.
