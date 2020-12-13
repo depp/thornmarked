@@ -9,6 +9,7 @@
 #include "game/core/particle.h"
 #include "game/core/physics.h"
 #include "game/core/player.h"
+#include "game/core/sfx.h"
 #include "game/core/stage.h"
 #include "game/core/time.h"
 #include "game/core/walk.h"
@@ -36,6 +37,7 @@ struct game_state {
     struct sys_menu menu;
     struct game_time time;
     struct sys_stage stage;
+    struct sys_sfx sfx;
 
     bool show_console;
 };

@@ -21,6 +21,7 @@ asset_data(
         "//assets/models:textures",
         "//assets/music",
         "//assets/particle",
+        "//assets/sfx",
     ],
     manifest = "manifest.txt",
     visibility = ["//game:__subpackages__"],

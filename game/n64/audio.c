@@ -7,11 +7,14 @@
 #include "base/n64/os.h" // osTvType
 #include "base/n64/scheduler.h"
 #include "base/pak/pak.h"
+#include "game/core/game.h"
 #include "game/n64/defs.h"
 #include "game/n64/system.h"
 #include "game/n64/task.h"
 
 enum {
+    AUDIO_SFX_SLOTS = 16,
+
     // Number of frames in an audio buffer.
     AUDIO_BUFSZ = 1024 * 2,
 
@@ -102,8 +105,6 @@ static ALDMAproc audio_dma_new(void *arg) {
 // Sample index of the start of the current buffer or next buffer.
 static unsigned current_sample;
 
-static u8 audio_heap[AUDIO_HEAP_SIZE]
-    __attribute__((section("uninit"), aligned(16)));
 static ALHeap audio_hp;
 static ALGlobals audio_globals;
 static ALSndPlayer audio_sndp;
@@ -154,7 +155,52 @@ static void audio_track_fixup(union audio_tracktablebuf *p, pak_track asset) {
 
 static union audio_tracktablebuf audio_trackbuf ASSET;
 
+static int audio_sfxcount;
+static union audio_tracktablebuf audio_sfxbuf[AUDIO_SFX_SLOTS] ASSET;
+static ALSound audio_sfxsound[AUDIO_SFX_SLOTS];
+static int audio_track_to_slot[PAK_TRACK_COUNT + 1];
+static int audio_track_from_slot[AUDIO_SFX_SLOTS];
+
+static ALEnvelope sndenv = {
+    .attackVolume = 127,
+    .decayVolume = 127,
+    .decayTime = -1,
+};
+
+static void sfx_load_slot(pak_track asset_id, int slot) {
+    pak_load_asset_sync(&audio_sfxbuf[slot], sizeof(audio_sfxbuf[slot]),
+                        pak_track_object(asset_id));
+    audio_track_fixup(&audio_sfxbuf[slot], asset_id);
+    audio_track_to_slot[asset_id.id] = slot;
+    audio_track_from_slot[slot] = asset_id.id;
+    audio_sfxsound[slot] = (ALSound){
+        .envelope = &sndenv,
+        .wavetable = &audio_sfxbuf[slot].header.wavetable,
+        .samplePan = AL_PAN_CENTER,
+        .sampleVolume = AL_VOL_FULL,
+        .flags = 1,
+    };
+}
+
+static void sfx_load(pak_track asset_id) {
+    if (asset_id.id < 1 || PAK_TRACK_COUNT < asset_id.id) {
+        fatal_error("sfx_load: invalid asset");
+    }
+    int slot = audio_track_to_slot[asset_id.id];
+    if (audio_track_from_slot[slot] == asset_id.id) {
+        return;
+    }
+    slot = audio_sfxcount;
+    if (slot >= AUDIO_SFX_SLOTS) {
+        fatal_error("sfx_load: out of slots");
+    }
+    audio_sfxcount = slot + 1;
+    sfx_load_slot(asset_id, slot);
+}
+
 void audio_init(void) {
+    sfx_load(SFX_CLANG);
+
     pak_track asset = TRACK_RISING_TIDE;
 
     // Mark all DMA buffers as "old" so they get used.
@@ -172,7 +218,7 @@ void audio_init(void) {
         audio_samples_per_frame = (audio_rate * 1001 + 30000) / 60000;
     }
 
-    alHeapInit(&audio_hp, audio_heap, sizeof(audio_heap));
+    alHeapInit(&audio_hp, mem_alloc(AUDIO_HEAP_SIZE), AUDIO_HEAP_SIZE);
     ALSynConfig scfg = {
         .maxVVoices = AUDIO_MAX_VOICES,
         .maxPVoices = AUDIO_MAX_VOICES,
@@ -190,17 +236,12 @@ void audio_init(void) {
         .heap = &audio_hp,
     };
     alSndpNew(&audio_sndp, &pcfg);
-    static ALEnvelope sndenv = {
-        .attackVolume = 127,
-        .decayVolume = 127,
-        .decayTime = -1,
-    };
+
     pak_load_asset_sync(&audio_trackbuf, sizeof(audio_trackbuf),
                         pak_track_object(asset));
     audio_track_fixup(&audio_trackbuf, asset);
     audio_trackstart = current_sample;
     audio_trackinfo = audio_trackbuf.header.info;
-
     static ALSound snd = {
         .envelope = &sndenv,
         .wavetable = &audio_trackbuf.header.wavetable,
@@ -213,7 +254,7 @@ void audio_init(void) {
     alSndpSetPitch(&audio_sndp, 1.0f);
     alSndpSetPan(&audio_sndp, 64);
     alSndpSetVol(&audio_sndp, 30000);
-    alSndpPlay(&audio_sndp);
+    // alSndpPlay(&audio_sndp);
 }
 
 // =============================================================================
@@ -235,7 +276,32 @@ static unsigned audio_buffermask(int i) {
     return 4u << i;
 }
 
-void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
+static void audio_startsfx(struct sfx_src *restrict sp) {
+    if (sp->track_id.id == 0) {
+        return;
+    }
+    if (sp->track_id.id < 1 || PAK_TRACK_COUNT < sp->track_id.id) {
+        fatal_error("invalid sfx: %d", sp->track_id.id);
+    }
+    int slot = audio_track_to_slot[sp->track_id.id];
+    if (audio_track_from_slot[slot] != sp->track_id.id) {
+        fatal_error("NOT LOADED %d %d", audio_track_from_slot[slot],
+                    sp->track_id.id);
+        return;
+    }
+    ALSndId sndid = alSndpAllocate(&audio_sndp, &audio_sfxsound[slot]);
+    if (sndid < 0) {
+        fatal_error("could ont allocate sound");
+    }
+    alSndpSetSound(&audio_sndp, sndid);
+    alSndpSetPitch(&audio_sndp, 1.0f);
+    alSndpSetPan(&audio_sndp, 64);
+    alSndpSetVol(&audio_sndp, 30000);
+    alSndpPlay(&audio_sndp);
+}
+
+void audio_frame(struct game_state *restrict gs,
+                 struct audio_state *restrict st, struct scheduler *sc,
                  OSMesgQueue *queue) {
     // Return finished DMA messages.
     {
@@ -255,6 +321,14 @@ void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
     for (int i = 0; i < AUDIO_DMA_COUNT; i++) {
         audio_dma[i].age++;
     }
+
+    // Play game sound effects.
+    for (struct sfx_src *restrict srcp = gs->sfx.src,
+                                  *srce = srcp + gs->sfx.count;
+         srcp != srce; srcp++) {
+        audio_startsfx(srcp);
+    }
+    gs->sfx.count = 0;
 
     // Create the command list.
     int16_t *buffer = audio_buffers[st->current_buffer];

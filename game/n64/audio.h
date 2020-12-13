@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 struct scheduler;
+struct game_state;
 
 enum {
     // Audio sample rate, in Hz.
@@ -40,5 +41,6 @@ extern struct audio_trackinfo audio_trackinfo;
 void audio_init(void);
 
 // Render the next audio frame.
-void audio_frame(struct audio_state *restrict st, struct scheduler *sc,
+void audio_frame(struct game_state *restrict gs,
+                 struct audio_state *restrict st, struct scheduler *sc,
                  OSMesgQueue *queue);

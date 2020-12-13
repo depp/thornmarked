@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 void game_init(struct game_state *restrict gs) {
+    sfx_init(&gs->sfx);
     rand_init(&grand, 0x01234567, 0x243F6A88); // Pi fractional digits.
     entity_init(&gs->ent);
     physics_init(&gs->physics);
@@ -20,6 +21,7 @@ void game_init(struct game_state *restrict gs) {
 }
 
 void game_update(struct game_state *restrict gs, float dt) {
+    sfx_update(&gs->sfx, dt); // Must be first.
     menu_update(gs, dt);
     if (gs->menu.stack_size == 0) {
         particle_update(&gs->particle, dt);

@@ -95,26 +95,24 @@ static void main(void *arg) {
     scheduler_start(&scheduler, 1);
 
     for (;;) {
-        bool ready = false;
+        bool audio_ready = (st->audio.busy & st->audio.wait) == 0;
+        bool video_ready = (st->graphics.busy & st->graphics.wait) == 0;
 
-        // Render an audio frame, if ready.
-        if ((st->audio.busy & st->audio.wait) == 0) {
-            while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
-            audio_frame(&st->audio, &scheduler, &st->evt_queue);
-            ready = true;
-        }
-
-        // Render a graphics frame, if ready.
-        if ((st->graphics.busy & st->graphics.wait) == 0) {
+        if (video_ready || audio_ready) {
             while (process_event(st, OS_MESG_NOBLOCK) == 0) {}
             console_init(&console, CONSOLE_TRUNCATE);
             game_system_update(&game_state, &scheduler);
-            graphics_frame(&game_state, &st->graphics, &scheduler,
-                           &st->evt_queue);
-            ready = true;
-        }
 
-        if (!ready) {
+            if (audio_ready) {
+                audio_frame(&game_state, &st->audio, &scheduler,
+                            &st->evt_queue);
+            }
+
+            if (video_ready) {
+                graphics_frame(&game_state, &st->graphics, &scheduler,
+                               &st->evt_queue);
+            }
+        } else {
             process_event(st, OS_MESG_BLOCK);
         }
     }

@@ -1,9 +1,12 @@
-package(default_visibility = ["//visibility:public"])
+load("//assets/music:defs.bzl", "audio_tracks")
 
-genrule(
-    name = "fanfare",
-    srcs = ["fanfare.flac"],
-    outs = ["fanfare.dat"],
-    cmd = "$(execpath //tools/audioconvert) -rate=22050 -input=$< -output=$@",
-    tools = ["//tools/audioconvert"],
+audio_tracks(
+    name = "sfx",
+    srcs = [
+        "clang.wav",
+        "fanfare.flac",
+        "swoosh.wav",
+    ],
+    rate = "32000",
+    visibility = ["//visibility:public"],
 )
