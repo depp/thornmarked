@@ -51,6 +51,6 @@ void stage_update(struct game_state *restrict gs, float dt) {
         }
     } else if (gs->monster.count < MONSTER_SPAWN_COUNT) {
         ssys->spawn_active = true;
-        ssys->spawn_time = 3.0f;
+        ssys->spawn_time = 1.5f;
     }
 }
