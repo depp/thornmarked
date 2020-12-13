@@ -22,8 +22,14 @@ void *mem_zone_alloc(struct mem_zone *restrict z, size_t size) {
     size = (size + 15) & ~(size_t)15;
     size_t rem = z->end - z->pos;
     if (rem < size) {
-        fatal_error("mem_zone_alloc failed\nsize = %zu\nzone = %s", size,
-                    z->name);
+        fatal_error(
+            "mem_zone_alloc failed\n"
+            "Alloc size: %zu\n"
+            "Zone: %s\n"
+            "Zone size: %zu\n"
+            "Total space required: %zu\n",
+            size, z->name, (size_t)(z->end - z->start),
+            (size_t)(z->pos + size - z->start));
     }
     uintptr_t ptr = z->pos;
     z->pos = ptr + size;
