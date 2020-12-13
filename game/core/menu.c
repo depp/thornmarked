@@ -263,24 +263,6 @@ static void menu_def_push(struct game_state *restrict gs,
 }
 
 // =============================================================================
-// Config Menu
-// =============================================================================
-
-static struct menu_def MENU_SETTINGS = {
-    .title = "Settings",
-    .count = 1,
-    .items =
-        {
-            {"Particles", 0},
-        },
-};
-
-static void menu_push_settings(struct game_state *restrict gs, int item) {
-    (void)item;
-    menu_def_push(gs, &MENU_SETTINGS);
-}
-
-// =============================================================================
 // Credits Screen
 // =============================================================================
 
@@ -312,12 +294,11 @@ static void action_play(struct game_state *restrict gs, int item) {
 }
 
 static struct menu_def MENU_NEWGAME = {
-    .count = 4,
+    .count = 3,
     .items =
         {
             {"Play 1P", 0},
             {"Play 2P", 0},
-            {"Settings", menu_push_settings},
             {"Credits", menu_push_credits},
         },
 };
