@@ -13,7 +13,7 @@
 
 enum {
     // Number of frames in an audio buffer.
-    AUDIO_BUFSZ = 1024,
+    AUDIO_BUFSZ = 1024 * 2,
 
     AUDIO_HEAP_SIZE = 256 * 1024,
     AUDIO_CLIST_SIZE = 4096,

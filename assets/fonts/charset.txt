@@ -6,7 +6,7 @@ range A Z
 range a z
 
 # Numbers
-#range 0 9
+range 0 9
 
 # ASCII Punctuation
 chars . , ! ? - :

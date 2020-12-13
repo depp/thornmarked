@@ -25,6 +25,12 @@ enum {
     BUTTON_C_DOWN = 0x0004,
     BUTTON_C_LEFT = 0x0002,
     BUTTON_C_RIGHT = 0x0001,
+
+    // Synthesized buttons from joystick.
+    BUTTON_J_UP = 0x10000,
+    BUTTON_J_DOWN = 0x20000,
+    BUTTON_J_LEFT = 0x40000,
+    BUTTON_J_RIGHT = 0x80000,
 };
 
 // Controller input.

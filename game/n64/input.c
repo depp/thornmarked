@@ -51,6 +51,16 @@ void input_init(struct sys_input *restrict inp) {
 static void input_update_player(struct controller_input *restrict pl,
                                 const OSContPad *restrict pad) {
     unsigned state = pad->button;
+    if (pad->stick_x < -JOYSTICK_FULL_SCALE / 2) {
+        state |= BUTTON_J_LEFT;
+    } else if (pad->stick_x > JOYSTICK_FULL_SCALE / 2) {
+        state |= BUTTON_J_RIGHT;
+    }
+    if (pad->stick_y < -JOYSTICK_FULL_SCALE / 2) {
+        state |= BUTTON_J_DOWN;
+    } else if (pad->stick_y > JOYSTICK_FULL_SCALE / 2) {
+        state |= BUTTON_J_UP;
+    }
     unsigned press = state & ~pl->button_state;
     pl->button_state = state;
     pl->button_press = press;

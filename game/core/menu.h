@@ -4,12 +4,7 @@
 #include "base/vectypes.h"
 
 struct game_state;
-
-// All possible menus.
-typedef enum menu_id {
-    MENU_NONE,
-    MENU_START,
-} menu_id;
+struct sys_menu;
 
 // Coordinates of an on-screen point. The center of the screen is (0, 0). X is
 // right, Y is up.
@@ -40,6 +35,18 @@ struct menu_text {
     char text[64];
 };
 
+struct menu_state {
+    void (*paint)(struct sys_menu *restrict msys);
+    void (*update)(struct game_state *restrict gs, const unsigned buttons,
+                   float dt);
+    // Menu animation time.
+    float time;
+    // Menu definition, if applicable.
+    struct menu_def *def;
+    // Current selected item, or other value.
+    int value;
+};
+
 // Menu system state.
 struct sys_menu {
     // Images to display.
@@ -50,11 +57,12 @@ struct sys_menu {
     struct menu_text *text;
     int text_count;
 
-    // Menu animation time.
-    float time;
+    // Stack of menu states.
+    struct menu_state stack[4];
+    int stack_size;
 
-    // Current active menu.
-    menu_id id;
+    // Button state.
+    unsigned button_state;
 };
 
 // Initialize the menu system.
