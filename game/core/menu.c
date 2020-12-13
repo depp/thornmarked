@@ -141,17 +141,19 @@ static void menu_def_paint(struct sys_menu *restrict msys) {
     int item = st->value;
     int pos = 30;
     for (int i = 0; i < def->count; i++) {
-        color icolor;
-        if (def->items[i].action != NULL) {
-            if (item == i) {
-                icolor = color_highlight;
+        if (def->items[i].name != NULL) {
+            color icolor;
+            if (def->items[i].action != NULL) {
+                if (item == i) {
+                    icolor = color_highlight;
+                } else {
+                    icolor = color_nohighlight;
+                }
             } else {
-                icolor = color_nohighlight;
+                icolor = color_disable;
             }
-        } else {
-            icolor = color_disable;
+            menu_addtext(msys, (point){0, pos}, icolor, def->items[i].name);
         }
-        menu_addtext(msys, (point){0, pos}, icolor, def->items[i].name);
         pos -= 30;
     }
     if (def->title) {
@@ -262,6 +264,28 @@ static void menu_push_settings(struct game_state *restrict gs, int item) {
 }
 
 // =============================================================================
+// Credits Screen
+// =============================================================================
+
+static struct menu_def MENU_CREDITS = {
+    .title = "Credits",
+    .count = 5,
+    .items =
+        {
+            {"Programming, Music", 0},
+            {"Dietrich Epp", 0},
+            {0},
+            {"Artwork, Modeling", 0},
+            {"Alastair Low", 0},
+        },
+};
+
+static void menu_push_credits(struct game_state *restrict gs, int item) {
+    (void)item;
+    menu_def_push(gs, &MENU_CREDITS);
+}
+
+// =============================================================================
 // Top-Level Menu (start game)
 // =============================================================================
 
@@ -271,12 +295,13 @@ static void action_play(struct game_state *restrict gs, int item) {
 }
 
 static struct menu_def MENU_NEWGAME = {
-    .count = 3,
+    .count = 4,
     .items =
         {
             {"Play 1P", 0},
             {"Play 2P", 0},
             {"Settings", menu_push_settings},
+            {"Credits", menu_push_credits},
         },
 };
 
