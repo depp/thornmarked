@@ -3,7 +3,6 @@
 #include "base/base.h"
 #include "game/core/input.h"
 #include "game/core/random.h"
-#include "game/core/spawn.h"
 
 #include <stdbool.h>
 
@@ -18,10 +17,6 @@ void game_init(struct game_state *restrict gs) {
     player_init(&gs->player);
     particle_init(&gs->particle);
     menu_init(gs);
-
-    for (int i = 0; i < gs->input.count; i++) {
-        spawn_player(gs, i);
-    }
 }
 
 void game_update(struct game_state *restrict gs, float dt) {
@@ -73,4 +68,13 @@ void entity_destroy(struct game_state *restrict gs, ent_id ent) {
             pl->ent = ENTITY_DESTROY;
         }
     }
+}
+
+void entity_destroyall(struct game_state *restrict gs) {
+    entity_freeall(&gs->ent);
+    physics_destroyall(&gs->physics);
+    walk_destroyall(&gs->walk);
+    model_destroyall(&gs->model);
+    monster_destroyall(&gs->monster);
+    player_destroyall(&gs->player);
 }

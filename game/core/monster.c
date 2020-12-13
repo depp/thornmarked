@@ -17,6 +17,8 @@ void monster_init(struct sys_monster *restrict msys) {
     };
 }
 
+void monster_destroyall(struct sys_monster *restrict msys);
+
 struct cp_monster *monster_get(struct sys_monster *restrict msys, ent_id ent);
 
 struct cp_monster *monster_new(struct sys_monster *restrict msys, ent_id ent) {

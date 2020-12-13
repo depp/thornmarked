@@ -19,6 +19,8 @@ void physics_init(struct sys_phys *restrict psys) {
     };
 }
 
+void physics_destroyall(struct sys_phys *restrict psys);
+
 noreturn void physics_missing(ent_id ent) {
     fatal_error("Missing physics component\nEntity: %d", ent.id);
 }

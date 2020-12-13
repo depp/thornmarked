@@ -2,6 +2,7 @@
 
 #include "assets/model.h"
 #include "assets/texture.h"
+#include "base/base.h"
 #include "game/core/game.h"
 #include "game/core/spawn.h"
 
@@ -10,13 +11,27 @@ enum {
     MONSTER_SPAWN_COUNT = 5,
 };
 
-// Initialize stage state.
 void stage_init(struct sys_stage *restrict ssys) {
     ssys->spawn_active = false;
 }
 
-// Update the stage state.
+void stage_start(struct game_state *restrict gs, int player_count) {
+    if (player_count < 1 || gs->input.count < player_count) {
+        fatal_error("Bad player count: %d", player_count);
+    }
+    entity_destroyall(gs);
+    gs->stage = (struct sys_stage){
+        .active = true,
+    };
+    for (int i = 0; i < player_count; i++) {
+        spawn_player(gs, i);
+    }
+}
+
 void stage_update(struct game_state *restrict gs, float dt) {
+    if (!gs->stage.active) {
+        return;
+    }
     struct sys_stage *ssys = &gs->stage;
     if (ssys->spawn_active) {
         ssys->spawn_time -= dt;

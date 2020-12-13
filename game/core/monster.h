@@ -21,6 +21,11 @@ struct sys_monster {
 // Initialize monster system.
 void monster_init(struct sys_monster *restrict msys);
 
+// Destroy all components.
+inline void monster_destroyall(struct sys_monster *restrict msys) {
+    msys->count = 0;
+}
+
 // Get the monster component for an entity.
 inline struct cp_monster *monster_get(struct sys_monster *restrict msys,
                                       ent_id ent) {

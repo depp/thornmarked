@@ -21,6 +21,13 @@ struct sys_player {
 // Initialize player system.
 void player_init(struct sys_player *restrict psys);
 
+// Destroy all components.
+inline void player_destroyall(struct sys_player *restrict psys) {
+    for (int i = 0; i < PLAYER_COUNT; i++) {
+        psys->players[i].ent.id = 0;
+    }
+}
+
 // Get the player compenent for the given entity, or NULL if there is none.
 struct cp_player *player_get(struct sys_player *restrict psys, ent_id ent);
 

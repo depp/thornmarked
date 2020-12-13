@@ -14,6 +14,8 @@ void model_init(struct sys_model *restrict msys) {
     };
 }
 
+void model_destroyall(struct sys_model *restrict msys);
+
 struct cp_model *model_get(struct sys_model *restrict msys, ent_id ent);
 
 struct cp_model *model_new(struct sys_model *restrict msys, ent_id ent) {

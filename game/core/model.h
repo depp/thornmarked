@@ -27,6 +27,11 @@ struct sys_model {
 // Initialize model system.
 void model_init(struct sys_model *restrict msys);
 
+// Destroy all components.
+inline void model_destroyall(struct sys_model *restrict msys) {
+    msys->count = 0;
+}
+
 // Get the model component for the given entity.
 inline struct cp_model *model_get(struct sys_model *restrict msys, ent_id ent) {
     int index = msys->entities[ent.id];

@@ -48,3 +48,6 @@ void game_update(struct game_state *restrict gs, float dt);
 
 // Destroy the named entity.
 void entity_destroy(struct game_state *restrict gs, ent_id ent);
+
+// Destroy all entities.
+void entity_destroyall(struct game_state *restrict gs);

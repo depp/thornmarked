@@ -38,3 +38,6 @@ ent_id entity_newid(struct sys_ent *restrict esys);
 // Return an entity ID to the freelist so it can be returned from entity_newid()
 // again.
 void entity_freeid(struct sys_ent *restrict esys, ent_id ent);
+
+// Mark all entities as free.
+void entity_freeall(struct sys_ent *restrict esys);

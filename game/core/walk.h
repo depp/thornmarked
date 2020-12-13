@@ -21,6 +21,11 @@ struct sys_walk {
 // Initailize walkers.
 void walk_init(struct sys_walk *restrict wsys);
 
+// Destroy all components.
+inline void walk_destroyall(struct sys_walk *restrict wsys) {
+    wsys->count = 0;
+}
+
 // Get the walker component for the given entity.
 inline struct cp_walk *walk_get(struct sys_walk *restrict wsys, ent_id ent) {
     int index = wsys->entities[ent.id];

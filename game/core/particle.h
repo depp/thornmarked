@@ -24,6 +24,11 @@ struct sys_particle {
 // Initialize the particle system.
 void particle_init(struct sys_particle *restrict psys);
 
+// Destroy all components.
+inline void particle_destroyall(struct sys_particle *restrict psys) {
+    psys->count = 0;
+}
+
 // Create a new particle at the given position.
 void particle_create(struct sys_particle *restrict psys, vec3 pos, float size,
                      color pcolor);

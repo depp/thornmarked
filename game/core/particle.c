@@ -8,6 +8,8 @@ void particle_init(struct sys_particle *restrict psys) {
     };
 }
 
+void particle_destroyall(struct sys_particle *restrict psys);
+
 void particle_create(struct sys_particle *restrict psys, vec3 pos, float size,
                      color pcolor) {
     // Drop the particle if there are too many.

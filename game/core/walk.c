@@ -20,6 +20,8 @@ void walk_init(struct sys_walk *restrict wsys) {
     };
 }
 
+void walk_destroyall(struct sys_walk *restrict wsys);
+
 struct cp_walk *walk_get(struct sys_walk *restrict wsys, ent_id ent);
 
 struct cp_walk *walk_new(struct sys_walk *restrict wsys, ent_id ent) {

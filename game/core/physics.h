@@ -42,6 +42,11 @@ struct sys_phys {
 // Initialize physics system.
 void physics_init(struct sys_phys *restrict psys);
 
+// Destroy all components.
+inline void physics_destroyall(struct sys_phys *restrict psys) {
+    psys->count = 0;
+}
+
 // Signal a fatal error for a missing physics component.
 noreturn void physics_missing(ent_id ent);
 

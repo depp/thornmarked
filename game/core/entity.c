@@ -13,14 +13,7 @@ void entity_init(struct sys_ent *restrict esys) {
         .free_end = ENTITY_COUNT - 1,
         .entities = mem_alloc(ENTITY_COUNT * sizeof(*esys->entities)),
     };
-    // Entity 0 is invalid, and not in the freelist.
-    esys->entities[0] = 0;
-    // Entities 1..(N-2) are in the freelist, pointing to the next entity.
-    for (int i = 0; i < ENTITY_COUNT - 1; i++) {
-        esys->entities[i] = i + 1;
-    }
-    // Entity N-1 is at the end of the freelist, points to itself.
-    esys->entities[ENTITY_COUNT - 1] = ENTITY_COUNT - 1;
+    entity_freeall(esys);
 }
 
 ent_id entity_newid(struct sys_ent *restrict esys) {
@@ -63,4 +56,15 @@ void entity_freeid(struct sys_ent *restrict esys, ent_id ent) {
         esys->entities[esys->free_end] = ent.id;
     }
     esys->free_end = ent.id;
+}
+
+void entity_freeall(struct sys_ent *restrict esys) {
+    // Entity 0 is invalid, and not in the freelist.
+    esys->entities[0] = 0;
+    // Entities 1..(N-2) are in the freelist, pointing to the next entity.
+    for (int i = 0; i < ENTITY_COUNT - 1; i++) {
+        esys->entities[i] = i + 1;
+    }
+    // Entity N-1 is at the end of the freelist, points to itself.
+    esys->entities[ENTITY_COUNT - 1] = ENTITY_COUNT - 1;
 }

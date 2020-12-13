@@ -290,14 +290,14 @@ static void menu_push_credits(struct game_state *restrict gs, int item) {
 
 static void action_play(struct game_state *restrict gs, int item) {
     menu_popall(gs);
-    (void)item;
+    stage_start(gs, item + 1);
 }
 
 static struct menu_def MENU_NEWGAME = {
     .count = 3,
     .items =
         {
-            {"Play 1P", 0},
+            {"Play 1P", 0}, // Don't reorder, index used by action.
             {"Play 2P", 0},
             {"Credits", menu_push_credits},
         },
@@ -381,10 +381,11 @@ void menu_init(struct game_state *restrict gs) {
         .image = mem_alloc(MENU_IMAGE_COUNT * sizeof(*msys->image)),
         .text = mem_alloc(MENU_TEXT_COUNT * sizeof(*msys->text)),
     };
+    // SHIP_IT:
     if (false) {
         menu_push_start(gs);
     }
-    menu_push_credits(gs, 0);
+    menu_push_newgame(gs);
 }
 
 void menu_update(struct game_state *restrict gs, float dt) {
