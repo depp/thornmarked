@@ -23,6 +23,7 @@ void game_init(struct game_state *restrict gs) {
 void game_update(struct game_state *restrict gs, float dt) {
     sfx_update(&gs->sfx, dt); // Must be first.
     menu_update(gs, dt);
+    time_update2(&gs->time);
     if (gs->menu.stack_size == 0) {
         particle_update(&gs->particle, dt);
         player_update(gs, dt);

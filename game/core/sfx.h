@@ -1,12 +1,10 @@
 #pragma once
 
 #include "base/pak/types.h"
-#include "base/vectypes.h"
 
-// A sounf effect source.
+// A sound effect source.
 struct sfx_src {
     pak_track track_id;
-    vec3 pos;
     float volume;
 };
 

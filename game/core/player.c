@@ -2,6 +2,7 @@
 
 #include "assets/model.h"
 #include "assets/texture.h"
+#include "assets/track.h"
 #include "base/base.h"
 #include "base/vec2.h"
 #include "base/vec3.h"
@@ -119,10 +120,17 @@ void player_update(struct game_state *restrict gs, float dt) {
                 pl->state = PSTATE_ATTACK;
                 pl->state_time = 0.0f;
                 vec2 ppos = vec2_madd(pp->pos, pp->forward, 0.5f);
-                struct cp_phys *target =
-                    physics_find(&gs->physics, pl->ent, ppos, 1.0f);
-                if (target != NULL && target->team == TEAM_MONSTER) {
-                    monster_damage(gs, target->ent);
+                if (gs->time.on_beat) {
+                    struct cp_phys *target =
+                        physics_find(&gs->physics, pl->ent, ppos, 1.0f);
+                    if (target != NULL && target->team == TEAM_MONSTER) {
+                        monster_damage(gs, target->ent);
+                    }
+                } else {
+                    sfx_play(&gs->sfx, &(struct sfx_src){
+                                           .track_id = SFX_CLANG,
+                                           .volume = 1.0f,
+                                       });
                 }
             }
             break;

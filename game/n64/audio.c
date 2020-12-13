@@ -288,7 +288,7 @@ void audio_init(void) {
         alSndpSetPitch(&audio_sndp, 1.0f);
         alSndpSetPan(&audio_sndp, 64);
         alSndpSetVol(&audio_sndp, 30000);
-        // alSndpPlay(&audio_sndp);
+        alSndpPlay(&audio_sndp);
     }
 }
 

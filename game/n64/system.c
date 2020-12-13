@@ -103,17 +103,6 @@ static const Gfx ground_dl[] = {
 
 void game_system_render(struct game_state *restrict gs,
                         struct graphics *restrict gr) {
-    if (gs->time.track_loop > 0) {
-        const float to_beats = 138.0f / (60.0f * AUDIO_SAMPLERATE);
-        const float fbeat = to_beats * gs->time.track_pos;
-        int beat = fbeat;
-        const float subbeat = fbeat - beat;
-        int measure = (beat >> 2) + 1;
-        beat = (beat & 3) + 1;
-        cprintf("%d:%02d:%d:%04.2f\n", gs->time.track_loop, measure, beat,
-                (double)subbeat);
-    }
-
     Gfx *dl = gr->dl_start;
     const bool full = true;
     const bool clear_z = true;
