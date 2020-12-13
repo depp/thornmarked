@@ -1,7 +1,5 @@
 #include "game/core/game.h"
 
-#include "assets/model.h"
-#include "assets/texture.h"
 #include "base/base.h"
 #include "game/core/input.h"
 #include "game/core/random.h"
@@ -26,41 +24,16 @@ void game_init(struct game_state *restrict gs) {
     }
 }
 
-enum {
-    // Number of monsters to spawn.
-    MONSTER_SPAWN_COUNT = 5,
-};
-
 void game_update(struct game_state *restrict gs, float dt) {
     menu_update(gs, dt);
     particle_update(&gs->particle, dt);
     player_update(gs, dt);
+    stage_update(gs, dt);
     monster_update(&gs->monster, &gs->physics, &gs->walk, dt);
     walk_update(&gs->walk, &gs->physics, dt);
     physics_update(&gs->physics, dt);
     camera_update(&gs->camera);
     model_update(&gs->model);
-
-    if (gs->spawn_active) {
-        gs->spawn_time -= dt;
-        if (gs->spawn_time < 0.0f) {
-            gs->spawn_active = false;
-            gs->spawn_time = 0.0f;
-            int n = MONSTER_SPAWN_COUNT - gs->monster.count;
-            if (n > 0) {
-                pak_texture texture =
-                    gs->spawn_type ? IMG_BLUEENEMY : IMG_GREENENEMY;
-                pak_model model =
-                    gs->spawn_type ? MODEL_BLUEENEMY : MODEL_GREENENEMY;
-                for (int i = 0; i < n; i++) {
-                    spawn_monster(gs, model, texture);
-                }
-            }
-        }
-    } else if (gs->monster.count < MONSTER_SPAWN_COUNT) {
-        gs->spawn_active = true;
-        gs->spawn_time = 3.0f;
-    }
 
     if (gs->input.count >= 1 &&
         (gs->input.input[0].button_press & BUTTON_START) != 0) {

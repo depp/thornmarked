@@ -15,6 +15,7 @@ cc_library(
         "player.c",
         "random.c",
         "spawn.c",
+        "stage.c",
         "walk.c",
     ],
     hdrs = [
@@ -31,6 +32,7 @@ cc_library(
         "player.h",
         "random.h",
         "spawn.h",
+        "stage.h",
         "time.h",
         "walk.h",
     ],

@@ -9,6 +9,7 @@
 #include "game/core/particle.h"
 #include "game/core/physics.h"
 #include "game/core/player.h"
+#include "game/core/stage.h"
 #include "game/core/time.h"
 #include "game/core/walk.h"
 
@@ -34,13 +35,9 @@ struct game_state {
     struct sys_particle particle;
     struct sys_menu menu;
     struct game_time time;
+    struct sys_stage stage;
 
     bool show_console;
-
-    // Monster spawn state.
-    int spawn_active; // True if spawn_time is counting down.
-    float spawn_time; // Time remaining until spawn.
-    int spawn_type; // Type of monsters to spawn.
 };
 
 // Initialize the game state.
