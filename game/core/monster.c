@@ -1,5 +1,7 @@
 #include "game/core/monster.h"
 
+#include "assets/model.h"
+#include "assets/texture.h"
 #include "base/base.h"
 #include "base/vec3.h"
 #include "game/core/game.h"
@@ -38,6 +40,51 @@ struct cp_monster *monster_new(struct sys_monster *restrict msys, ent_id ent) {
         .ent = ent,
     };
     return p;
+}
+
+// Information about a monster type.
+struct monster_info {
+    pak_model model;
+    pak_texture texture;
+};
+
+static const struct monster_info monster_info[] = {
+    [MONSTER_BLUE] =
+        {
+            .model = MODEL_BLUEENEMY,
+            .texture = IMG_BLUEENEMY,
+        },
+    [MONSTER_GREEN] =
+        {
+            .model = MODEL_GREENENEMY,
+            .texture = IMG_GREENENEMY,
+        },
+};
+
+void monster_spawn(struct game_state *restrict gs, monster_type type) {
+    if (type <= 0 || (int)ARRAY_COUNT(monster_info) <= type) {
+        fatal_error("spawn_monster: bad type: %d", (int)type);
+    }
+    ent_id ent = entity_newid(&gs->ent);
+    if (ent.id == 0) {
+        fatal_error("spawn_monster: no entity");
+    }
+    struct cp_phys *pp = physics_new(&gs->physics, ent);
+    const float radius = 0.75f, wall = 4.0f, r = wall - radius;
+    pp->pos = (vec2){{
+        rand_frange(&grand, -r, r),
+        rand_frange(&grand, -r, r),
+    }};
+    pp->radius = radius;
+    pp->team = TEAM_MONSTER;
+    walk_new(&gs->walk, ent);
+    struct cp_model *mp = model_new(&gs->model, ent);
+    mp->model_id = monster_info[type].model;
+    mp->material[0] = (struct material){
+        .flags = MAT_ENABLED | MAT_CULL_BACK | MAT_VERTEX_COLOR,
+        .texture_id = monster_info[type].texture,
+    };
+    monster_new(&gs->monster, ent);
 }
 
 void monster_update(struct sys_monster *restrict msys,

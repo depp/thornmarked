@@ -40,13 +40,12 @@ void stage_update(struct game_state *restrict gs, float dt) {
             ssys->spawn_time = 0.0f;
             int n = MONSTER_SPAWN_COUNT - gs->monster.count;
             if (n > 0) {
-                pak_texture texture =
-                    ssys->spawn_type ? IMG_BLUEENEMY : IMG_GREENENEMY;
-                pak_model model =
-                    ssys->spawn_type ? MODEL_BLUEENEMY : MODEL_GREENENEMY;
+                monster_type type =
+                    ssys->spawn_type ? MONSTER_BLUE : MONSTER_GREEN;
                 for (int i = 0; i < n; i++) {
-                    spawn_monster(gs, model, texture);
+                    monster_spawn(gs, type);
                 }
+                ssys->spawn_type ^= 1;
             }
         }
     } else if (gs->monster.count < MONSTER_SPAWN_COUNT) {

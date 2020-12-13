@@ -6,9 +6,17 @@ struct sys_phys;
 struct sys_walk;
 struct game_state;
 
+// Types of monster.
+typedef enum {
+    MONSTER_NONE,
+    MONSTER_BLUE,
+    MONSTER_GREEN,
+} monster_type;
+
 // Monster behavior component.
 struct cp_monster {
     ent_id ent;
+    monster_type type;
     float timer;
 };
 
@@ -38,6 +46,9 @@ inline struct cp_monster *monster_get(struct sys_monster *restrict msys,
 // Create new monster component attached to the given entity. Overwrites any
 // existing monster component for that entity.
 struct cp_monster *monster_new(struct sys_monster *restrict msys, ent_id ent);
+
+// Spawn a monster entity.
+void monster_spawn(struct game_state *restrict gs, monster_type type);
 
 // Update monsters.
 void monster_update(struct sys_monster *restrict msys,
