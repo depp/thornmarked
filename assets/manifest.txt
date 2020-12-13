@@ -12,8 +12,8 @@ texture IMG_STAR1 particle/star_01.texture
 texture IMG_STAR2 particle/star_02.texture
 
 font FONT_BUTTONS images/buttons.font
-# font FONT_GG fonts/grenze_gotisch/grenze_gotisch.font
-font FONT_BS fonts/baksosapi/baksosapi.font
+font FONT_TITLE fonts/baksosapi/baksosapi.font
+font FONT_BODY fonts/fira_sans/fira_sans.font
 
 # model MODEL_LOGO models/logo.model
 model MODEL_FAIRY models/fairy2.model

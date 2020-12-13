@@ -10,6 +10,7 @@ asset_data(
     name = "assets_files",
     srcs = [
         "//assets/fonts/baksosapi",
+        "//assets/fonts/fira_sans",
         "//assets/images",
         "//assets/images:big_images",
         "//assets/images:buttons",

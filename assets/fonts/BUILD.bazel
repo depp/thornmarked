@@ -1,4 +1,7 @@
 exports_files(
-    ["charset.txt"],
+    [
+        "charset.txt",
+        "charset_big.txt",
+    ],
     visibility = ["__subpackages__"],
 )

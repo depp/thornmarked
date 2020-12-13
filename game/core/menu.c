@@ -7,9 +7,13 @@
 
 #include <string.h>
 
+// Appears to be a false positive here.
+#pragma GCC diagnostic ignored "-Warray-bounds"
+
 static const color color_nohighlight = {{111, 82, 179, 255}};
 static const color color_highlight = {{231, 225, 89, 255}};
 static const color color_disable = {{128, 128, 128, 160}};
+static const color color_body = {{255, 255, 255, 255}};
 
 enum {
     // Maximum number of images to display on-screen.
@@ -44,22 +48,13 @@ static struct menu_state *menu_push(struct sys_menu *restrict msys) {
     return &msys->stack[msys->stack_size++];
 }
 
-static void menu_addtext(struct sys_menu *restrict msys, point pos,
-                         color tcolor, const char *text) {
+static struct menu_text *menu_addtext(struct sys_menu *restrict msys) {
     int index = msys->text_count;
     if (index >= MENU_TEXT_COUNT) {
         fatal_error("menu_addtext: too many text items");
     }
-    struct menu_text *restrict txp = &msys->text[index];
-    size_t len = strlen(text);
-    if (len >= sizeof(txp->text)) {
-        fatal_error("menu_addtext: text too long\nlength: %zu", len);
-    }
-    txp->font = FONT_BS;
-    txp->pos = pos;
-    txp->color = tcolor;
-    memcpy(txp->text, text, len + 1);
     msys->text_count = index + 1;
+    return &msys->text[index];
 }
 
 static void menu_pop(struct game_state *restrict gs) {
@@ -129,6 +124,7 @@ struct menu_item {
 
 struct menu_def {
     const char *title;
+    const char *body;
     int count;
     struct menu_item items[];
 };
@@ -152,12 +148,30 @@ static void menu_def_paint(struct sys_menu *restrict msys) {
             } else {
                 icolor = color_disable;
             }
-            menu_addtext(msys, (point){0, pos}, icolor, def->items[i].name);
+            *menu_addtext(msys) = (struct menu_text){
+                .font = FONT_TITLE,
+                .pos = {0, pos},
+                .color = icolor,
+                .text = def->items[i].name,
+            };
         }
         pos -= 30;
     }
-    if (def->title) {
-        menu_addtext(msys, (point){0, 80}, color_nohighlight, def->title);
+    if (def->title != NULL) {
+        *menu_addtext(msys) = (struct menu_text){
+            .font = FONT_TITLE,
+            .pos = {0, 80},
+            .color = color_nohighlight,
+            .text = def->title,
+        };
+    }
+    if (def->body != NULL) {
+        *menu_addtext(msys) = (struct menu_text){
+            .font = FONT_BODY,
+            .pos = {0, pos},
+            .color = color_body,
+            .text = def->body,
+        };
     }
 }
 
@@ -269,15 +283,14 @@ static void menu_push_settings(struct game_state *restrict gs, int item) {
 
 static struct menu_def MENU_CREDITS = {
     .title = "Credits",
-    .count = 5,
-    .items =
-        {
-            {"Programming, Music", 0},
-            {"Dietrich Epp", 0},
-            {0},
-            {"Artwork, Modeling", 0},
-            {"Alastair Low", 0},
-        },
+    .body =
+        "Programming, Music\n"
+        "Dietrich Epp\n"
+        "\n"
+        "Artwork, Modeling\n"
+        "Alastair Low\n"
+        "\n"
+        "Made for N64BrewJam2020.",
 };
 
 static void menu_push_credits(struct game_state *restrict gs, int item) {
@@ -332,12 +345,12 @@ static void menu_start_paint(struct sys_menu *restrict msys) {
         .image = IMG_LOGO,
     };
     msys->text_count = 0;
-    point pos = {0, -60};
-    if (st->value == 0) {
-        menu_addtext(msys, pos, color_disable, "No Controller");
-    } else {
-        menu_addtext(msys, pos, color_nohighlight, "Press Start");
-    }
+    *menu_addtext(msys) = (struct menu_text){
+        .font = FONT_TITLE,
+        .color = st->value == 0 ? color_disable : color_nohighlight,
+        .pos = {0, -60},
+        .text = st->value == 0 ? "No Controller" : "Press Start",
+    };
 }
 
 static void menu_start_update(struct game_state *restrict gs, unsigned buttons,
@@ -383,7 +396,10 @@ void menu_init(struct game_state *restrict gs) {
         .image = mem_alloc(MENU_IMAGE_COUNT * sizeof(*msys->image)),
         .text = mem_alloc(MENU_TEXT_COUNT * sizeof(*msys->text)),
     };
-    menu_push_start(gs);
+    if (false) {
+        menu_push_start(gs);
+    }
+    menu_push_credits(gs, 0);
 }
 
 void menu_update(struct game_state *restrict gs, float dt) {

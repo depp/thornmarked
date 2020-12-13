@@ -24,15 +24,9 @@ struct menu_image {
 // Text to display in the menu.
 struct menu_text {
     pak_font font;
-
-    // Position of text (pen position).
-    point pos;
-
-    // Color to draw the text.
+    point pos; // Position of text (pen position).
     color color;
-
-    // Text to display, nul-terminated.
-    char text[64];
+    const char *text;
 };
 
 struct menu_state {

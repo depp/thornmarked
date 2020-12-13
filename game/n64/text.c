@@ -21,10 +21,10 @@
 
 enum {
     // Maximum total number of font textures.
-    MAX_FONT_TEXTURES = 8,
+    MAX_FONT_TEXTURES = 12,
 
     // Memory available for fonts.
-    FONT_HEAP_SIZE = 32 * 1024,
+    FONT_HEAP_SIZE = 48 * 1024,
 };
 
 // =============================================================================
@@ -203,17 +203,23 @@ static noreturn void text_badstring(const char *text, const char *tptr) {
 static struct text_glyph *text_to_glyphs(pak_font font_id, pak_font sprite_id,
                                          struct text_glyph *gptr,
                                          struct text_glyph *gend,
-                                         const char *text, color color) {
+                                         const char *text, color tcolor) {
     const char *tptr = text;
     const struct font_header *restrict fn = font_get(font_id);
     const struct font_header *restrict bfn = font_get(sprite_id);
+    int line = 0;
     while (*tptr != '\0') {
         if (gptr == gend) {
             fatal_error("Text too long\nLength: %zu\nText: \"%s\"",
                         strlen(text), text);
         }
         unsigned cp = (unsigned char)*tptr++;
-        if (cp == '{') {
+        if (cp < 32) {
+            if (cp == '\n') {
+                line++;
+            }
+            continue;
+        } else if (cp == '{') {
             if (*tptr == '{') {
                 tptr++;
             } else {
@@ -225,12 +231,13 @@ static struct text_glyph *text_to_glyphs(pak_font font_id, pak_font sprite_id,
                     text_badstring(text, tptr);
                 }
                 struct font_sprite sp = font_get_sprite(name, tptr - name);
-                gptr->src = sprite_id.id;
-                gptr->glyph = bfn->charmap[sp.schar];
-                gptr->color = sp.color;
-                gptr->color.u |= (color.u & 0xff);
-                gptr++;
                 tptr++;
+                *gptr++ = (struct text_glyph){
+                    .x = line,
+                    .src = sprite_id.id,
+                    .glyph = bfn->charmap[sp.schar],
+                    .color = {.u = sp.color.u | (tcolor.u & 0xff)},
+                };
                 continue;
             }
         } else if (cp == '}') {
@@ -240,20 +247,36 @@ static struct text_glyph *text_to_glyphs(pak_font font_id, pak_font sprite_id,
                 text_badstring(text, tptr);
             }
         }
-        gptr->src = font_id.id;
-        gptr->glyph = fn->charmap[cp];
-        gptr->color = color;
-        gptr++;
+        *gptr++ = (struct text_glyph){
+            .x = line,
+            .src = font_id.id,
+            .glyph = fn->charmap[cp],
+            .color = tcolor,
+        };
     }
     return gptr;
+}
+
+static void text_align(struct text_glyph *restrict glyphs, int count, int len) {
+    int xoff = -(len >> 1);
+    for (int i = 0; i < count; i++) {
+        glyphs[i].x += xoff;
+    }
 }
 
 // Calculate the pen coordinates for glyphs. Converts source from font ID to
 // texture index.
 static void text_place(struct text_glyph *restrict glyphs, int count, int x,
                        int y) {
-    int xpos = x, ypos = y;
+    int xpos = x, ypos = y, line = 0, line_start = 0;
     for (int i = 0; i < count; i++) {
+        if (glyphs[i].x != line) {
+            ypos += 18 * (glyphs[i].x - line);
+            line = glyphs[i].x;
+            text_align(glyphs + line_start, i - line_start, xpos - x);
+            xpos = x;
+            line_start = i;
+        }
         int glyph = glyphs[i].glyph;
         const struct font_glyph *restrict gi =
             &font_slots[glyphs[i].src]->glyphs[glyph];
@@ -262,10 +285,7 @@ static void text_place(struct text_glyph *restrict glyphs, int count, int x,
         glyphs[i].src = gi->texindex;
         xpos += gi->advance;
     }
-    int xoff = -((xpos - x) >> 1);
-    for (int i = 0; i < count; i++) {
-        glyphs[i].x += xoff;
-    }
+    text_align(glyphs + line_start, count - line_start, xpos - x);
 }
 
 // Sorts glyphs by texture index, removing empty glyphs. Returns the output
@@ -301,7 +321,8 @@ static struct text_glyph glyph_buffer[2][256];
 void text_init(void) {
     mem_zone_init(&font_heap, FONT_HEAP_SIZE, "font");
     font_load(FONT_BUTTONS);
-    font_load(FONT_BS);
+    font_load(FONT_TITLE);
+    font_load(FONT_BODY);
 }
 
 static Gfx *text_use_texture(Gfx *dl, const struct font_texture *restrict tex) {

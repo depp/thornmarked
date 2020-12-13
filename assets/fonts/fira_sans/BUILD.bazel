@@ -1,0 +1,13 @@
+load("//tools/font:defs.bzl", "bitmap_font")
+
+bitmap_font(
+    name = "fira_sans",
+    src = "FiraSans-Medium.ttf",
+    charset = "//assets/fonts:charset_big.txt",
+    encoding = "windows-1252",
+    font_size = "16",
+    format = "ia.8",
+    shadow = "1:1",
+    texsize = "64:64",
+    visibility = ["//assets:__pkg__"],
+)
