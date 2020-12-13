@@ -63,8 +63,15 @@ static void menu_pop(struct game_state *restrict gs) {
     msys->text_count = 0;
     if (msys->stack_size > 0) {
         msys->stack_size--;
-        msys->stack[msys->stack_size - 1].paint(msys);
+        if (msys->stack_size > 0) {
+            msys->stack[msys->stack_size - 1].paint(msys);
+        }
     }
+}
+
+static void action_pop(struct game_state *restrict gs, int action) {
+    (void)action;
+    menu_pop(gs);
 }
 
 static void menu_popall(struct game_state *restrict gs) {
@@ -125,6 +132,7 @@ struct menu_item {
 struct menu_def {
     const char *title;
     const char *body;
+    void (*cancel)(struct game_state *restrict gs);
     int count;
     struct menu_item items[];
 };
@@ -190,12 +198,14 @@ static void menu_def_update(struct game_state *restrict gs, unsigned buttons,
         if (index >= 0) {
             if (def->items[index].action != NULL) {
                 def->items[index].action(gs, index);
+                return;
             }
         }
         break;
     case MBUTTON_CANCEL:
-        if (msys->stack_size > 1) {
-            menu_pop(gs);
+        if (def->cancel != NULL) {
+            def->cancel(gs);
+            return;
         }
         break;
     case MBUTTON_UP:
@@ -267,6 +277,7 @@ static void menu_def_push(struct game_state *restrict gs,
 // =============================================================================
 
 static struct menu_def MENU_CREDITS = {
+    .cancel = menu_pop,
     .body =
         "Thornmarked\n"
         "\n"
@@ -372,6 +383,28 @@ static void menu_push_start(struct game_state *restrict gs) {
 }
 
 // =============================================================================
+// In-Game Pause Menu
+// =============================================================================
+
+static void action_quit(struct game_state *restrict gs, int action) {
+    (void)action;
+    stage_stop(gs);
+    gs->menu.stack_size--;
+    menu_push_start(gs);
+}
+
+static struct menu_def MENU_PAUSE = {
+    .count = 2,
+    .title = "Paused",
+    .cancel = menu_pop,
+    .items =
+        {
+            {"Continue", action_pop},
+            {"Quit", action_quit},
+        },
+};
+
+// =============================================================================
 // Public API
 // =============================================================================
 
@@ -398,5 +431,7 @@ void menu_update(struct game_state *restrict gs, float dt) {
     gs->menu.button_state = bstate;
     if (gs->menu.stack_size > 0) {
         gs->menu.stack[gs->menu.stack_size - 1].update(gs, button_press, dt);
+    } else if ((button_press & BUTTON_START) != 0) {
+        menu_def_push(gs, &MENU_PAUSE);
     }
 }

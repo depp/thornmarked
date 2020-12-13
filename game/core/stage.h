@@ -16,6 +16,9 @@ struct sys_stage {
 // Initialize stage state.
 void stage_init(struct sys_stage *restrict ssys);
 
+// Stop the stage from running.
+void stage_stop(struct game_state *restrict gs);
+
 // Start a new stage -- destroy all entities and start playing.
 void stage_start(struct game_state *restrict gs, int player_count);
 

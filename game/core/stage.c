@@ -14,6 +14,13 @@ void stage_init(struct sys_stage *restrict ssys) {
     ssys->spawn_active = false;
 }
 
+void stage_stop(struct game_state *restrict gs) {
+    entity_destroyall(gs);
+    gs->stage = (struct sys_stage){
+        .active = false,
+    };
+}
+
 void stage_start(struct game_state *restrict gs, int player_count) {
     if (player_count < 1 || gs->input.count < player_count) {
         fatal_error("Bad player count: %d", player_count);

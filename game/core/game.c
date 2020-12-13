@@ -21,14 +21,16 @@ void game_init(struct game_state *restrict gs) {
 
 void game_update(struct game_state *restrict gs, float dt) {
     menu_update(gs, dt);
-    particle_update(&gs->particle, dt);
-    player_update(gs, dt);
-    stage_update(gs, dt);
-    monster_update(&gs->monster, &gs->physics, &gs->walk, dt);
-    walk_update(&gs->walk, &gs->physics, dt);
-    physics_update(&gs->physics, dt);
-    camera_update(&gs->camera);
-    model_update(&gs->model);
+    if (gs->menu.stack_size == 0) {
+        particle_update(&gs->particle, dt);
+        player_update(gs, dt);
+        stage_update(gs, dt);
+        monster_update(&gs->monster, &gs->physics, &gs->walk, dt);
+        walk_update(&gs->walk, &gs->physics, dt);
+        physics_update(&gs->physics, dt);
+        camera_update(&gs->camera);
+        model_update(&gs->model);
+    }
 
     if (gs->input.count >= 1 &&
         (gs->input.input[0].button_press & BUTTON_START) != 0) {
