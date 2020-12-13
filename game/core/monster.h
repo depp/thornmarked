@@ -4,6 +4,7 @@
 
 struct sys_phys;
 struct sys_walk;
+struct game_state;
 
 // Monster behavior component.
 struct cp_monster {
@@ -42,3 +43,6 @@ struct cp_monster *monster_new(struct sys_monster *restrict msys, ent_id ent);
 void monster_update(struct sys_monster *restrict msys,
                     struct sys_phys *restrict psys,
                     struct sys_walk *restrict wsys, float dt);
+
+// Apply damage to the given monster.
+void monster_damage(struct game_state *restrict gs, ent_id ent);

@@ -1,9 +1,10 @@
 #include "game/core/monster.h"
 
 #include "base/base.h"
+#include "base/vec3.h"
+#include "game/core/game.h"
 #include "game/core/physics.h"
 #include "game/core/random.h"
-#include "game/core/walk.h"
 
 enum {
     // Maximum number of monster components.
@@ -66,4 +67,13 @@ void monster_update(struct sys_monster *restrict msys,
         }
     }
     msys->count = mend - mstart;
+}
+
+void monster_damage(struct game_state *restrict gs, ent_id ent) {
+    struct cp_phys *pp = physics_get(&gs->physics, ent);
+    entity_destroy(gs, ent);
+    if (pp != NULL) {
+        particle_create(&gs->particle, vec3_vec2(pp->pos, pp->height), 2.0f,
+                        (color){{255, 0, 0, 255}});
+    }
 }

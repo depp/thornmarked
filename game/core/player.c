@@ -95,10 +95,7 @@ void player_update(struct game_state *restrict gs, float dt) {
                 struct cp_phys *target =
                     physics_find(&gs->physics, pl->ent, ppos, 1.0f);
                 if (target != NULL && target->team == TEAM_MONSTER) {
-                    entity_destroy(gs, target->ent);
-                    particle_create(&gs->particle,
-                                    vec3_vec2(target->pos, target->height),
-                                    2.0f, (color){{255, 0, 0, 255}});
+                    monster_damage(gs, target->ent);
                 }
             }
             break;
