@@ -93,7 +93,7 @@ Gfx *material_use(struct material_state *restrict mst, Gfx *dl,
             break;
         case RDP_PARTICLE:
             gDPSetCycleType(dl++, G_CYC_2CYCLE);
-            gDPSetRenderMode(dl++, G_RM_PASS, G_RM_ZB_PCL_SURF2);
+            gDPSetRenderMode(dl++, G_RM_PASS, G_RM_ZB_XLU_SURF2);
             // gDPSetRenderMode(dl++, G_RM_PASS, G_RM_ZB_XLU_SURF2);
             gDPSetCombineMode(dl++, G_CC_TRILERP, CC_PARTICLE);
             gDPSetTexturePersp(dl++, G_TP_PERSP);
