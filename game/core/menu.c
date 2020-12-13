@@ -133,6 +133,7 @@ struct menu_def {
     const char *title;
     const char *body;
     void (*cancel)(struct game_state *restrict gs);
+    void (*start)(struct game_state *restrict gs);
     int count;
     struct menu_item items[];
 };
@@ -193,6 +194,12 @@ static void menu_def_update(struct game_state *restrict gs, unsigned buttons,
     struct menu_state *st = menu_top(msys);
     struct menu_def *def = st->def;
     int index = st->value;
+    if ((buttons & BUTTON_START) != 0) {
+        if (def->start != NULL) {
+            def->start(gs);
+            return;
+        }
+    }
     switch (menu_button(buttons)) {
     case MBUTTON_SELECT:
         if (index >= 0) {
@@ -397,6 +404,7 @@ static struct menu_def MENU_PAUSE = {
     .count = 2,
     .title = "Paused",
     .cancel = menu_pop,
+    .start = menu_pop,
     .items =
         {
             {"Continue", action_pop},
