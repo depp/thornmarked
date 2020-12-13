@@ -15,10 +15,15 @@
 #include <stdalign.h>
 
 enum {
-    AUDIO_SFX_SLOTS = 16,
+    ID_SFX_FIRST = ID_SFX_CLANG,
+    ID_SFX_LAST = ID_SFX_WHA_5,
+};
+
+enum {
+    AUDIO_SFX_SLOTS = ID_SFX_LAST - ID_SFX_FIRST + 1,
 
     // Number of frames in an audio buffer.
-    AUDIO_BUFSZ = 1024 * 2,
+    AUDIO_BUFSZ = 1024,
 
     AUDIO_HEAP_SIZE = 256 * 1024,
     AUDIO_CLIST_SIZE = 4096,
@@ -225,7 +230,9 @@ static int audio_voice_count = 0;
 static struct audio_voice audio_voices[AUDIO_MAX_VOICES - 1];
 
 void audio_init(void) {
-    sfx_load(SFX_CLANG);
+    for (int i = ID_SFX_FIRST; i <= ID_SFX_LAST; i++) {
+        sfx_load((pak_track){i});
+    }
 
     pak_track asset = TRACK_RISING_TIDE;
 

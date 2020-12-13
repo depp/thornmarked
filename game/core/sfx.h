@@ -14,8 +14,6 @@ struct sfx_src {
 struct sys_sfx {
     struct sfx_src *src;
     int count;
-
-    float timer;
 };
 
 // Initialize the sound effects system.

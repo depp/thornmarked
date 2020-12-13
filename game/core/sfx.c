@@ -16,14 +16,8 @@ void sfx_init(struct sys_sfx *restrict ssys) {
 }
 
 void sfx_update(struct sys_sfx *restrict ssys, float dt) {
-    ssys->timer -= dt;
-    if (ssys->timer < 0.0f) {
-        sfx_play(ssys, &(struct sfx_src){
-                           .track_id = SFX_CLANG,
-                           .volume = 1.0,
-                       });
-        ssys->timer = 1.0f;
-    }
+    (void)ssys;
+    (void)dt;
 }
 
 void sfx_play(struct sys_sfx *restrict ssys,

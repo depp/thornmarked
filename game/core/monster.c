@@ -2,6 +2,7 @@
 
 #include "assets/model.h"
 #include "assets/texture.h"
+#include "assets/track.h"
 #include "base/base.h"
 #include "base/vec3.h"
 #include "game/core/game.h"
@@ -116,6 +117,8 @@ void monster_update(struct sys_monster *restrict msys,
     msys->count = mend - mstart;
 }
 
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+
 void monster_damage(struct game_state *restrict gs, ent_id ent) {
     struct cp_phys *pp = physics_get(&gs->physics, ent);
     entity_destroy(gs, ent);
@@ -123,4 +126,9 @@ void monster_damage(struct game_state *restrict gs, ent_id ent) {
         particle_create(&gs->particle, vec3_vec2(pp->pos, pp->height), 2.0f,
                         (color){{255, 0, 0, 255}});
     }
+    sfx_play(
+        &gs->sfx,
+        &(struct sfx_src){
+            .track_id = {rand_range_fast(&grand, ID_SFX_MDIE_1, ID_SFX_MDIE_7)},
+        });
 }
