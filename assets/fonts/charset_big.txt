@@ -9,7 +9,7 @@ range a z
 range 0 9
 
 # ASCII Punctuation
-chars . , ! ? - : / @
+chars . , ! ? - : / @ ( )
 
 # Curly quotes: single, double
 chars $2018 $2019

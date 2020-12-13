@@ -166,6 +166,9 @@ static void menu_def_paint(struct sys_menu *restrict msys) {
         };
     }
     if (def->body != NULL) {
+        if (def->count == 0 && def->title == NULL) {
+            pos = 80;
+        }
         *menu_addtext(msys) = (struct menu_text){
             .font = FONT_BODY,
             .pos = {0, pos},
@@ -282,15 +285,16 @@ static void menu_push_settings(struct game_state *restrict gs, int item) {
 // =============================================================================
 
 static struct menu_def MENU_CREDITS = {
-    .title = "Credits",
     .body =
+        "Thornmarked\n"
+        "\n"
         "Programming, Music\n"
         "Dietrich Epp\n"
         "\n"
         "Artwork, Modeling\n"
         "Alastair Low\n"
         "\n"
-        "Made for N64BrewJam2020.",
+        "Made for N64BrewJam2020",
 };
 
 static void menu_push_credits(struct game_state *restrict gs, int item) {
