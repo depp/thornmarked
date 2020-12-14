@@ -2,7 +2,7 @@ image IMG_LOGO images/Logo.texture
 image IMG_POINT images/Point.texture
 
 texture IMG_GROUND1 images/Marble012.texture
-texture IMG_GROUND2 images/Ground023.texture
+texture IMG_GROUND2 images/Marble009.texture
 texture IMG_FAIRY1 models/fairy.texture
 texture IMG_FAIRY2 models/fairy2.texture
 texture IMG_BLUEENEMY models/BlueEnemy.texture
