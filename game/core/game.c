@@ -41,7 +41,7 @@ void game_update(struct game_state *restrict gs, float dt) {
     }
 
     if (gs->input.count >= 1 &&
-        (gs->input.input[0].button_press & BUTTON_START) != 0) {
+        (gs->input.input[0].button_press & BUTTON_L) != 0) {
         gs->show_console = !gs->show_console;
     }
 }

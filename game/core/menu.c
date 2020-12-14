@@ -422,11 +422,7 @@ void menu_init(struct game_state *restrict gs) {
         .image = mem_alloc(MENU_IMAGE_COUNT * sizeof(*msys->image)),
         .text = mem_alloc(MENU_TEXT_COUNT * sizeof(*msys->text)),
     };
-    // SHIP_IT:
-    if (false) {
-        menu_push_start(gs);
-    }
-    menu_push_newgame(gs);
+    menu_push_start(gs);
 }
 
 void menu_update(struct game_state *restrict gs, float dt) {

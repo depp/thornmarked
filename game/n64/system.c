@@ -27,7 +27,7 @@ void game_system_init(struct game_state *restrict gs) {
     text_init();
     terrain_init();
     game_init(gs);
-    gs->show_console = true;
+    // gs->show_console = true;
 }
 
 void game_system_update(struct game_state *restrict gs, struct scheduler *sc) {
@@ -134,7 +134,7 @@ void game_system_render(struct game_state *restrict gs,
 
         // Clear the color framebuffer.
         if (clear_cfb) {
-            const uint32_t clear_color = RGB16_32(31, 0, 31);
+            const uint32_t clear_color = RGB16_32(5, 5, 5);
             gDPSetFillColor(dl++, clear_color);
             gDPFillRectangle(dl++, x0, y0, x1 - 1, y1 - 1);
             gDPPipeSync(dl++);
