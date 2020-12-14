@@ -303,6 +303,68 @@ static void menu_push_credits(struct game_state *restrict gs, int item) {
 }
 
 // =============================================================================
+// Instructions
+// =============================================================================
+
+#if 0
+
+static void menu_instructions_paint(struct sys_menu *restrict msys) {
+    // msys->image_count = 0;
+    msys->text_count = 0;
+    *menu_addtext(msys) = (struct menu_text){
+        .font = FONT_BODY,
+        .pos = {0, 65},
+        .color = color_nohighlight,
+        .text = "Pointy, green enemies:",
+    };
+    *menu_addtext(msys) = (struct menu_text){
+        .font = FONT_TITLE,
+        .pos = {0, 40},
+        .color = color_nohighlight,
+        .text = "Attack with {B}",
+    };
+    *menu_addtext(msys) = (struct menu_text){
+        .font = FONT_BODY,
+        .pos = {0, 40},
+        .color = color_nohighlight,
+        .text = "Round, green enemies:",
+    };
+    *menu_addtext(msys) = (struct menu_text){
+        .font = FONT_TITLE,
+        .pos = {0, -15},
+        .color = color_nohighlight,
+        .text = "Attack with {A}",
+    };
+}
+
+static void menu_instructions_update(struct game_state *restrict gs,
+                                     unsigned buttons, float dt) {
+    (void)dt;
+    switch (menu_button(buttons)) {
+    case MBUTTON_SELECT:;
+        int nplayers = menu_top(&gs->menu)->value + 1;
+        menu_popall(gs);
+        stage_start(gs, nplayers);
+        break;
+    case MBUTTON_CANCEL:
+        menu_pop(gs);
+        break;
+    }
+}
+
+static void menu_push_instructions(struct game_state *restrict gs, int item) {
+    struct menu_state *st = menu_push(&gs->menu);
+    *st = (struct menu_state){
+        .paint = menu_instructions_paint,
+        .update = menu_instructions_update,
+        .value = item,
+    };
+    menu_instructions_paint(&gs->menu);
+}
+
+#endif
+
+// =============================================================================
 // Top-Level Menu (start game)
 // =============================================================================
 
