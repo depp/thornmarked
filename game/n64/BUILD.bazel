@@ -55,6 +55,8 @@ cc_binary(
         "system.h",
         "task.c",
         "task.h",
+        "terrain.c",
+        "terrain.h",
         "text.c",
         "text.h",
         "texture.c",

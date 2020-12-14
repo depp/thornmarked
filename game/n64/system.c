@@ -1,6 +1,5 @@
 #include "game/n64/system.h"
 
-#include "assets/texture.h"
 #include "base/base.h"
 #include "base/console.h"
 #include "base/n64/console.h"
@@ -11,9 +10,9 @@
 #include "game/n64/graphics.h"
 #include "game/n64/image.h"
 #include "game/n64/input.h"
-#include "game/n64/material.h"
 #include "game/n64/model.h"
 #include "game/n64/particle.h"
+#include "game/n64/terrain.h"
 #include "game/n64/text.h"
 #include "game/n64/texture.h"
 
@@ -26,6 +25,7 @@ void game_system_init(struct game_state *restrict gs) {
     texture_init();
     image_init();
     text_init();
+    terrain_init();
     game_init(gs);
     gs->show_console = true;
 }
@@ -69,35 +69,6 @@ static const Gfx init_dl[] = {
     gsDPSetColorDither(G_CD_DISABLE),
     gsDPSetCycleType(G_CYC_FILL),
 
-    gsSPEndDisplayList(),
-};
-
-// Vertex data for the ground.
-#define X0 (-8)
-#define Y0 (-4)
-#define X1 8
-#define Y1 14
-#define V (1 << 7)
-#define T (1 << 11)
-#define Z (-V)
-static const Vtx ground_vtx[] = {
-    {{.ob = {X0 * V, Y0 *V, Z}, .tc = {X0 * T, -Y0 *T}}},
-    {{.ob = {X1 * V, Y0 *V, Z}, .tc = {X1 * T, -Y0 *T}}},
-    {{.ob = {X0 * V, Y1 *V, Z}, .tc = {X0 * T, -Y1 *T}}},
-    {{.ob = {X1 * V, Y1 *V, Z}, .tc = {X1 * T, -Y1 *T}}},
-};
-#undef X0
-#undef Y0
-#undef X1
-#undef Y1
-#undef V
-#undef T
-#undef Z
-
-// Display list to draw the ground, once the texture is loaded.
-static const Gfx ground_dl[] = {
-    gsSPVertex(ground_vtx, 4, 0),
-    gsSP2Triangles(0, 1, 2, 0, 2, 1, 3, 0),
     gsSPEndDisplayList(),
 };
 
@@ -175,11 +146,7 @@ void game_system_render(struct game_state *restrict gs,
     gDPSetPrimColor(dl++, 0, 0, 255, 255, 255, 255);
     dl = camera_render(&gs->camera, gr, dl);
     dl = model_render(dl, gr, &gs->model, &gs->physics);
-    dl = material_use(&gr->material, dl,
-                      (struct material){
-                          .texture_id = IMG_GROUND,
-                      });
-    gSPDisplayList(dl++, ground_dl);
+    dl = terrain_render(dl, gr);
     dl = particle_render(dl, gr, &gs->particle, &gs->camera);
     gDPSetTextureLOD(dl++, G_TL_TILE);
 
