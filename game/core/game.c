@@ -1,6 +1,7 @@
 #include "game/core/game.h"
 
 #include "base/base.h"
+#include "base/console.h"
 #include "game/core/input.h"
 #include "game/core/random.h"
 
@@ -21,6 +22,10 @@ void game_init(struct game_state *restrict gs) {
 }
 
 void game_update(struct game_state *restrict gs, float dt) {
+    cprintf("dt = %.3f\n", (double)dt);
+    if (dt > 0.1f || dt < 0.0f) {
+        fatal_error("dt = %f", (double)dt);
+    }
     sfx_update(&gs->sfx, dt); // Must be first.
     menu_update(gs, dt);
     time_update2(&gs->time);

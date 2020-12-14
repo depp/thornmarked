@@ -34,7 +34,7 @@ float time_update(struct game_time *restrict tm, struct scheduler *sc) {
         if (udelta_time > MAX_DELTA_TIME) {
             udelta_time = MAX_DELTA_TIME;
         }
-        last_update_time = last_time;
+        last_update_time = cur_time;
         delta_time = udelta_time;
     }
 
@@ -75,6 +75,7 @@ float time_update(struct game_time *restrict tm, struct scheduler *sc) {
     last_update_sample = frame_sample;
 
     (void)delta_time;
-    return (float)delta_sample * (1.0f / AUDIO_SAMPLERATE);
-    // (float)(int)delta_time * (1.0f / (float)OS_CPU_COUNTER);
+    (void)delta_sample;
+    // return (float)delta_sample * (1.0f / AUDIO_SAMPLERATE);
+    return (float)delta_time * (1.0f / (float)OS_CPU_COUNTER);
 }
