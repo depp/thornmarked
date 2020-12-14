@@ -47,6 +47,7 @@ struct cp_monster *monster_new(struct sys_monster *restrict msys, ent_id ent) {
 struct monster_info {
     pak_model model;
     pak_texture texture;
+    unsigned buttons;
 };
 
 static const struct monster_info monster_info[] = {
@@ -54,11 +55,13 @@ static const struct monster_info monster_info[] = {
         {
             .model = MODEL_BLUEENEMY,
             .texture = IMG_BLUEENEMY,
+            .buttons = BUTTON_A,
         },
     [MONSTER_GREEN] =
         {
             .model = MODEL_GREENENEMY,
             .texture = IMG_GREENENEMY,
+            .buttons = BUTTON_B,
         },
 };
 
@@ -85,7 +88,8 @@ void monster_spawn(struct game_state *restrict gs, monster_type type) {
         .flags = MAT_ENABLED | MAT_CULL_BACK | MAT_VERTEX_COLOR,
         .texture_id = monster_info[type].texture,
     };
-    monster_new(&gs->monster, ent);
+    struct cp_monster *mon = monster_new(&gs->monster, ent);
+    mon->type = type;
 }
 
 void monster_update(struct sys_monster *restrict msys,
@@ -119,7 +123,16 @@ void monster_update(struct sys_monster *restrict msys,
 
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
-void monster_damage(struct game_state *restrict gs, ent_id ent) {
+bool monster_damage(struct game_state *restrict gs, ent_id ent,
+                    unsigned buttons) {
+    struct cp_monster *mp = monster_get(&gs->monster, ent);
+    if (mp == NULL) {
+        return false;
+    }
+    const struct monster_info *mi = &monster_info[mp->type];
+    if ((buttons & mi->buttons) == 0) {
+        return false;
+    }
     struct cp_phys *pp = physics_get(&gs->physics, ent);
     entity_destroy(gs, ent);
     if (pp != NULL) {
@@ -131,4 +144,5 @@ void monster_damage(struct game_state *restrict gs, ent_id ent) {
         &(struct sfx_src){
             .track_id = {rand_range_fast(&grand, ID_SFX_MDIE_1, ID_SFX_MDIE_7)},
         });
+    return true;
 }

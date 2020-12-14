@@ -2,6 +2,8 @@
 
 #include "game/core/entity.h"
 
+#include <stdbool.h>
+
 struct sys_phys;
 struct sys_walk;
 struct game_state;
@@ -25,6 +27,7 @@ struct sys_monster {
     struct cp_monster *monsters;
     unsigned short *entities;
     int count;
+    monster_type type;
 };
 
 // Initialize monster system.
@@ -55,5 +58,7 @@ void monster_update(struct sys_monster *restrict msys,
                     struct sys_phys *restrict psys,
                     struct sys_walk *restrict wsys, float dt);
 
-// Apply damage to the given monster.
-void monster_damage(struct game_state *restrict gs, ent_id ent);
+// Apply damage to the given monster. Return true if successful, false if this
+// was the wrong type of attack.
+bool monster_damage(struct game_state *restrict gs, ent_id ent,
+                    unsigned buttons);

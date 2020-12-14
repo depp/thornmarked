@@ -111,29 +111,25 @@ void player_update(struct game_state *restrict gs, float dt) {
         const unsigned action_mask = BUTTON_A | BUTTON_B;
         unsigned action = gs->input.input[i].button_press & action_mask;
         // Action fails if multiple buttons are pressed.
-        if ((gs->input.input[i].button_state & action_mask) != action) {
-            action = -1;
+        if ((gs->input.input[i].button_state & action_mask) != action ||
+            (action & (action - 1)) != 0) {
+            action = 0;
         }
-        switch (action) {
-        case BUTTON_A:
-            if (pl->state == PSTATE_INIT) {
-                pl->state = PSTATE_ATTACK;
-                pl->state_time = 0.0f;
-                vec2 ppos = vec2_madd(pp->pos, pp->forward, 0.5f);
-                if (gs->time.on_beat) {
-                    struct cp_phys *target =
-                        physics_find(&gs->physics, pl->ent, ppos, 1.0f);
-                    if (target != NULL && target->team == TEAM_MONSTER) {
-                        monster_damage(gs, target->ent);
-                    }
-                } else {
+        if (action != 0 && pl->state == PSTATE_INIT) {
+            pl->state = PSTATE_ATTACK;
+            pl->state_time = 0.0f;
+            vec2 ppos = vec2_madd(pp->pos, pp->forward, 0.5f);
+            struct cp_phys *target =
+                physics_find(&gs->physics, pl->ent, ppos, 1.0f);
+            if (target != NULL && target->team == TEAM_MONSTER) {
+                bool ok = monster_damage(gs, target->ent, action);
+                if (!ok) {
                     sfx_play(&gs->sfx, &(struct sfx_src){
                                            .track_id = SFX_CLANG,
                                            .volume = 1.0f,
                                        });
                 }
             }
-            break;
         }
 
         // Move player.
