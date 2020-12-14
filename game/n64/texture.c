@@ -56,7 +56,8 @@ static int texture_load(pak_texture asset) {
 }
 
 void texture_init(void) {
-    texture_load(IMG_GROUND);
+    texture_load(IMG_GROUND1);
+    texture_load(IMG_GROUND2);
     texture_load(IMG_FAIRY1);
     texture_load(IMG_FAIRY2);
     texture_load(IMG_BLUEENEMY);

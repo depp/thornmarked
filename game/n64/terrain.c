@@ -1,45 +1,60 @@
 #include "game/n64/terrain.h"
 
 #include "assets/texture.h"
+#include "base/base.h"
 #include "game/n64/graphics.h"
 #include "game/n64/material.h"
 
-// Vertex data for the ground.
-#define X0 (-8)
-#define Y0 (-4)
-#define X1 8
-#define Y1 14
-#define V (1 << 7)
-#define T (1 << 11)
-#define Z (-V)
-static const Vtx ground_vtx[] = {
-    {{.ob = {X0 * V, Y0 *V, Z}, .tc = {X0 * T, -Y0 *T}}},
-    {{.ob = {X1 * V, Y0 *V, Z}, .tc = {X1 * T, -Y0 *T}}},
-    {{.ob = {X0 * V, Y1 *V, Z}, .tc = {X0 * T, -Y1 *T}}},
-    {{.ob = {X1 * V, Y1 *V, Z}, .tc = {X1 * T, -Y1 *T}}},
-};
-#undef X0
-#undef Y0
-#undef X1
-#undef Y1
-#undef V
-#undef T
-#undef Z
+static int terrain_vtx_size;
+static Vtx *terrain_vtx;
+static Gfx *terrain_dl[2];
 
-// Display list to draw the ground, once the texture is loaded.
-static const Gfx ground_dl[] = {
-    gsSPVertex(ground_vtx, 4, 0),
-    gsSP2Triangles(0, 1, 2, 0, 2, 1, 3, 0),
-    gsSPEndDisplayList(),
-};
-
-void terrain_init(void) {}
+void terrain_init(void) {
+    const int sx = 4, sy = 4;
+    const int y0 = -(sy >> 1), x0 = -(sx >> 1);
+    const int vsz = 1 << 8, tsz = 1 << 12;
+    Vtx *vtx = mem_alloc((sx + 1) * (sy + 1) * sizeof(*vtx));
+    terrain_vtx = vtx;
+    terrain_vtx_size = (sx + 1) * (sy + 1);
+    for (int y = 0; y <= sy; y++) {
+        for (int x = 0; x <= sx; x++) {
+            vtx[y * (sx + 1) + x] = (Vtx){{
+                .ob = {(y0 + y) * vsz, (x0 + x) * vsz, -64},
+                .tc = {(y0 + sy - y) * tsz, (x0 + sx - x) * tsz},
+            }};
+        }
+    }
+    const int dlsz = sx * sy * 2 + 2;
+    Gfx *dlstart = mem_alloc(dlsz * sizeof(*terrain_dl));
+    Gfx *dl[2] = {dlstart, dlstart + (dlsz >> 1)};
+    terrain_dl[0] = dl[0];
+    terrain_dl[1] = dl[1];
+    const int tx = 1, ty = sx + 1;
+    for (int y = 0; y < sy; y++) {
+        for (int x = 0; x < sx; x++) {
+            int off = y * (sx + 1) + x;
+            gSP2Triangles(dl[(x + y) & 1]++, off, off + tx, off + ty, 0,
+                          off + ty, off + tx, off + tx + ty, 0);
+        }
+    }
+    gSPEndDisplayList(dl[0]++);
+    gSPEndDisplayList(dl[1]++);
+    osWritebackDCache(vtx, (sx + 1) * (sy + 1) * sizeof(*vtx));
+    osWritebackDCache(dlstart, dlsz * sizeof(*dlstart));
+    return;
+}
 
 Gfx *terrain_render(Gfx *dl, struct graphics *restrict gr) {
     dl = material_use(&gr->material, dl,
                       (struct material){
-                          .texture_id = IMG_GROUND,
+                          .texture_id = IMG_GROUND1,
                       });
-    gSPDisplayList(dl++, ground_dl);
+    gSPVertex(dl++, terrain_vtx, terrain_vtx_size, 0);
+    gSPDisplayList(dl++, terrain_dl[0]);
+    dl = material_use(&gr->material, dl,
+                      (struct material){
+                          .texture_id = IMG_GROUND2,
+                      });
+    gSPDisplayList(dl++, terrain_dl[1]);
     return dl;
 }
