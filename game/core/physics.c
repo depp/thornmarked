@@ -132,7 +132,7 @@ static void physics_post_collision(struct cp_phys *restrict cps, int count,
         struct cp_phys *restrict cx = &cps[i];
         if (cx->collided) {
             cx->pos = vec2_add(cx->pos, cx->adj);
-            if (cx->stable) {
+            if (cx->stable && false) {
                 // When an entity pops in, don't accumulate velocity changes.
                 // Instead, just adjust the position.
                 cx->vel = vec2_madd(cx->vel, cx->adj, invdt);
